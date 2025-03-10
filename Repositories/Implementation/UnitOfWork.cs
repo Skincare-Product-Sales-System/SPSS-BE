@@ -8,12 +8,13 @@ public class UnitOfWork : IUnitOfWork
 {
     private readonly SPSSContext _context;
     private IProductRepository _productRepository;
+    private ICancelReasonRepository _cancelReasonRepository;
     private IDbContextTransaction _transaction; 
 
     public UnitOfWork(SPSSContext context) =>  _context = context;
 
     public IProductRepository Products => _productRepository ??= new ProductRepository(_context);
-
+    public ICancelReasonRepository CancelReasons => _cancelReasonRepository ??= new CancelReasonRepository(_context);
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 
     public async Task BeginTransactionAsync()
