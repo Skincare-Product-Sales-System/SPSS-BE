@@ -1,6 +1,17 @@
-﻿namespace API.Extensions;
+﻿using AutoMapper;
+using BusinessObjects.Dto.Product;
+using BusinessObjects.Models;
 
-public class MappingProfile
+namespace API.Extensions;
+
+public class MappingProfile : Profile
 {
-    
+    public MappingProfile()
+    {
+        #region Product
+        CreateMap<Product, ProductDto>();
+        CreateMap<ProductForCreationDto, Product>();
+        CreateMap<ProductForUpdateDto, Product>();
+        #endregion
+    }
 }

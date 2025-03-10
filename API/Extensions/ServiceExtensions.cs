@@ -1,15 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Repositories;
+﻿using BusinessObjects.Models;
+using Microsoft.EntityFrameworkCore;
 using Repositories.Implementation;
 using Repositories.Interface;
-using Services;
 using Services.Interface;
 
 namespace API.Extensions;
 
 public static class ServiceExtensions
 {
+    
     public static IServiceCollection ConfigureRepositories(this IServiceCollection services)
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -24,7 +23,7 @@ public static class ServiceExtensions
 
     public static IServiceCollection ConfigureDbContext(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<DbContext>(options =>
+        services.AddDbContext<SPSSContext>(options =>
         {
             options.UseSqlServer(configuration.GetConnectionString("SPSS"));
         });

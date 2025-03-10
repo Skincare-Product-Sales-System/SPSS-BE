@@ -7,13 +7,13 @@ using Microsoft.Extensions.Configuration;
 
 namespace BusinessObjects.Models;
 
-public partial class spss1Context : DbContext
+public partial class SPSSContext : DbContext
 {
-    public spss1Context()
+    public SPSSContext()
     {
     }
 
-    public spss1Context(DbContextOptions<spss1Context> options)
+    public SPSSContext(DbContextOptions<SPSSContext> options)
         : base(options)
     {
     }
