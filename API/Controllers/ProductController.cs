@@ -97,7 +97,7 @@ public class ProductController : ControllerBase
     }
     
     [HttpDelete("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)] // Changed to 200 to return response
+    [ProducesResponseType(StatusCodes.Status200OK)] 
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id)
     {

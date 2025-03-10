@@ -42,7 +42,6 @@ public class ProductService : IProductService
     {
         if (productDto == null)
             throw new ArgumentNullException(nameof(productDto), "Product data cannot be null.");
-
         var product = _mapper.Map<Product>(productDto);
         _unitOfWork.Products.Add(product);
         await _unitOfWork.SaveChangesAsync();
@@ -53,15 +52,12 @@ public class ProductService : IProductService
     {
         if (productDto == null)
             throw new ArgumentNullException(nameof(productDto), "Product data cannot be null.");
-
         var product = await _unitOfWork.Products.GetByIdAsync(productDto.Id);
         if (product == null)
             throw new KeyNotFoundException($"Product with ID {productDto.Id} not found.");
-
         _mapper.Map(productDto, product); 
         _unitOfWork.Products.Update(product);
         await _unitOfWork.SaveChangesAsync(); 
-
         return _mapper.Map<ProductDto>(product); 
     }
 
@@ -70,7 +66,6 @@ public class ProductService : IProductService
         var product = await _unitOfWork.Products.GetByIdAsync(id);
         if (product == null)
             throw new KeyNotFoundException($"Product with ID {id} not found.");
-
         _unitOfWork.Products.Delete(product);
         await _unitOfWork.SaveChangesAsync();
     }
