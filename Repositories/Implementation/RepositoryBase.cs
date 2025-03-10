@@ -6,9 +6,9 @@ namespace Repositories.Implementation;
 
 public class RepositoryBase<T, TKey> : IRepositoryBase<T, TKey> where T : class
 {
-    protected readonly spss1Context _context;
+    protected readonly SPSSContext _context;
 
-    public RepositoryBase(spss1Context context) => _context = context;
+    public RepositoryBase(SPSSContext context) => _context = context;
 
     public async Task<T?> GetByIdAsync(TKey id) => await _context.Set<T>().FindAsync(id);
     public async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(int pageNumber, int pageSize)

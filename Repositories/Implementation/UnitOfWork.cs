@@ -6,11 +6,11 @@ namespace Repositories.Implementation;
 
 public class UnitOfWork : IUnitOfWork
 {
-    private readonly spss1Context _context;
+    private readonly SPSSContext _context;
     private IProductRepository _productRepository;
     private IDbContextTransaction _transaction; 
 
-    public UnitOfWork(spss1Context context) =>  _context = context;
+    public UnitOfWork(SPSSContext context) =>  _context = context;
 
     public IProductRepository Products => _productRepository ??= new ProductRepository(_context);
 

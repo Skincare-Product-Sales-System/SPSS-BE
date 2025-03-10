@@ -5,7 +5,7 @@ namespace Repositories.Implementation;
 
 public class ProductRepository : RepositoryBase<Product, Guid>, IProductRepository
 {
-    public ProductRepository(spss1Context context) : base(context)
+    public ProductRepository(SPSSContext context) : base(context)
     {
     }
 }
