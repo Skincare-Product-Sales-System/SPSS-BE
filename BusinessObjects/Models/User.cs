@@ -9,7 +9,7 @@ namespace BusinessObjects.Models
 {
     public class User
     {
-        public Guid UserId { get; set; }
+        public int UserId { get; set; }
         public Guid? SkinTypeId { get; set; }
         public Guid? RoleId { get; set; }
         public string SurName { get; set; }
