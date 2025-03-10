@@ -8,7 +8,7 @@ using Services.Response;
 
 namespace API.Controllers;
 [ApiController]
-[Microsoft.AspNetCore.Components.Route("api/products")]
+[Route("api/products")]
 public class ProductController : ControllerBase
 {
     private readonly IProductService _productService;
