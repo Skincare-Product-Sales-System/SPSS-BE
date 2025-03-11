@@ -5,6 +5,7 @@ using BusinessObjects.Dto.Category;
 using BusinessObjects.Dto.Product;
 using BusinessObjects.Dto.ProductConfiguration;
 using BusinessObjects.Dto.ProductItem;
+using BusinessObjects.Dto.ProductStatus;
 using BusinessObjects.Dto.Promotion;
 using BusinessObjects.Models;
 
@@ -57,6 +58,12 @@ public class MappingProfile : Profile
         CreateMap<CancelReason, CancelReasonDto>();
         CreateMap<CancelReasonForCreationDto, CancelReason>();
         CreateMap<CancelReasonForUpdateDto, CancelReason>();
+        #endregion
+
+        #region ProductStatus
+        CreateMap<ProductStatus, ProductStatusDto>();
+        CreateMap<ProductStatusForCreationDto, ProductStatus>();
+        CreateMap<ProductStatusForUpdateDto, ProductStatus>();
         #endregion
 
         #region ProductItem

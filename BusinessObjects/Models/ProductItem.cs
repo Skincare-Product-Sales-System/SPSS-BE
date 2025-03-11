@@ -14,7 +14,7 @@ public partial class ProductItem
     public string ImageUrl { get; set; }
 
     public decimal Price { get; set; }
-
+    //public decimal MarketPrice { get; set; }
     public Guid ProductId { get; set; }
 
     public string CreatedBy { get; set; }
