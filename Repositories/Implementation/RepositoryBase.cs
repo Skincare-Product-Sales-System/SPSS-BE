@@ -17,7 +17,10 @@ public class RepositoryBase<T, TKey> : IRepositoryBase<T, TKey> where T : class
     }
     public async Task<T?> GetByIdAsync(TKey id) => await _context.Set<T>().FindAsync(id);
     public IQueryable<T> Entities => _context.Set<T>();
-    public async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(int pageNumber, int pageSize)
+    public async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
+        Expression<Func<T, bool>> predicate)
     {
         if (pageNumber < 1) pageNumber = 1;
         if (pageSize < 1) pageSize = 10;
@@ -28,7 +31,7 @@ public class RepositoryBase<T, TKey> : IRepositoryBase<T, TKey> where T : class
         }
         int totalCount = await query.CountAsync();
         var items = await query
-            .OrderBy(e => EF.Property<DateTimeOffset>(e, "CreatedTime")) 
+            .OrderBy(e => EF.Property<DateTimeOffset>(e, "CreatedTime"))
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();

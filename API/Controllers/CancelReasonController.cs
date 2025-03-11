@@ -55,10 +55,10 @@ public class CancelReasonController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<CancelReasonDto>.FailureResponse("Invalid cancel reason data", errors));
         }
-
+        string userId = "System";
         try
         {
-            var createdCancelReason = await _cancelReasonService.CreateAsync(cancelReasonDto);
+            var createdCancelReason = await _cancelReasonService.CreateAsync(cancelReasonDto, userId);
             var response = ApiResponse<CancelReasonDto>.SuccessResponse(createdCancelReason, "Cancel reason created successfully");
             return CreatedAtAction(nameof(GetById), new { id = createdCancelReason.Id }, response);
         }
@@ -79,10 +79,10 @@ public class CancelReasonController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<CancelReasonDto>.FailureResponse("Invalid cancel reason data", errors));
         }
-
+        string userId = "System";
         try
         {
-            var updatedCancelReason = await _cancelReasonService.UpdateAsync(id, cancelReasonDto);
+            var updatedCancelReason = await _cancelReasonService.UpdateAsync(id, cancelReasonDto, userId);
             return Ok(ApiResponse<CancelReasonDto>.SuccessResponse(updatedCancelReason, "Cancel reason updated successfully"));
         }
         catch (KeyNotFoundException ex)
@@ -102,7 +102,8 @@ public class CancelReasonController : ControllerBase
     {
         try
         {
-            await _cancelReasonService.DeleteAsync(id);
+            string userId = "System";
+            await _cancelReasonService.DeleteAsync(id, userId);
             return Ok(ApiResponse<object>.SuccessResponse(null, "Cancel reason deleted successfully"));
         }
         catch (KeyNotFoundException ex)

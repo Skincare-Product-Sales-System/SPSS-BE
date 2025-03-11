@@ -58,10 +58,10 @@ public class ProductController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<ProductDto>.FailureResponse("Invalid product data", errors));
         }
-
+        string userId = "123"; // Get the user ID from the request context
         try
         {
-            var createdProduct = await _productService.CreateAsync(productDto);
+            var createdProduct = await _productService.CreateAsync(productDto, userId);
             return Ok(ApiResponse<bool>.SuccessResponse(createdProduct, "Product created successfully"));
         }
         catch (ArgumentNullException ex)
@@ -82,13 +82,13 @@ public class ProductController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<ProductDto>.FailureResponse("Invalid product data", errors));
         }
-
+        string userId = "123"; // Get the user ID from the request context
         if (id != productDto.Id)
             return BadRequest(ApiResponse<ProductDto>.FailureResponse("Product ID in URL must match the ID in the body"));
 
         try
         {
-            var updatedProduct = await _productService.UpdateAsync(productDto);
+            var updatedProduct = await _productService.UpdateAsync(productDto, userId);
             return Ok(ApiResponse<ProductDto>.SuccessResponse(updatedProduct, "Product updated successfully"));
         }
         catch (KeyNotFoundException ex)
@@ -109,7 +109,8 @@ public class ProductController : ControllerBase
     {
         try
         {
-            await _productService.DeleteAsync(id);
+            string userId = "123"; // Get the user ID from the request context
+            await _productService.DeleteAsync(id, userId);
             return Ok(ApiResponse<object>.SuccessResponse(null, "Product deleted successfully"));
         }
         catch (KeyNotFoundException ex)

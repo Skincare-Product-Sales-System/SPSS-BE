@@ -14,6 +14,7 @@ public class ProductService : IProductService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly IProductStatusService _productStatusService;
+    private readonly string _currentUser;
 
     public ProductService(IUnitOfWork unitOfWork, IMapper mapper, IProductStatusService productStatusService)
     {
@@ -44,7 +45,11 @@ public class ProductService : IProductService
 
     public async Task<PagedResponse<ProductDto>> GetPagedAsync(int pageNumber, int pageSize)
     {
-        var (products, totalCount) = await _unitOfWork.Products.GetPagedAsync(pageNumber, pageSize);
+        var (products, totalCount) = await _unitOfWork.Products.GetPagedAsync(
+                pageNumber,
+                pageSize,
+                cr => cr.IsDeleted == false
+            );
 
         var orderedProducts = products.OrderByDescending(p => p.CreatedTime);
 
@@ -59,7 +64,7 @@ public class ProductService : IProductService
         };
     }
 
-    public async Task<bool> CreateAsync(ProductForCreationDto productDto)
+    public async Task<bool> CreateAsync(ProductForCreationDto productDto, string userId)
     {
         await _unitOfWork.BeginTransactionAsync();
 
@@ -94,13 +99,17 @@ public class ProductService : IProductService
                     Id = Guid.NewGuid(),
                     ProductId = productEntity.Id,
                     ImageUrl = imageUrl,
-                    IsThumbnail = (i == 0)
+                    IsThumbnail = (i == 0),
+                    CreatedBy = userId,
+                    LastUpdatedBy = userId,
+                    CreatedTime = DateTime.UtcNow,
+                    LastUpdatedTime = DateTime.UtcNow
                 });
             }
 
             productEntity.ProductStatusId = await _productStatusService.GetFirstAvailableProductStatusIdAsync();
-            //productEntity.CreatedBy = userId;
-            //productEntity.LastUpdatedBy = userId;
+            productEntity.CreatedBy = userId;
+            productEntity.LastUpdatedBy = userId;
             _unitOfWork.Products.Add(productEntity);
 
             // Step 7: Validate if each Variation exists and if its ID is a valid GUID
@@ -171,8 +180,7 @@ public class ProductService : IProductService
             }
 
             // Step 13: Create ProductItems and ProductConfigurations for each VariationCombination
-            //await AddVariationOptionsToProduct(productEntity, productDto.VariationCombinations, userId);
-            await AddVariationOptionsToProduct(productEntity, productDto.ProductItems);
+            await AddVariationOptionsToProduct(productEntity, productDto.ProductItems, userId);
 
             await _unitOfWork.SaveChangesAsync();
 
@@ -186,7 +194,7 @@ public class ProductService : IProductService
         }
     }
 
-    public async Task AddVariationOptionsToProduct(Product product, List<VariationCombinationDto> variationCombinations)
+    public async Task AddVariationOptionsToProduct(Product product, List<VariationCombinationDto> variationCombinations, string userId)
     {
         foreach (var combination in variationCombinations)
         {
@@ -203,7 +211,8 @@ public class ProductService : IProductService
                 ProductId = product.Id,
                 Price = combination.Price,
                 QuantityInStock = combination.QuantityInStock,
-                ImageUrl = combination.ImageUrl
+                ImageUrl = combination.ImageUrl,
+                CreatedBy = userId,
             };
 
             // Add ProductItem to the DbContext
@@ -216,7 +225,8 @@ public class ProductService : IProductService
                 {
                     Id = Guid.NewGuid(),
                     ProductItemId = productItem.Id,
-                    VariationOptionId = variationOptionId
+                    VariationOptionId = variationOptionId,
+                    CreatedBy = userId,
                 };
 
                 // Add ProductConfiguration to the DbContext
@@ -263,7 +273,7 @@ public class ProductService : IProductService
         return result.Select(c => c.ToList());
     }
 
-    public async Task<ProductDto> UpdateAsync(ProductForUpdateDto productDto)
+    public async Task<ProductDto> UpdateAsync(ProductForUpdateDto productDto, string userId)
     {
         if (productDto == null)
             throw new ArgumentNullException(nameof(productDto), "Product data cannot be null.");
@@ -273,7 +283,7 @@ public class ProductService : IProductService
             throw new KeyNotFoundException($"Product with ID {productDto.Id} not found or has been deleted.");
 
         product.LastUpdatedTime = DateTimeOffset.UtcNow;
-        product.LastUpdatedBy = _currentUser;
+        product.LastUpdatedBy = userId;
 
         _mapper.Map(productDto, product);
         _unitOfWork.Products.Update(product);
@@ -281,14 +291,14 @@ public class ProductService : IProductService
         return _mapper.Map<ProductDto>(product);
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task DeleteAsync(Guid id , string userId)
     {
         var product = await _unitOfWork.Products.GetByIdAsync(id);
         if (product == null || product.IsDeleted)
             throw new KeyNotFoundException($"Product with ID {id} not found or has been deleted.");
         product.IsDeleted = true;
         product.DeletedTime = DateTimeOffset.UtcNow;
-        product.DeletedBy = _currentUser;
+        product.DeletedBy = userId;
         _unitOfWork.Products.Update(product); 
         await _unitOfWork.SaveChangesAsync();
     }

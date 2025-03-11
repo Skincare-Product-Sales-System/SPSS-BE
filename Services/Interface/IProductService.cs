@@ -7,7 +7,7 @@ public interface IProductService
 {
     Task<ProductWithDetailsDto> GetByIdAsync(Guid id);
     Task<PagedResponse<ProductDto>> GetPagedAsync(int pageNumber, int pageSize);
-    Task<bool> CreateAsync(ProductForCreationDto productDto);
-    Task<ProductDto> UpdateAsync(ProductForUpdateDto productDto); 
-    Task DeleteAsync(Guid id);
+    Task<bool> CreateAsync(ProductForCreationDto productDto, string userId);
+    Task<ProductDto> UpdateAsync(ProductForUpdateDto productDto, string userId); 
+    Task DeleteAsync(Guid id, string userId);
 }
