@@ -267,21 +267,29 @@ public class ProductService : IProductService
     {
         if (productDto == null)
             throw new ArgumentNullException(nameof(productDto), "Product data cannot be null.");
+
         var product = await _unitOfWork.Products.GetByIdAsync(productDto.Id);
-        if (product == null)
-            throw new KeyNotFoundException($"Product with ID {productDto.Id} not found.");
-        _mapper.Map(productDto, product); 
+        if (product == null || product.IsDeleted)
+            throw new KeyNotFoundException($"Product with ID {productDto.Id} not found or has been deleted.");
+
+        product.LastUpdatedTime = DateTimeOffset.UtcNow;
+        product.LastUpdatedBy = _currentUser;
+
+        _mapper.Map(productDto, product);
         _unitOfWork.Products.Update(product);
-        await _unitOfWork.SaveChangesAsync(); 
-        return _mapper.Map<ProductDto>(product); 
+        await _unitOfWork.SaveChangesAsync();
+        return _mapper.Map<ProductDto>(product);
     }
 
     public async Task DeleteAsync(Guid id)
     {
         var product = await _unitOfWork.Products.GetByIdAsync(id);
-        if (product == null)
-            throw new KeyNotFoundException($"Product with ID {id} not found.");
-        _unitOfWork.Products.Delete(product);
+        if (product == null || product.IsDeleted)
+            throw new KeyNotFoundException($"Product with ID {id} not found or has been deleted.");
+        product.IsDeleted = true;
+        product.DeletedTime = DateTimeOffset.UtcNow;
+        product.DeletedBy = _currentUser;
+        _unitOfWork.Products.Update(product); 
         await _unitOfWork.SaveChangesAsync();
     }
 }

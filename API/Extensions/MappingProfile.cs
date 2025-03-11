@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using BusinessObjects.Dto.Brand;
+using BusinessObjects.Dto.Address;
 using BusinessObjects.Dto.CancelReason;
 using BusinessObjects.Dto.ProductCategory;
 using BusinessObjects.Dto.Product;
@@ -119,6 +120,12 @@ public class MappingProfile : Profile
 
         #region ProductConfiguration
         CreateMap<ProductConfiguration, ProductConfigurationForProductQueryDto>();
+        #endregion
+
+        #region Address
+        CreateMap<Address, AddressDto>();
+        CreateMap<AddressForCreationDto, Address>();
+        CreateMap<AddressForUpdateDto, Address>();
         #endregion
     }
 }
