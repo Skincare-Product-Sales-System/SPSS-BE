@@ -17,7 +17,8 @@ namespace Services.Implementation
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-            _currentUser = "System"; // Replace with actual user retrieval (e.g., from IHttpContextAccessor or a service)
+            _currentUser =
+                "System"; // Replace with actual user retrieval (e.g., from IHttpContextAccessor or a service)
         }
 
         public async Task<CancelReasonDto> GetByIdAsync(Guid id)
@@ -61,14 +62,15 @@ namespace Services.Implementation
             return _mapper.Map<CancelReasonDto>(cancelReason);
         }
 
-        public async Task<CancelReasonDto> UpdateAsync(CancelReasonForUpdateDto cancelReasonDto)
+        public async Task<CancelReasonDto> UpdateAsync(Guid cancelReasonId, CancelReasonForUpdateDto cancelReasonDto)
         {
             if (cancelReasonDto == null)
                 throw new ArgumentNullException(nameof(cancelReasonDto), "Cancel reason data cannot be null.");
 
-            var cancelReason = await _unitOfWork.CancelReasons.GetByIdAsync(cancelReasonDto.Id);
+            var cancelReason = await _unitOfWork.CancelReasons.GetByIdAsync(cancelReasonId);
             if (cancelReason == null || cancelReason.IsDeleted)
-                throw new KeyNotFoundException($"Cancel reason with ID {cancelReasonDto.Id} not found or has been deleted.");
+                throw new KeyNotFoundException(
+                    $"Cancel reason with ID {cancelReasonId} not found or has been deleted.");
 
             cancelReason.LastUpdatedTime = DateTimeOffset.UtcNow;
             cancelReason.LastUpdatedBy = _currentUser;

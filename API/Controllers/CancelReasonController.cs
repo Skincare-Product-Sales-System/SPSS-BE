@@ -82,7 +82,7 @@ public class CancelReasonController : ControllerBase
 
         try
         {
-            var updatedCancelReason = await _cancelReasonService.UpdateAsync(cancelReasonDto);
+            var updatedCancelReason = await _cancelReasonService.UpdateAsync(id, cancelReasonDto);
             return Ok(ApiResponse<CancelReasonDto>.SuccessResponse(updatedCancelReason, "Cancel reason updated successfully"));
         }
         catch (KeyNotFoundException ex)

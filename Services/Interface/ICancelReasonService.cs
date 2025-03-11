@@ -11,7 +11,7 @@ namespace Services.Interface
 
         Task<CancelReasonDto> CreateAsync(CancelReasonForCreationDto cancelReasonDto);
 
-        Task<CancelReasonDto> UpdateAsync(CancelReasonForUpdateDto cancelReasonDto);
+        Task<CancelReasonDto> UpdateAsync(Guid cancelReasonId,CancelReasonForUpdateDto cancelReasonDto);
 
         Task DeleteAsync(Guid id);
     }
