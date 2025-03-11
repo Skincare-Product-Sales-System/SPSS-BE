@@ -12,6 +12,8 @@ public interface IUnitOfWork : IDisposable
     IVariationOptionRepository VariationOptions { get; }
     IProductStatusRepository ProductStatuses { get; }
     IProductCategoryRepository  ProductCategories { get; }
+    IUserRepository Users { get; }
+    IRoleRepository Roles { get; }
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();
     Task CommitTransactionAsync();

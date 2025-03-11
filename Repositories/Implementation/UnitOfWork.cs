@@ -18,6 +18,8 @@ public class UnitOfWork : IUnitOfWork
     private IVariationOptionRepository _variationOptionRepository;
     private IProductStatusRepository _productStatusRepository;
     private IProductCategoryRepository _productCategoryRepository;
+    private IUserRepository _userRepository;
+    private IRoleRepository _roleRepository;
     private IDbContextTransaction _transaction; 
 
     public UnitOfWork(SPSSContext context) =>  _context = context;
@@ -31,7 +33,9 @@ public class UnitOfWork : IUnitOfWork
     public IVariationOptionRepository VariationOptions => _variationOptionRepository ??= new VariationOptionRepository(_context);
     public IProductStatusRepository ProductStatuses => _productStatusRepository ??= new ProductStatusRepository(_context);
     public IProductCategoryRepository ProductCategories => _productCategoryRepository ??= new ProductCategoryRepository(_context);
+    public IUserRepository Users => _userRepository ??= new UserRepository(_context);
     public IAddressRepository Addresses => _addressRepository ??= new AddressRepository(_context);
+    public IRoleRepository Roles => _roleRepository ?? = new RoleRepository(_context);
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 
     public async Task BeginTransactionAsync()
