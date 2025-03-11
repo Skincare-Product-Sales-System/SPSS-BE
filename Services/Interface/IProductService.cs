@@ -10,4 +10,6 @@ public interface IProductService
     Task<bool> CreateAsync(ProductForCreationDto productDto, string userId);
     Task<ProductDto> UpdateAsync(ProductForUpdateDto productDto, string userId); 
     Task DeleteAsync(Guid id, string userId);
+
+    Task<PagedResponse<ProductDto>> GetByCategoryIdPagedAsync(Guid categoryId, int pageNumber, int pageSize);
 }

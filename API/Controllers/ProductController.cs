@@ -118,4 +118,20 @@ public class ProductController : ControllerBase
             return NotFound(ApiResponse<object>.FailureResponse(ex.Message));
         }
     }
+
+    [HttpGet("by-category/{categoryId:guid}")]
+    public async Task<IActionResult> GetByCategoryId(
+    Guid categoryId,
+    [FromQuery, Range(1, int.MaxValue)] int pageNumber = 1,
+    [FromQuery, Range(1, 100)] int pageSize = 10)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse<PagedResponse<ProductDto>>.FailureResponse("Invalid pagination parameters", errors));
+        }
+
+        var pagedData = await _productService.GetByCategoryIdPagedAsync(categoryId, pageNumber, pageSize);
+        return Ok(ApiResponse<PagedResponse<ProductDto>>.SuccessResponse(pagedData));
+    }
 }
