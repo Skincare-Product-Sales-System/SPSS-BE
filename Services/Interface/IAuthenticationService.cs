@@ -4,6 +4,7 @@ namespace Services.Interface;
 
 public interface IAuthenticationService
 {
-    Task<LoginResponse> Login(LoginDto request);
-    Task RegisterSystemAccount(RegisterDto model);
+    Task<AuthenticationResponse> LoginAsync(LoginRequest loginRequest);
+    Task<AuthenticationResponse> RefreshTokenAsync(RefreshTokenRequest refreshTokenRequest);
+    Task LogoutAsync(int userId);
 }

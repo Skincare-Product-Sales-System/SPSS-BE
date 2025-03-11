@@ -1,6 +1,8 @@
+// File: API/Program.cs
+
 using API.Extensions;
 using Microsoft.OpenApi.Models;
-using Serilog;  // Add this
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,13 +13,13 @@ builder.Host.UseSerilog((context, services, configuration) =>
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
-        .WriteTo.Console()  // Logs to console
+        .WriteTo.Console()
         .WriteTo.File(
-            path: "logs/log-.txt",  // Logs to file with date
-            rollingInterval: RollingInterval.Day,  // New file each day
+            path: "logs/log-.txt",
+            rollingInterval: RollingInterval.Day,
             rollOnFileSizeLimit: true,
-            fileSizeLimitBytes: 10485760, // 10MB
-            retainedFileCountLimit: 31);  // Keep 31 days of logs
+            fileSizeLimitBytes: 10485760,
+            retainedFileCountLimit: 31);
 });
 
 // Add services to the container.
@@ -41,6 +43,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.ConfigureRepositories();
 builder.Services.ConfigureServices();
 builder.Services.ConfigureDbContext(builder.Configuration);
+builder.Services.ConfigureJwtAuthentication(builder.Configuration); // Register JWT authentication
 builder.Services.AddAutoMapper(typeof(Program));
 
 var app = builder.Build();
@@ -55,16 +58,16 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = string.Empty;
     });
 }
-app.UseSerilogRequestLogging();  // Add this for request logging
+app.UseSerilogRequestLogging();
 
 app.UseHttpsRedirection();
 app.UseRouting();
+app.UseAuthentication(); // Add this line to enable authentication
+app.UseAuthorization();
 app.UseEndpoints(endpoints =>
 {
-    endpoints.MapControllers();  // Complete the endpoints configuration
+    endpoints.MapControllers();
 });
 
 app.Run();
 
-// Add this at the end to ensure proper shutdown of Serilog
-public partial class Program { }  // Needed for Serilog

@@ -5,31 +5,12 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class CartItem
+public partial class CartItem : BaseEntity
 {
     public Guid Id { get; set; }
-
     public int UserId { get; set; }
-
     public Guid ProductItemId { get; set; }
-
     public int Quantity { get; set; }
-
-    public string CreatedBy { get; set; }
-
-    public string LastUpdatedBy { get; set; }
-
-    public string DeletedBy { get; set; }
-
-    public DateTimeOffset CreatedTime { get; set; }
-
-    public DateTimeOffset? LastUpdatedTime { get; set; }
-
-    public DateTimeOffset? DeletedTime { get; set; }
-
-    public bool IsDeleted { get; set; }
-
     public virtual ProductItem ProductItem { get; set; }
-
     public virtual User User { get; set; }
 }

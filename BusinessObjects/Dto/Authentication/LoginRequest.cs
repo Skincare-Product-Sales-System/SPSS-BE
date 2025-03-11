@@ -1,12 +1,14 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace BusinessObjects.Dto.Authentication;
 
-public class LoginDto
+public class LoginRequest
 {
+    public string UserName { get; set; }
+        
     [EmailAddress]
     public string Email { get; set; }
-
-    public string UserName { get; set; }
+        
+    [Required]
     public string Password { get; set; }
 }

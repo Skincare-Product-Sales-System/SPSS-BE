@@ -27,6 +27,26 @@ public class UserService : IUserService
 
         return _mapper.Map<UserDto>(user);
     }
+    
+    public async Task<UserDto> GetByEmailAsync(string email)
+    {
+        var user = await _unitOfWork.Users.GetByEmailAsync(email);
+
+        if (user == null || user.IsDeleted)
+            throw new KeyNotFoundException($"User with email {email} not found.");
+
+        return _mapper.Map<UserDto>(user);
+    }
+
+    public async Task<UserDto> GetByUserNameAsync(string userName)
+    {
+        var user = await _unitOfWork.Users.GetByUserNameAsync(userName);
+
+        if (user == null || user.IsDeleted)
+            throw new KeyNotFoundException($"User with user name {userName} not found.");
+
+        return _mapper.Map<UserDto>(user);
+    }
 
     public async Task<PagedResponse<UserDto>> GetPagedAsync(int pageNumber, int pageSize)
     {
@@ -99,4 +119,6 @@ public class UserService : IUserService
         _unitOfWork.Users.Update(user);
         await _unitOfWork.SaveChangesAsync();
     }
+
+   
 }

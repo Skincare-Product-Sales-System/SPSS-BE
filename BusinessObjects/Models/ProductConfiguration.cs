@@ -5,28 +5,13 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class ProductConfiguration
+public partial class ProductConfiguration : BaseEntity
 {
     public Guid Id { get; set; }
 
     public Guid ProductItemId { get; set; }
 
     public Guid VariationOptionId { get; set; }
-
-    public string CreatedBy { get; set; }
-
-    public string LastUpdatedBy { get; set; }
-
-    public string DeletedBy { get; set; }
-
-    public DateTimeOffset CreatedTime { get; set; }
-
-    public DateTimeOffset? LastUpdatedTime { get; set; }
-
-    public DateTimeOffset? DeletedTime { get; set; }
-
-    public bool IsDeleted { get; set; }
-
     public virtual ProductItem ProductItem { get; set; }
 
     public virtual VariationOption VariationOption { get; set; }

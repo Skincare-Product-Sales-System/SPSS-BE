@@ -24,7 +24,7 @@ public class UnitOfWork : IUnitOfWork
 
     public UnitOfWork(SPSSContext context) =>  _context = context;
     
-    public IProductImageRepository ProductImages => _productImageRepository ?? (_productImageRepository = new ProductImageRepository(_context));
+    public IProductImageRepository ProductImages => _productImageRepository ??= new ProductImageRepository(_context);
     public IProductRepository Products => _productRepository ??= new ProductRepository(_context);
     public ICancelReasonRepository CancelReasons => _cancelReasonRepository ??= new CancelReasonRepository(_context);
     public IProductConfigurationRepository ProductConfigurations => _productConfigurationRepository ??= new ProductConfigurationRepository(_context);
@@ -35,7 +35,7 @@ public class UnitOfWork : IUnitOfWork
     public IProductCategoryRepository ProductCategories => _productCategoryRepository ??= new ProductCategoryRepository(_context);
     public IUserRepository Users => _userRepository ??= new UserRepository(_context);
     public IAddressRepository Addresses => _addressRepository ??= new AddressRepository(_context);
-    public IRoleRepository Roles => _roleRepository ?? = new RoleRepository(_context);
+    public IRoleRepository Roles => _roleRepository ??= new RoleRepository(_context);
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 
     public async Task BeginTransactionAsync()

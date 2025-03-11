@@ -5,50 +5,22 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class Order
+public partial class Order : BaseEntity
 {
     public Guid Id { get; set; }
-
     public string Status { get; set; }
-
     public decimal OrderTotal { get; set; }
-
     public Guid? CancelReasonId { get; set; }
-
     public int UserId { get; set; }
-
     public Guid PaymentMethodId { get; set; }
-
     public Guid AddressId { get; set; }
-
     public Guid? VoucherId { get; set; }
-
-    public string CreatedBy { get; set; }
-
-    public string LastUpdatedBy { get; set; }
-
-    public string DeletedBy { get; set; }
-
-    public DateTimeOffset CreatedTime { get; set; }
-
-    public DateTimeOffset? LastUpdatedTime { get; set; }
-
-    public DateTimeOffset? DeletedTime { get; set; }
-
-    public bool IsDeleted { get; set; }
-
     public virtual Address Address { get; set; }
-
     public virtual CancelReason CancelReason { get; set; }
-
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
-
     public virtual PaymentMethod PaymentMethod { get; set; }
-
     public virtual ICollection<StatusChange> StatusChanges { get; set; } = new List<StatusChange>();
     public virtual ICollection<Order> Orders { get; set; }
-
     public virtual User User { get; set; }
-
     public virtual Voucher Voucher { get; set; }
 }
