@@ -62,8 +62,7 @@ public class ProductController : ControllerBase
         try
         {
             var createdProduct = await _productService.CreateAsync(productDto);
-            var response = ApiResponse<ProductWithDetailsDto>.SuccessResponse(createdProduct, "Product created successfully");
-            return CreatedAtAction(nameof(GetById), new { id = createdProduct.Id }, response);
+            return Ok(ApiResponse<bool>.SuccessResponse(createdProduct, "Product created successfully"));
         }
         catch (ArgumentNullException ex)
         {

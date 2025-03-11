@@ -19,6 +19,12 @@ namespace Services.Implementation
             _mapper = mapper;
         }
 
+        public async Task<Guid?> GetFirstAvailableProductStatusIdAsync()
+        {
+            var productStatuses = await _unitOfWork.ProductStatuses.FindAsync(ps => !ps.IsDeleted && !string.IsNullOrEmpty(ps.StatusName));
+            return productStatuses.Select(ps => ps.Id).FirstOrDefault();
+        }
+
         public async Task<ProductStatusDto> GetByIdAsync(Guid id)
         {
             var productStatus = await _unitOfWork.ProductStatuses.GetByIdAsync(id);

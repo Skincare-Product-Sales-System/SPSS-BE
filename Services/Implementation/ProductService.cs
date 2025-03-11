@@ -13,11 +13,13 @@ public class ProductService : IProductService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IProductStatusService _productStatusService;
 
-    public ProductService(IUnitOfWork unitOfWork, IMapper mapper)
+    public ProductService(IUnitOfWork unitOfWork, IMapper mapper, IProductStatusService productStatusService)
     {
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        _productStatusService = productStatusService;
     }
 
     public async Task<ProductWithDetailsDto> GetByIdAsync(Guid id)
@@ -43,7 +45,11 @@ public class ProductService : IProductService
     public async Task<PagedResponse<ProductDto>> GetPagedAsync(int pageNumber, int pageSize)
     {
         var (products, totalCount) = await _unitOfWork.Products.GetPagedAsync(pageNumber, pageSize);
-        var productDtos = _mapper.Map<IEnumerable<ProductDto>>(products);
+
+        var orderedProducts = products.OrderByDescending(p => p.CreatedTime);
+
+        var productDtos = _mapper.Map<IEnumerable<ProductDto>>(orderedProducts);
+
         return new PagedResponse<ProductDto>
         {
             Items = productDtos,
@@ -53,27 +59,49 @@ public class ProductService : IProductService
         };
     }
 
-    public async Task<ProductWithDetailsDto> CreateAsync(ProductForCreationDto productDto)
+    public async Task<bool> CreateAsync(ProductForCreationDto productDto)
     {
         await _unitOfWork.BeginTransactionAsync();
 
         try
         {
-            //var categoryExists = await _unitOfWork.ProducsCategories.Entities
-            //    .AnyAsync(c => c.Id == productDto.ProductCategoryId);
-            //if (!categoryExists)
-            //{
-            //    throw new ArgumentNullException($"Category with ID {productDto.ProductCategoryId} not found.");
-            //}
+            var categoryExists = await _unitOfWork.ProductCategories.Entities
+                .AnyAsync(c => c.Id == productDto.ProductCategoryId);
+            if (!categoryExists)
+            {
+                throw new ArgumentNullException($"Category with ID {productDto.ProductCategoryId} not found.");
+            }
 
             // Step 5: Map the product DTO to the Product entity
             var productEntity = _mapper.Map<Product>(productDto);
-            //productEntity.ProductStatusId = ProductForStatus.Available;
+            foreach (var item in productEntity.ProductItems)
+            {
+                if (item.Id == Guid.Empty)
+                {
+                    item.Id = Guid.NewGuid();
+                }
+            }
+
+            productEntity.Id = Guid.NewGuid();
+            productEntity.CreatedTime = DateTime.UtcNow;
+            productEntity.LastUpdatedTime = DateTime.UtcNow;
+            // Map hình ảnh từ ProductImageUrls
+            for (int i = 0; i < productDto.ProductImageUrls.Count; i++)
+            {
+                var imageUrl = productDto.ProductImageUrls[i];
+                productEntity.ProductImages.Add(new ProductImage
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = productEntity.Id,
+                    ImageUrl = imageUrl,
+                    IsThumbnail = (i == 0)
+                });
+            }
+
+            productEntity.ProductStatusId = await _productStatusService.GetFirstAvailableProductStatusIdAsync();
             //productEntity.CreatedBy = userId;
             //productEntity.LastUpdatedBy = userId;
-
-            //await _unitOfWork.ProductCategories.Add(productEntity);
-            await _unitOfWork.SaveChangesAsync();
+            _unitOfWork.Products.Add(productEntity);
 
             // Step 7: Validate if each Variation exists and if its ID is a valid GUID
             foreach (var variation in productDto.Variations)
@@ -128,7 +156,7 @@ public class ProductService : IProductService
             var variationCombinations = GetVariationOptionCombinations(variationOptionIdsPerVariation);
 
             // Step 11: Check if all required combinations exist in VariationCombinations
-            var providedCombinations = productDto.VariationCombinations
+            var providedCombinations = productDto.ProductItems
                 .Select(vc => string.Join("-", vc.VariationOptionIds.OrderBy(id => id)))
                 .ToList();
 
@@ -144,10 +172,12 @@ public class ProductService : IProductService
 
             // Step 13: Create ProductItems and ProductConfigurations for each VariationCombination
             //await AddVariationOptionsToProduct(productEntity, productDto.VariationCombinations, userId);
-            await AddVariationOptionsToProduct(productEntity, productDto.VariationCombinations);
+            await AddVariationOptionsToProduct(productEntity, productDto.ProductItems);
+
+            await _unitOfWork.SaveChangesAsync();
 
             await _unitOfWork.CommitTransactionAsync();
-            return _mapper.Map<ProductWithDetailsDto>(productEntity);
+            return true;
         }
         catch (Exception)
         {
@@ -160,80 +190,60 @@ public class ProductService : IProductService
     {
         foreach (var combination in variationCombinations)
         {
+            // Ensure VariationOptionIds are valid
+            if (combination.VariationOptionIds == null || !combination.VariationOptionIds.Any())
+            {
+                throw new ArgumentException("VariationOptionIds cannot be null or empty.");
+            }
+
+            // Create a new ProductItem
             var productItem = new ProductItem
             {
+                Id = Guid.NewGuid(),
                 ProductId = product.Id,
                 Price = combination.Price,
                 QuantityInStock = combination.QuantityInStock,
-                //CreatedBy = userId,
-                //LastUpdatedBy = userId
+                ImageUrl = combination.ImageUrl
             };
 
+            // Add ProductItem to the DbContext
             _unitOfWork.ProductItems.Add(productItem);
-            await _unitOfWork.SaveChangesAsync();
 
+            // Create ProductConfigurations for each VariationOptionId
             foreach (var variationOptionId in combination.VariationOptionIds)
             {
                 var productConfiguration = new ProductConfiguration
                 {
+                    Id = Guid.NewGuid(),
                     ProductItemId = productItem.Id,
                     VariationOptionId = variationOptionId
                 };
 
+                // Add ProductConfiguration to the DbContext
                 _unitOfWork.ProductConfigurations.Add(productConfiguration);
             }
-
-            await _unitOfWork.SaveChangesAsync();
         }
     }
-
-    //public async Task AddVariationOptionsToProduct(Product product, List<VariationCombinationDto> variationCombinations, string userId)
-    //{
-    //    foreach (var combination in variationCombinations)
-    //    {
-    //        var productItem = new ProductItem
-    //        {
-    //            ProductId = product.Id,
-    //            Price = combination.Price,
-    //            QuantityInStock = combination.QuantityInStock,
-    //            CreatedBy = userId,
-    //            LastUpdatedBy = userId
-    //        };
-
-    //        await _unitOfWork.GetRepository<ProductItem>().InsertAsync(productItem);
-    //        await _unitOfWork.SaveAsync();
-
-    //        foreach (var variationOptionId in combination.VariationOptionIds)
-    //        {
-    //            var productConfiguration = new ProductConfiguration
-    //            {
-    //                ProductItemId = productItem.Id,
-    //                VariationOptionId = variationOptionId
-    //            };
-
-    //            await _unitOfWork.GetRepository<ProductConfiguration>().InsertAsync(productConfiguration);
-    //        }
-
-    //        await _unitOfWork.SaveAsync();
-    //    }
-    //}
 
     // Method to generate all combinations of VariationOptionIds
     private List<VariationCombinationDto> GetVariationOptionCombinations(Dictionary<Guid, List<Guid>> variationOptionIdsPerVariation)
     {
-        // Generate all possible combinations of variation options based on the IDs per variation
         var allCombinations = new List<VariationCombinationDto>();
 
+        // Generate all combinations from the variation options
         var lists = variationOptionIdsPerVariation.Values.ToList();
-
         var combinations = GetCombinations(lists);
 
         foreach (var combination in combinations)
         {
-            allCombinations.Add(new VariationCombinationDto
+            // Ensure unique combinations
+            if (!allCombinations.Any(c => c.VariationOptionIds.SequenceEqual(combination)))
             {
-                VariationOptionIds = combination
-            });
+                allCombinations.Add(new VariationCombinationDto
+                {
+                    VariationOptionIds = combination
+                });
+            }
         }
 
         return allCombinations;

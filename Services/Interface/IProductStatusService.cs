@@ -8,6 +8,8 @@ namespace Services.Interface
     {
         Task<ProductStatusDto> GetByIdAsync(Guid id);
 
+        Task<Guid?> GetFirstAvailableProductStatusIdAsync();
+
         Task<PagedResponse<ProductStatusDto>> GetPagedAsync(int pageNumber, int pageSize);
 
         Task<ProductStatusDto> CreateAsync(ProductStatusForCreationDto productStatusDto);

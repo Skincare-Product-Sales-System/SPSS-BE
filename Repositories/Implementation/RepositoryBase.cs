@@ -1,6 +1,7 @@
 ﻿using BusinessObjects.Models;
 using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
+using System.Linq.Expressions;
 
 namespace Repositories.Implementation;
 
@@ -27,6 +28,24 @@ public class RepositoryBase<T, TKey> : IRepositoryBase<T, TKey> where T : class
             .ToListAsync();
         return (items, totalCount);
     }
+    public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
+    {
+        return await _context.Set<T>().Where(predicate).ToListAsync();
+    }
+
+    public void DetachEntities()
+    {
+        var entries = _context.ChangeTracker.Entries().ToList();
+
+        foreach (var entry in entries)
+        {
+            if (entry.State != EntityState.Detached)
+            {
+                entry.State = EntityState.Detached;
+            }
+        }
+    }
+
     public void Add(T entity) => _context.Set<T>().Add(entity);
     public void Update(T entity) => _context.Set<T>().Update(entity);
     public void Delete(T entity) => _context.Set<T>().Remove(entity);
