@@ -3,6 +3,7 @@ using BusinessObjects.Dto.Brand;
 using BusinessObjects.Dto.CancelReason;
 using BusinessObjects.Dto.Category;
 using BusinessObjects.Dto.Product;
+using BusinessObjects.Dto.ProductCategory;
 using BusinessObjects.Dto.ProductConfiguration;
 using BusinessObjects.Dto.ProductItem;
 using BusinessObjects.Dto.ProductStatus;
@@ -84,8 +85,10 @@ public class MappingProfile : Profile
         CreateMap<Brand, BrandDto>();
         #endregion
 
-        #region Category
-        CreateMap<ProductCategory, CategoryDto>();
+        #region ProductCategory
+        CreateMap<ProductCategory, ProductCategoryDto>();
+        CreateMap<ProductCategoryForCreationDto, ProductCategory>();
+        CreateMap<ProductCategoryForUpdateDto, ProductCategory>();
         #endregion
 
         #region ProductConfiguration
