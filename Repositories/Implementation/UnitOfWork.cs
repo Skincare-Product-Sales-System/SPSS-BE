@@ -1,6 +1,7 @@
 ﻿using BusinessObjects.Models;
 using Repositories.Interface;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore;
 
 namespace Repositories.Implementation;
 
@@ -10,9 +11,13 @@ public class UnitOfWork : IUnitOfWork
     private IProductRepository _productRepository;
     private ICancelReasonRepository _cancelReasonRepository;
     private IProductImageRepository _productImageRepository;
+    private IProductConfigurationRepository _productConfigurationRepository;
+    private IProductItemRepository _productItemRepository;
     private IAddressRepository _addressRepository;
-    
-
+    private IVariationRepository _variationRepository;
+    private IVariationOptionRepository _variationOptionRepository;
+    private IProductStatusRepository _productStatusRepository;
+    private IProductCategoryRepository _productCategoryRepository;
     private IDbContextTransaction _transaction; 
 
     public UnitOfWork(SPSSContext context) =>  _context = context;
@@ -20,8 +25,13 @@ public class UnitOfWork : IUnitOfWork
     public IProductImageRepository ProductImages => _productImageRepository ?? (_productImageRepository = new ProductImageRepository(_context));
     public IProductRepository Products => _productRepository ??= new ProductRepository(_context);
     public ICancelReasonRepository CancelReasons => _cancelReasonRepository ??= new CancelReasonRepository(_context);
+    public IProductConfigurationRepository ProductConfigurations => _productConfigurationRepository ??= new ProductConfigurationRepository(_context);
+    public IProductItemRepository ProductItems => _productItemRepository ??= new ProductItemRepository(_context);
+    public IVariationRepository Variations => _variationRepository ??= new VariationRepository(_context);
+    public IVariationOptionRepository VariationOptions => _variationOptionRepository ??= new VariationOptionRepository(_context);
+    public IProductStatusRepository ProductStatuses => _productStatusRepository ??= new ProductStatusRepository(_context);
+    public IProductCategoryRepository ProductCategories => _productCategoryRepository ??= new ProductCategoryRepository(_context);
     public IAddressRepository Addresses => _addressRepository ??= new AddressRepository(_context);
-
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 
     public async Task BeginTransactionAsync()

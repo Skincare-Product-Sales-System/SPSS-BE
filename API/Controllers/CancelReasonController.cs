@@ -80,9 +80,6 @@ public class CancelReasonController : ControllerBase
             return BadRequest(ApiResponse<CancelReasonDto>.FailureResponse("Invalid cancel reason data", errors));
         }
 
-        if (id != cancelReasonDto.Id)
-            return BadRequest(ApiResponse<CancelReasonDto>.FailureResponse("Cancel reason ID in URL must match the ID in the body"));
-
         try
         {
             var updatedCancelReason = await _cancelReasonService.UpdateAsync(cancelReasonDto);
