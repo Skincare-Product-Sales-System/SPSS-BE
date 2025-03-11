@@ -32,7 +32,11 @@ namespace Services.Implementation
 
         public async Task<PagedResponse<CartItemDto>> GetPagedAsync(int pageNumber, int pageSize)
         {
-            var (cartItems, totalCount) = await _unitOfWork.CartItems.GetPagedAsync(pageNumber, pageSize);
+            var (cartItems, totalCount) = await _unitOfWork.CartItems.GetPagedAsync(
+                pageNumber,
+                pageSize,
+                cr => cr.IsDeleted == false // Filter out deleted cancel reasons
+            );
             var cartItemDtos = _mapper.Map<IEnumerable<CartItemDto>>(cartItems);
             return new PagedResponse<CartItemDto>
             {

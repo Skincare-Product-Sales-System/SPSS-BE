@@ -22,7 +22,9 @@ public class MappingProfile : Profile
     public MappingProfile()
     {
         #region Product
-        CreateMap<Product, ProductDto>();
+        CreateMap<Product, ProductDto>()
+            .ForMember(dest => dest.Thumbnail,
+                opt => opt.MapFrom(src => src.ProductImages.FirstOrDefault(img => img.IsThumbnail).ImageUrl));
         // Mapping từ ProductForCreationDto sang Product
         CreateMap<ProductForCreationDto, Product>()
             .ForMember(dest => dest.ProductItems, opt => opt.Ignore())
@@ -130,6 +132,8 @@ public class MappingProfile : Profile
         CreateMap<Address, AddressDto>();
         CreateMap<AddressForCreationDto, Address>();
         CreateMap<AddressForUpdateDto, Address>();
+        #endregion
+
         #region Review
         CreateMap<Review, ReviewDto>();
         CreateMap<ReviewForCreationDto, Review>();

@@ -33,7 +33,11 @@ namespace Services.Implementation
 
         public async Task<PagedResponse<ReviewDto>> GetPagedAsync(int pageNumber, int pageSize)
         {
-            var (reviews, totalCount) = await _unitOfWork.Reviews.GetPagedAsync(pageNumber, pageSize);
+            var (reviews, totalCount) = await _unitOfWork.Reviews.GetPagedAsync(
+                pageNumber,
+                pageSize,
+                cr => cr.IsDeleted == false
+            );
             var reviewDtos = _mapper.Map<IEnumerable<ReviewDto>>(reviews);
             return new PagedResponse<ReviewDto>
             {

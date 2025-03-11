@@ -32,7 +32,11 @@ namespace Services.Implementation
 
         public async Task<PagedResponse<ReplyDto>> GetPagedAsync(int pageNumber, int pageSize)
         {
-            var (replies, totalCount) = await _unitOfWork.Replies.GetPagedAsync(pageNumber, pageSize);
+            var (replies, totalCount) = await _unitOfWork.Replies.GetPagedAsync(
+                pageNumber,
+                pageSize,
+                cr => cr.IsDeleted == false
+            );
             var replyDtos = _mapper.Map<IEnumerable<ReplyDto>>(replies);
             return new PagedResponse<ReplyDto>
             {

@@ -20,7 +20,6 @@ public class UnitOfWork : IUnitOfWork
     private IAddressRepository _addressRepository;
     
 
-    private IDbContextTransaction _transaction; 
     private IDbContextTransaction _transaction;
     private IReviewRepository _reviewRepository;
     private IReplyRepository _replyRepository;
