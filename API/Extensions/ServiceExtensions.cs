@@ -24,6 +24,9 @@ public static class ServiceExtensions
         services.AddScoped<IProductStatusService, ProductStatusService>();
         services.AddScoped<IProductCategoryService, ProductCategoryService>();
         services.AddScoped<IAddressService, AddressService>();
+        services.AddScoped<IReviewService, ReviewService>();
+        services.AddScoped<IReplyService, ReplyService>();
+        services.AddScoped<ICartItemService, CartItemService>();
         return services;
     }
 

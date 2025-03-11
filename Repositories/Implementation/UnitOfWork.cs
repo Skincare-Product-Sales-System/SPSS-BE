@@ -21,6 +21,10 @@ public class UnitOfWork : IUnitOfWork
     
 
     private IDbContextTransaction _transaction; 
+    private IDbContextTransaction _transaction;
+    private IReviewRepository _reviewRepository;
+    private IReplyRepository _replyRepository;
+    private ICartItemRepository _cartItemRepository;
 
     public UnitOfWork(SPSSContext context) =>  _context = context;
     
@@ -34,6 +38,10 @@ public class UnitOfWork : IUnitOfWork
     public IProductStatusRepository ProductStatuses => _productStatusRepository ??= new ProductStatusRepository(_context);
     public IProductCategoryRepository ProductCategories => _productCategoryRepository ??= new ProductCategoryRepository(_context);
     public IAddressRepository Addresses => _addressRepository ??= new AddressRepository(_context);
+    public IReviewRepository Reviews => _reviewRepository ??= new ReviewRepository(_context);
+    public IReplyRepository Replies => _replyRepository ??= new ReplyRepository(_context);
+
+    public ICartItemRepository CartItems => _cartItemRepository ??= new CartItemRepository(_context);
 
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 

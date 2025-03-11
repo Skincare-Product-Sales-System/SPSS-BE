@@ -2,13 +2,17 @@
 using BusinessObjects.Dto.Brand;
 using BusinessObjects.Dto.Address;
 using BusinessObjects.Dto.CancelReason;
+using BusinessObjects.Dto.Product;
 using BusinessObjects.Dto.ProductCategory;
 using BusinessObjects.Dto.Product;
 using BusinessObjects.Dto.ProductConfiguration;
 using BusinessObjects.Dto.ProductItem;
 using BusinessObjects.Dto.ProductStatus;
 using BusinessObjects.Dto.Promotion;
+using BusinessObjects.Dto.Review;
+using BusinessObjects.Dto.Reply;
 using BusinessObjects.Models;
+using BusinessObjects.Dto.CartItem;
 using BusinessObjects.Dto.Variation;
 
 namespace API.Extensions;
@@ -126,6 +130,22 @@ public class MappingProfile : Profile
         CreateMap<Address, AddressDto>();
         CreateMap<AddressForCreationDto, Address>();
         CreateMap<AddressForUpdateDto, Address>();
+        #region Review
+        CreateMap<Review, ReviewDto>();
+        CreateMap<ReviewForCreationDto, Review>();
+        CreateMap<ReviewForUpdateDto, Review>();
+        #endregion
+
+        #region Reply
+        CreateMap<Reply, ReplyDto>();
+        CreateMap<ReplyForCreationDto, Reply>();
+        CreateMap<ReplyForUpdateDto, Reply>();
+        #endregion
+
+        #region CartItem
+        CreateMap<CartItem, CartItemDto>();
+        CreateMap<CartItemForCreationDto, CartItem>();
+        CreateMap<CartItemForUpdateDto, CartItem>();
         #endregion
     }
 }
