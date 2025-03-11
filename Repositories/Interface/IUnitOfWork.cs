@@ -6,6 +6,10 @@ public interface IUnitOfWork : IDisposable
     IProductImageRepository ProductImages { get; }
     ICancelReasonRepository CancelReasons { get; }
     IProductCategoryRepository  ProductCategories { get; }
+    IReviewRepository Reviews { get; }
+    IReplyRepository Replies { get; }
+
+    ICartItemRepository CartItems { get; }
     
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();

@@ -11,7 +11,10 @@ public class UnitOfWork : IUnitOfWork
     private ICancelReasonRepository _cancelReasonRepository;
     private IProductImageRepository _productImageRepository;
     private IProductCategoryRepository _productCategoryRepository;
-    private IDbContextTransaction _transaction; 
+    private IDbContextTransaction _transaction;
+    private IReviewRepository _reviewRepository;
+    private IReplyRepository _replyRepository;
+    private ICartItemRepository _cartItemRepository;
 
     public UnitOfWork(SPSSContext context) =>  _context = context;
     
@@ -19,6 +22,10 @@ public class UnitOfWork : IUnitOfWork
     public IProductRepository Products => _productRepository ??= new ProductRepository(_context);
     public ICancelReasonRepository CancelReasons => _cancelReasonRepository ??= new CancelReasonRepository(_context);
     public IProductCategoryRepository ProductCategories => _productCategoryRepository ??= new ProductCategoryRepository(_context);
+    public IReviewRepository Reviews => _reviewRepository ??= new ReviewRepository(_context);
+    public IReplyRepository Replies => _replyRepository ??= new ReplyRepository(_context);
+
+    public ICartItemRepository CartItems => _cartItemRepository ??= new CartItemRepository(_context);
 
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 
