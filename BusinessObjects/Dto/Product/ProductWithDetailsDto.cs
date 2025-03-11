@@ -1,0 +1,48 @@
+﻿using BusinessObjects.Dto.Brand;
+using BusinessObjects.Dto.Category;
+using BusinessObjects.Dto.ProductItem;
+using BusinessObjects.Dto.Promotion;
+using BusinessObjects.Models;
+
+namespace BusinessObjects.Dto.Product
+{
+    public class ProductWithDetailsDto
+    {
+        public Guid Id { get; set; }
+
+        public string Name { get; set; } = null!;
+        public string Description { get; set; } = null!;
+
+        public int SoldCount { get; set; }
+
+        public double Rating { get; set; }
+
+        public decimal Price { get; set; }
+
+        public decimal MarketPrice { get; set; }
+        public string Status { get; set; } = null!;
+
+        public List<string> ProductImageUrls { get; set; } = new();
+        public List<ProductItemDto> ProductItems { get; set; } = new();
+        public PromotionForProductQueryDto? Promotion { get; set; }
+        public BrandDto Brand { get; set; } = null!;
+        public CategoryDto Category { get; set; } = null!;
+        public ProductSpecifications Specifications { get; set; } = new();
+    }
+
+    public class ProductSpecifications
+    {
+        public double VolumeWeight { get; set; }
+        public string? DetailedIngredients { get; set; }
+        public string? RegisterNumber { get; set; }
+        public string? MainFunction { get; set; }
+        public string? Texture { get; set; }
+        public string? EnglishName { get; set; }
+        public string? KeyActiveIngredients { get; set; }
+        public string? StorageInstruction { get; set; }
+        public string? UsageInstruction { get; set; }
+        public string? ExpiryDate { get; set; }
+        public string? SkinIssues { get; set; }
+
+    }
+}

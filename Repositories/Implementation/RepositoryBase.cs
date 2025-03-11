@@ -9,7 +9,10 @@ public class RepositoryBase<T, TKey> : IRepositoryBase<T, TKey> where T : class
     protected readonly SPSSContext _context;
 
     public RepositoryBase(SPSSContext context) => _context = context;
-
+    public IQueryable<T> GetQueryable()
+    {
+        return _context.Set<T>().AsQueryable();
+    }
     public async Task<T?> GetByIdAsync(TKey id) => await _context.Set<T>().FindAsync(id);
     public async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(int pageNumber, int pageSize)
     {
