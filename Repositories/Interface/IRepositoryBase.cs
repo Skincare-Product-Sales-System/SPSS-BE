@@ -11,6 +11,7 @@ public interface IRepositoryBase<T, TKey> where T : class
         int pageSize,
         Expression<Func<T, bool>> predicate);
     Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate);
+    Task<IEnumerable<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null);
     void Add(T entity);
     void Update(T entity);
     void Delete(T entity);

@@ -42,6 +42,21 @@ public class RepositoryBase<T, TKey> : IRepositoryBase<T, TKey> where T : class
         return await _context.Set<T>().Where(predicate).ToListAsync();
     }
 
+    public async Task<IEnumerable<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null)
+    {
+        var query = _context.Set<T>().AsQueryable();
+
+        // Áp dụng bộ lọc nếu có
+        if (filter != null)
+        {
+            query = query.Where(filter);
+        }
+
+        // Trả về danh sách tất cả các đối tượng
+        return await query.ToListAsync();
+    }
+
+
     public void DetachEntities()
     {
         var entries = _context.ChangeTracker.Entries().ToList();

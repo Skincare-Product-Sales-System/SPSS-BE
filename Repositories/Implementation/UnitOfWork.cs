@@ -18,8 +18,8 @@ public class UnitOfWork : IUnitOfWork
     private IProductStatusRepository _productStatusRepository;
     private IProductCategoryRepository _productCategoryRepository;
     private IAddressRepository _addressRepository;
-    
-
+    private IPromotionTypeRepository _promotionTypeRepository;
+    private IPaymentMethodRepository _paymentMethodRepository;
     private IDbContextTransaction _transaction;
     private IReviewRepository _reviewRepository;
     private IReplyRepository _replyRepository;
@@ -29,6 +29,7 @@ public class UnitOfWork : IUnitOfWork
     
     public IProductImageRepository ProductImages => _productImageRepository ?? (_productImageRepository = new ProductImageRepository(_context));
     public IProductRepository Products => _productRepository ??= new ProductRepository(_context);
+    public IPromotionTypeRepository PromotionTypes => _promotionTypeRepository ??= new PromotionTypeRepository(_context);
     public ICancelReasonRepository CancelReasons => _cancelReasonRepository ??= new CancelReasonRepository(_context);
     public IProductConfigurationRepository ProductConfigurations => _productConfigurationRepository ??= new ProductConfigurationRepository(_context);
     public IProductItemRepository ProductItems => _productItemRepository ??= new ProductItemRepository(_context);
@@ -39,7 +40,7 @@ public class UnitOfWork : IUnitOfWork
     public IAddressRepository Addresses => _addressRepository ??= new AddressRepository(_context);
     public IReviewRepository Reviews => _reviewRepository ??= new ReviewRepository(_context);
     public IReplyRepository Replies => _replyRepository ??= new ReplyRepository(_context);
-
+    public IPaymentMethodRepository PaymentMethods => _paymentMethodRepository ??= new PaymentMethodRepository(_context);
     public ICartItemRepository CartItems => _cartItemRepository ??= new CartItemRepository(_context);
 
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();

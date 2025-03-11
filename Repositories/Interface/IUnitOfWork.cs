@@ -14,9 +14,10 @@ public interface IUnitOfWork : IDisposable
     IAddressRepository Addresses { get; }
     IReviewRepository Reviews { get; }
     IReplyRepository Replies { get; }
-
+    IPromotionTypeRepository PromotionTypes { get; }
     ICartItemRepository CartItems { get; }
-    
+    IPaymentMethodRepository PaymentMethods { get; }
+
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();
     Task CommitTransactionAsync();
