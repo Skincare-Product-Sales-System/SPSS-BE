@@ -59,6 +59,14 @@ app.UseSerilogRequestLogging();  // Add this for request logging
 
 app.UseHttpsRedirection();
 app.UseRouting();
+
+// Turn off CORS
+app.UseCors(builder =>
+    builder.AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials()
+        .WithOrigins("http://localhost:3000"));
+
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();  // Complete the endpoints configuration
