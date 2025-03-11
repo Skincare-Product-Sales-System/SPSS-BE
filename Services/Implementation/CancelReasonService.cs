@@ -50,13 +50,13 @@ namespace Services.Implementation
             return _mapper.Map<CancelReasonDto>(cancelReason);
         }
 
-        public async Task<CancelReasonDto> UpdateAsync(CancelReasonForUpdateDto cancelReasonDto)
+        public async Task<CancelReasonDto> UpdateAsync(Guid id, CancelReasonForUpdateDto cancelReasonDto)
         {
             if (cancelReasonDto == null)
                 throw new ArgumentNullException(nameof(cancelReasonDto), "Cancel reason data cannot be null.");
-            var cancelReason = await _unitOfWork.CancelReasons.GetByIdAsync(cancelReasonDto.Id);
+            var cancelReason = await _unitOfWork.CancelReasons.GetByIdAsync(id);
             if (cancelReason == null)
-                throw new KeyNotFoundException($"Cancel reason with ID {cancelReasonDto.Id} not found.");
+                throw new KeyNotFoundException($"Cancel reason with ID {id} not found.");
             _mapper.Map(cancelReasonDto, cancelReason);
             _unitOfWork.CancelReasons.Update(cancelReason);
             await _unitOfWork.SaveChangesAsync();
