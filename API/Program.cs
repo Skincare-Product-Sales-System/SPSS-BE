@@ -62,6 +62,7 @@ app.UseSerilogRequestLogging();
 
 app.UseHttpsRedirection();
 app.UseRouting();
+app.UseMiddleware<API.Middlewares.RequestResponseMiddleware>();
 app.UseAuthentication(); // Add this line to enable authentication
 app.UseAuthorization();
 app.UseEndpoints(endpoints =>
