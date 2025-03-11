@@ -1,4 +1,5 @@
-﻿using BusinessObjects.Models;
+﻿using System.Linq.Expressions;
+using BusinessObjects.Models;
 using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
 
@@ -11,13 +12,21 @@ public class RepositoryBase<T, TKey> : IRepositoryBase<T, TKey> where T : class
     public RepositoryBase(SPSSContext context) => _context = context;
 
     public async Task<T?> GetByIdAsync(TKey id) => await _context.Set<T>().FindAsync(id);
-    public async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(int pageNumber, int pageSize)
+    public async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
+        int pageNumber, 
+        int pageSize, 
+        Expression<Func<T, bool>> predicate)
     {
         if (pageNumber < 1) pageNumber = 1;
         if (pageSize < 1) pageSize = 10;
         var query = _context.Set<T>().AsQueryable();
+        if (predicate != null)
+        {
+            query = query.Where(predicate);
+        }
         int totalCount = await query.CountAsync();
         var items = await query
+            .OrderBy(e => EF.Property<DateTimeOffset>(e, "CreatedTime")) 
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();

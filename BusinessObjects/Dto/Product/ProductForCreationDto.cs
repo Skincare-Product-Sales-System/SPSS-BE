@@ -2,7 +2,6 @@
 
 public class ProductForCreationDto
 {
-    public Guid Id { get; set; }
     public Guid? ProductStatusId { get; set; }
     public Guid? BrandId { get; set; }
 

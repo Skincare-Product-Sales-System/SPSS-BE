@@ -5,6 +5,7 @@ public interface IUnitOfWork : IDisposable
     IProductRepository Products { get; }
     IProductImageRepository ProductImages { get; }
     ICancelReasonRepository CancelReasons { get; }
+    IAddressRepository Addresses { get; }
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();
     Task CommitTransactionAsync();
