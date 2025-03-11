@@ -7,4 +7,5 @@ public interface IRepositoryBase<T, TKey> where T : class
     void Add(T entity);
     void Update(T entity);
     void Delete(T entity);
+    IQueryable<T> GetQueryable();
 }

@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using BusinessObjects.Dto.Product;
 using BusinessObjects.Models;
+using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
 using Services.Interface;
 using Services.Response;
@@ -16,13 +17,24 @@ public class ProductService : IProductService
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
     }
 
-    public async Task<ProductDto> GetByIdAsync(Guid id)
+    public async Task<ProductWithDetailsDto> GetByIdAsync(Guid id)
     {
-        var product = await _unitOfWork.Products.GetByIdAsync(id);
+        var product = await _unitOfWork.Products
+            .GetQueryable()
+            .Include(p => p.ProductCategory)
+            .Include(p => p.ProductItems)
+                .ThenInclude(pi => pi.ProductConfigurations)
+                    .ThenInclude(pc => pc.VariationOption)
+                        .ThenInclude(vo => vo.Variation)
+            .Include(p => p.Brand)  
+            .Include(p => p.ProductImages) 
+            .Include(p => p.PromotionTargets)
+                .ThenInclude(pt => pt.Promotion) 
+            .FirstOrDefaultAsync(p => p.Id == id);
         if (product == null)
             throw new KeyNotFoundException($"Product with ID {id} not found.");
 
-        return _mapper.Map<ProductDto>(product);
+        return _mapper.Map<ProductWithDetailsDto>(product);
     }
 
     public async Task<PagedResponse<ProductDto>> GetPagedAsync(int pageNumber, int pageSize)

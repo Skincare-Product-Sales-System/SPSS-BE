@@ -21,11 +21,11 @@ public class ProductController : ControllerBase
         try
         {
             var product = await _productService.GetByIdAsync(id);
-            return Ok(ApiResponse<ProductDto>.SuccessResponse(product));
+            return Ok(ApiResponse<ProductWithDetailsDto>.SuccessResponse(product));
         }
         catch (KeyNotFoundException ex)
         {
-            return NotFound(ApiResponse<ProductDto>.FailureResponse(ex.Message));
+            return NotFound(ApiResponse<ProductWithDetailsDto>.FailureResponse(ex.Message));
         }
     }
     
