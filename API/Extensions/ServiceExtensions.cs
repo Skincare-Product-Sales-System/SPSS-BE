@@ -21,6 +21,7 @@ public static class ServiceExtensions
         services.AddScoped<IProductService, ProductService>();
         services.AddScoped<ICancelReasonService, CancelReasonService>();
         services.AddScoped<IProductImageService, ProductImageService>();
+        services.AddScoped<IProductCategoryService, ProductCategoryService>();
         return services;
     }
 
