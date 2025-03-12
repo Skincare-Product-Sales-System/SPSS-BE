@@ -22,22 +22,19 @@ public class AuthenticationService : IAuthenticationService
 
     public async Task<AuthenticationResponse> LoginAsync(LoginRequest loginRequest)
     {
-        // Find user by username
-        var user = await _unitOfWork.Users.GetByUserNameAsync(loginRequest.UserName);
-        
+        User user = null;
+        if (loginRequest.UsernameOrEmail.Contains('@')) 
+            user = await _unitOfWork.Users.GetByEmailAsync(loginRequest.UsernameOrEmail);
+        if (user == null)
+            user = await _unitOfWork.Users.GetByUserNameAsync(loginRequest.UsernameOrEmail);
         if (user == null || user.IsDeleted)
-            throw new UnauthorizedAccessException("Invalid username or password");
-
-        // Verify password
-        // Note: In production, use a proper password hashing library like BCrypt
+            throw new UnauthorizedAccessException("Invalid username/email or password");
         if (user.Password != loginRequest.Password)
-            throw new UnauthorizedAccessException("Invalid username or password");
-
-        // Generate tokens
-        var accessToken = _tokenService.GenerateAccessToken(user);
-        var refreshToken = _tokenService.GenerateRefreshToken();
+            throw new UnauthorizedAccessException("Invalid username/email or password");
         
-        // Save refresh token
+        var accessToken = await _tokenService.GenerateAccessTokenAsync(user);
+        var refreshToken = _tokenService.GenerateRefreshToken();
+    
         var refreshTokenEntity = new RefreshToken
         {
             Token = refreshToken,
@@ -47,21 +44,25 @@ public class AuthenticationService : IAuthenticationService
             IsRevoked = false,
             IsUsed = false
         };
-        
+    
         _unitOfWork.RefreshTokens.Add(refreshTokenEntity);
         await _unitOfWork.SaveChangesAsync();
-        
-        // Map user to UserDto
-        var userDto = _mapper.Map<UserDto>(user);
-        
+    
+        var authUserDto = new AuthUserDto
+        {
+            UserId = user.UserId,
+            UserName = user.UserName,
+            EmailAddress = user.EmailAddress,
+            AvatarUrl = user.AvatarUrl
+        };
+    
         return new AuthenticationResponse
         {
             AccessToken = accessToken,
             RefreshToken = refreshToken,
-            User = userDto
+            AuthUserDto = authUserDto
         };
     }
-
     public async Task<TokenResponse> RefreshTokenAsync(string accessToken, string refreshToken)
     {
         var (newAccessToken, newRefreshToken) = await _tokenService.RefreshTokenAsync(accessToken, refreshToken);

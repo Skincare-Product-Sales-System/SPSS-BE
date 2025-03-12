@@ -87,18 +87,26 @@ public partial class SPSSContext : DbContext
 
     public virtual DbSet<Voucher> Vouchers { get; set; }
     
+    // protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    // {
+    //
+    //     var builder = new ConfigurationBuilder()
+    //         .SetBasePath(Directory.GetCurrentDirectory())
+    //         .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+    //     optionsBuilder.EnableSensitiveDataLogging();
+    //     IConfigurationRoot configurationRoot = builder.Build();
+    //     optionsBuilder.UseSqlServer(configurationRoot.GetConnectionString("SPSS"));
+    // }
+    
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-
-        var builder = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-        optionsBuilder.EnableSensitiveDataLogging();
-        IConfigurationRoot configurationRoot = builder.Build();
-        optionsBuilder.UseSqlServer(configurationRoot.GetConnectionString("SPSS"));
-
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder.UseSqlServer("Server=LUAN-TRAN\\SQLEXPRESS;Database=SPSS;User ID=sa;Password=12345;TrustServerCertificate=True");
+            optionsBuilder.EnableSensitiveDataLogging();
+        }
     }
-
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         
@@ -361,7 +369,6 @@ public partial class SPSSContext : DbContext
                 .IsRequired()
                 .HasMaxLength(255);
             entity.Property(e => e.Price).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.RegisterNumber).HasMaxLength(50);
             entity.Property(e => e.SkinIssues).HasMaxLength(255);
             entity.Property(e => e.StorageInstruction).HasMaxLength(500);
             entity.Property(e => e.Texture).HasMaxLength(255);

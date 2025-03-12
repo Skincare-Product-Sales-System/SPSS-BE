@@ -46,16 +46,16 @@ namespace Services.Implementation
             };
         }
 
-        public async Task<CancelReasonDto> CreateAsync(CancelReasonForCreationDto cancelReasonDto, string userId)
+        public async Task<CancelReasonDto> CreateAsync(CancelReasonForCreationDto cancelReasonDto, Guid userId)
         {
             if (cancelReasonDto == null)
                 throw new ArgumentNullException(nameof(cancelReasonDto), "Cancel reason data cannot be null.");
 
             var cancelReason = _mapper.Map<CancelReason>(cancelReasonDto);
             cancelReason.CreatedTime = DateTimeOffset.UtcNow;
-            cancelReason.CreatedBy = userId;
+            cancelReason.CreatedBy = userId.ToString();
             cancelReason.LastUpdatedTime = DateTimeOffset.UtcNow;
-            cancelReason.LastUpdatedBy = userId;
+            cancelReason.LastUpdatedBy = userId.ToString();
             cancelReason.IsDeleted = false;
 
             _unitOfWork.CancelReasons.Add(cancelReason);
@@ -63,7 +63,7 @@ namespace Services.Implementation
             return _mapper.Map<CancelReasonDto>(cancelReason);
         }
 
-        public async Task<CancelReasonDto> UpdateAsync(Guid id, CancelReasonForUpdateDto cancelReasonDto, string userId)
+        public async Task<CancelReasonDto> UpdateAsync(Guid id, CancelReasonForUpdateDto cancelReasonDto, Guid userId)
         {
             if (cancelReasonDto == null)
                 throw new ArgumentNullException(nameof(cancelReasonDto), "Cancel reason data cannot be null.");
@@ -73,7 +73,7 @@ namespace Services.Implementation
                 throw new KeyNotFoundException($"Cancel reason with ID {id} not found or has been deleted.");
 
             cancelReason.LastUpdatedTime = DateTimeOffset.UtcNow;
-            cancelReason.LastUpdatedBy = userId;
+            cancelReason.LastUpdatedBy = userId.ToString();
 
             _mapper.Map(cancelReasonDto, cancelReason);
             _unitOfWork.CancelReasons.Update(cancelReason);
@@ -81,7 +81,7 @@ namespace Services.Implementation
             return _mapper.Map<CancelReasonDto>(cancelReason);
         }
 
-        public async Task DeleteAsync(Guid id, string userId)
+        public async Task DeleteAsync(Guid id, Guid userId)
         {
             var cancelReason = await _unitOfWork.CancelReasons.GetByIdAsync(id);
             if (cancelReason == null || cancelReason.IsDeleted)
@@ -89,7 +89,7 @@ namespace Services.Implementation
 
             cancelReason.IsDeleted = true;
             cancelReason.DeletedTime = DateTimeOffset.UtcNow;
-            cancelReason.DeletedBy = userId;
+            cancelReason.DeletedBy = userId.ToString();
 
             _unitOfWork.CancelReasons.Update(cancelReason); // Soft delete via update
             await _unitOfWork.SaveChangesAsync();

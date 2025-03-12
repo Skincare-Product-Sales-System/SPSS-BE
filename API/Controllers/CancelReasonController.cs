@@ -55,7 +55,7 @@ public class CancelReasonController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<CancelReasonDto>.FailureResponse("Invalid cancel reason data", errors));
         }
-        string userId = "System";
+        Guid userId = Guid.Parse("12e6ef03-e72c-407d-894e-fd3d17f66756"); //Hardcoded for demo purposes
         try
         {
             var createdCancelReason = await _cancelReasonService.CreateAsync(cancelReasonDto, userId);
@@ -79,7 +79,7 @@ public class CancelReasonController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<CancelReasonDto>.FailureResponse("Invalid cancel reason data", errors));
         }
-        string userId = "System";
+        Guid userId = Guid.Parse("12e6ef03-e72c-407d-894e-fd3d17f66756"); //Hardcoded for demo purposes
         try
         {
             var updatedCancelReason = await _cancelReasonService.UpdateAsync(id, cancelReasonDto, userId);
@@ -102,7 +102,7 @@ public class CancelReasonController : ControllerBase
     {
         try
         {
-            string userId = "System";
+            Guid userId = Guid.Parse("12e6ef03-e72c-407d-894e-fd3d17f66756"); //Hardcoded for demo purposes
             await _cancelReasonService.DeleteAsync(id, userId);
             return Ok(ApiResponse<object>.SuccessResponse(null, "Cancel reason deleted successfully"));
         }

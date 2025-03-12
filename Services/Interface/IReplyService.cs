@@ -11,10 +11,8 @@ namespace Services.Interface
 {
     public interface IReplyService
     {
-        Task<ReplyDto> GetByIdAsync(Guid id);
-        Task<PagedResponse<ReplyDto>> GetPagedAsync(int pageNumber, int pageSize);
-        Task<ReplyDto> CreateAsync(ReplyForCreationDto reviewDto);
-        Task<ReplyDto> UpdateAsync(ReplyForUpdateDto reviewDto);
-        Task DeleteAsync(Guid id);
+        Task<ReplyDto> CreateAsync(Guid userId, ReplyForCreationDto replyDto);
+        Task<ReplyDto> UpdateAsync(Guid userId, ReplyForUpdateDto replyDto, Guid id);
+        Task DeleteAsync(Guid userId, Guid id);
     }
 }

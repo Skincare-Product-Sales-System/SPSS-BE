@@ -51,7 +51,7 @@ public class AuthenticationController : ControllerBase
         }
     }
 
-    [Authorize]
+    // [Authorize]
     [HttpPost("logout")]
     public async Task<IActionResult> Logout([FromBody] LogoutRequest logoutRequest)
     {

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using BusinessObjects.Dto.CartItem;
 using Services.Dto.Api;
 using Services.Response;
+using Microsoft.AspNetCore.Authorization;
 
 namespace API.Controllers;
 
@@ -19,32 +20,24 @@ public class CartItemController : ControllerBase
     public CartItemController(ICartItemService cartItemService) =>
         _cartItemService = cartItemService ?? throw new ArgumentNullException(nameof(cartItemService));
 
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id)
+    [HttpGet("user/cart")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetCart(
+    [Range(1, int.MaxValue)] int pageNumber = 1,
+    [Range(1, 100)] int pageSize = 10)
     {
-        try
-        {
-            var cartItem = await _cartItemService.GetByIdAsync(id);
-            return Ok(ApiResponse<CartItemDto>.SuccessResponse(cartItem));
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ApiResponse<CartItemDto>.FailureResponse(ex.Message));
-        }
-    }
+        var userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); // Hardcoded for now
 
-    [HttpGet]
-    public async Task<IActionResult> GetPaged(
-        [Range(1, int.MaxValue)] int pageNumber = 1,
-        [Range(1, 100)] int pageSize = 10)
-    {
-        if (!ModelState.IsValid)
-        {
-            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-            return BadRequest(ApiResponse<PagedResponse<CartItemDto>>.FailureResponse("Invalid pagination parameters", errors));
-        }
-        var pagedData = await _cartItemService.GetPagedAsync(pageNumber, pageSize);
-        return Ok(ApiResponse<PagedResponse<CartItemDto>>.SuccessResponse(pagedData));
+        // Gọi service để lấy cart items.
+        var cartItems = await _cartItemService.GetByUserIdAsync(userId, pageNumber, pageSize);
+
+        // Xử lý nếu không có cart items.
+        if (cartItems == null || !cartItems.Items.Any())
+            return NotFound(ApiResponse<PagedResponse<CartItemDto>>.FailureResponse("No cart items found for the specified user."));
+
+        // Trả về kết quả thành công.
+        return Ok(ApiResponse<PagedResponse<CartItemDto>>.SuccessResponse(cartItems, "Cart items retrieved successfully"));
     }
 
     [HttpPost]
@@ -60,13 +53,13 @@ public class CartItemController : ControllerBase
 
         try
         {
-            var createdCartItem = await _cartItemService.CreateAsync(cartItemDto);
-            var response = ApiResponse<CartItemDto>.SuccessResponse(createdCartItem, "Cart item created successfully");
-            return CreatedAtAction(nameof(GetById), new { id = createdCartItem.Id }, response);
+            Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); // Hardcoded for now
+            var createdCartItem = await _cartItemService.CreateAsync(cartItemDto, userId);
+            return  Ok(ApiResponse<bool>.SuccessResponse(createdCartItem, "Cart item created successfully"));
         }
         catch (ArgumentNullException ex)
         {
-            return BadRequest(ApiResponse<CartItemDto>.FailureResponse(ex.Message));
+            return BadRequest(ApiResponse<bool>.FailureResponse(ex.Message));
         }
     }
 
@@ -82,12 +75,9 @@ public class CartItemController : ControllerBase
             return BadRequest(ApiResponse<CartItemDto>.FailureResponse("Invalid cart item data", errors));
         }
 
-        if (id != cartItemDto.Id)
-            return BadRequest(ApiResponse<CartItemDto>.FailureResponse("Cart item ID in URL must match the ID in the body"));
-
         try
         {
-            var updatedCartItem = await _cartItemService.UpdateAsync(cartItemDto);
+            var updatedCartItem = await _cartItemService.UpdateAsync(id, cartItemDto);
             return Ok(ApiResponse<CartItemDto>.SuccessResponse(updatedCartItem, "Cart item updated successfully"));
         }
         catch (KeyNotFoundException ex)

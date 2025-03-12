@@ -38,6 +38,8 @@ public static class ServiceExtensions
         services.AddScoped<IVariationService, VariationService>();
         services.AddScoped<IVariationOptionService, VariationOptionService>();
         services.AddScoped<IProductItemService, ProductItemService>();
+        services.AddScoped<IBlogService, BlogService>();
+        services.AddScoped<IOrderService, OrderService>();
         return services;
     }
 
@@ -136,6 +138,22 @@ public static class ServiceExtensions
         services.AddDbContext<SPSSContext>(options =>
         {
             options.UseSqlServer(configuration.GetConnectionString("SPSS"));
+        });
+        return services;
+    }
+    
+    public static IServiceCollection ConfigureCors(this IServiceCollection services)
+    {
+        services.AddCors(options =>
+        {
+            options.AddPolicy("AllowFrontendApp",
+                policy =>
+                {
+                    policy.WithOrigins("http://localhost:3000")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
         });
         return services;
     }

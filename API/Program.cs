@@ -1,4 +1,7 @@
 using API.Extensions;
+using API.Middleware;
+using API.Middlewares;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Serilog;
 
@@ -19,22 +22,15 @@ builder.Host.UseSerilog((context, services, configuration) =>
 });
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontendApp",
-        policy =>
-        {
-            policy.WithOrigins("http://localhost:3000")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials();
-        });
-});
+builder.Services.ConfigureCors();
 builder.Services.ConfigureRepositories();
 builder.Services.ConfigureServices();
 builder.Services.ConfigureDbContext(builder.Configuration);
-builder.Services.ConfigureJwtAuthentication(builder.Configuration); 
-builder.Services.AddAutoMapper(typeof(Program));
+builder.Services.ConfigureJwtAuthentication(builder.Configuration);
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<MappingProfile>();  // Add your mappings profile here
+}, typeof(Program).Assembly);
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
@@ -50,6 +46,8 @@ app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors("AllowFrontendApp");
 app.UseMiddleware<API.Middlewares.RequestResponseMiddleware>();
+app.UseMiddleware<ErrorHandlingMiddleware>();
+app.UseMiddleware<AuthMiddleware>();
 app.UseAuthentication(); 
 app.UseAuthorization();
 app.MapControllers();

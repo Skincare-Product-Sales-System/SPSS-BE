@@ -1,10 +1,10 @@
 ﻿using AutoMapper;
 using BusinessObjects.Dto.Brand;
 using BusinessObjects.Dto.Address;
+using BusinessObjects.Dto.Blog;
 using BusinessObjects.Dto.CancelReason;
 using BusinessObjects.Dto.Product;
 using BusinessObjects.Dto.ProductCategory;
-using BusinessObjects.Dto.Product;
 using BusinessObjects.Dto.ProductConfiguration;
 using BusinessObjects.Dto.ProductItem;
 using BusinessObjects.Dto.ProductStatus;
@@ -19,6 +19,9 @@ using BusinessObjects.Dto.PaymentMethod;
 using BusinessObjects.Dto.Role;
 using BusinessObjects.Dto.User;
 using BusinessObjects.Dto.VariationOption;
+using BusinessObjects.Dto.SkinType;
+using BusinessObjects.Dto.Order;
+using BusinessObjects.Dto.OrderDetail;
 
 namespace API.Extensions;
 
@@ -26,6 +29,29 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
+        #region Order
+        // Mapping Order -> OrderDto
+        CreateMap<Order, OrderDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
+            .ForMember(dest => dest.OrderTotal, opt => opt.MapFrom(src => src.OrderTotal))
+            .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => src.CreatedTime))
+            .ForMember(dest => dest.OrderDetail, opt => opt.MapFrom(src => src.OrderDetails.FirstOrDefault()));
+        CreateMap<OrderForCreationDto, Order>();
+        CreateMap<OrderForUpdateDto, Order>();
+        #endregion
+
+        #region OrderDetail
+        // Mapping OrderDetail -> OrderDetailDto
+        CreateMap<OrderDetail, OrderDetailDto>()
+            .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductItem.ProductId))
+            .ForMember(dest => dest.ProductImage, opt => opt.MapFrom(src => src.ProductItem.Product.ProductImages.FirstOrDefault().ImageUrl))
+            .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.ProductItem.Product.Name))
+            .ForMember(dest => dest.VariationOptionValues, opt => opt.MapFrom(src => src.ProductItem.ProductConfigurations.Select(pc => pc.VariationOption.Value)))
+            .ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Quantity))
+            .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price));
+        #endregion
+
         #region Product
         CreateMap<Product, ProductDto>()
             .ForMember(dest => dest.Thumbnail,
@@ -44,9 +70,7 @@ public class MappingProfile : Profile
             // Mapping Specifications
             .ForMember(dest => dest.StorageInstruction, opt => opt.MapFrom(src => src.Specifications.StorageInstruction))
             .ForMember(dest => dest.UsageInstruction, opt => opt.MapFrom(src => src.Specifications.UsageInstruction))
-            .ForMember(dest => dest.VolumeWeight, opt => opt.MapFrom(src => src.Specifications.VolumeWeight))
             .ForMember(dest => dest.DetailedIngredients, opt => opt.MapFrom(src => src.Specifications.DetailedIngredients))
-            .ForMember(dest => dest.RegisterNumber, opt => opt.MapFrom(src => src.Specifications.RegisterNumber))
             .ForMember(dest => dest.MainFunction, opt => opt.MapFrom(src => src.Specifications.MainFunction))
             .ForMember(dest => dest.Texture, opt => opt.MapFrom(src => src.Specifications.Texture))
             .ForMember(dest => dest.KeyActiveIngredients, opt => opt.MapFrom(src => src.Specifications.KeyActiveIngredients))
@@ -74,9 +98,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.ProductCategory))
             .ForMember(dest => dest.Specifications, opt => opt.MapFrom(src => new ProductSpecifications
             {
-                VolumeWeight = src.VolumeWeight,
                 DetailedIngredients = src.DetailedIngredients,
-                RegisterNumber = src.RegisterNumber,
                 MainFunction = src.MainFunction,
                 Texture = src.Texture,
                 EnglishName = src.EnglishName,
@@ -85,7 +107,15 @@ public class MappingProfile : Profile
                 UsageInstruction = src.UsageInstruction,
                 ExpiryDate = src.ExpiryDate,
                 SkinIssues = src.SkinIssues
-            }));
+            }))
+            .ForMember(dest => dest.skinTypes, opt => opt.MapFrom(src => src.ProductForSkinTypes
+                .Where(pst => pst.SkinType != null)
+                .Select(pst => new SkinTypeForProductQueryDto
+                {
+                    Id = pst.SkinType.Id,
+                    Name = pst.SkinType.Name
+                })
+                .ToList()));
         // Mapping from VariationCombinationDto to ProductItem
         CreateMap<VariationCombinationDto, ProductItem>()
             .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price))
@@ -140,19 +170,95 @@ public class MappingProfile : Profile
         #endregion
 
         #region Review
-        CreateMap<Review, ReviewDto>();
-        CreateMap<ReviewForCreationDto, Review>();
-        CreateMap<ReviewForUpdateDto, Review>();
+        CreateMap<Review, ReviewDto>()
+            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.UserName)) // Lấy tên người dùng
+            .ForMember(dest => dest.AvatarUrl, opt => opt.MapFrom(src => src.User.AvatarUrl)) // Lấy Avatar URL
+            .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.ProductItem.Product.Name)) // Lấy tên sản phẩm
+            .ForMember(dest => dest.ProductImage, opt => opt.MapFrom(src =>
+                        src.ProductItem.Product.ProductImages.Any(img => img.IsThumbnail)
+                            ? src.ProductItem.Product.ProductImages.FirstOrDefault(img => img.IsThumbnail).ImageUrl
+                            : null)) // Check for IsThumbnail without null-propagating // Lấy URL hình ảnh sản phẩm đầu tiên
+            .ForMember(dest => dest.ReviewImages, opt => opt.MapFrom(src =>
+                src.ReviewImages != null && src.ReviewImages.Any()
+                    ? src.ReviewImages.Select(ri => ri.ImageUrl).ToList()
+                    : new List<string>())) // Lấy danh sách URL của ReviewImages
+            .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductItem.ProductId)) // Ánh xạ ProductId
+            .ForMember(dest => dest.VariationOptionValues, opt => opt.MapFrom(src =>
+                src.ProductItem.ProductConfigurations
+                    .Select(pc => pc.VariationOption.Value).ToList())) // Lấy danh sách giá trị của VariationOption
+            .ForMember(dest => dest.RatingValue, opt => opt.MapFrom(src => src.RatingValue)) // Ánh xạ RatingValue
+            .ForMember(dest => dest.Comment, opt => opt.MapFrom(src => src.Comment)) // Ánh xạ Comment
+            .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => src.LastUpdatedTime)) // Ánh xạ thời gian cập nhật cuối
+            .ForMember(dest => dest.Reply, opt => opt.MapFrom(src => src.Reply != null
+                ? new ReplyDto
+                {
+                    Id = src.Reply.Id,
+                    UserName = src.Reply.User.UserName,
+                    ReplyContent = src.Reply.ReplyContent,
+                    LastUpdatedTime = src.Reply.LastUpdatedTime
+                }
+                : null)); // Ánh xạ Reply nếu tồn tại
+        CreateMap<Review, ReviewForProductQueryDto>()
+            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.UserName))
+            .ForMember(dest => dest.AvatarUrl, opt => opt.MapFrom(src => src.User.AvatarUrl))
+            .ForMember(dest => dest.ReviewImages, opt => opt.MapFrom(src => src.ReviewImages.Select(ri => ri.ImageUrl)))
+            .ForMember(dest => dest.VariationOptionValues, opt => opt.MapFrom(src =>
+                src.ProductItem.ProductConfigurations.Select(pc => pc.VariationOption.Value)))
+            .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => src.LastUpdatedTime))
+            .ForMember(dest => dest.Reply, opt => opt.MapFrom(src => src.Reply)); CreateMap<ReviewForCreationDto, Review>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(_ => Guid.NewGuid()))
+            .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(_ => DateTimeOffset.UtcNow))
+            .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(_ => DateTimeOffset.UtcNow))
+            .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+            .ForMember(dest => dest.LastUpdatedBy, opt => opt.Ignore())
+            .ForMember(dest => dest.UserId, opt => opt.Ignore())
+            .ForMember(dest => dest.ReviewImages, opt => opt.MapFrom(src =>
+                src.ReviewImages != null
+                    ? src.ReviewImages.Select(imageUrl => new ReviewImage
+                    {
+                        Id = Guid.NewGuid(),
+                        ImageUrl = imageUrl
+                    }).ToList()
+                    : new List<ReviewImage>()))
+        .ReverseMap(); // Enable reverse mapping
+
+        CreateMap<Review, ReviewForCreationDto>()
+            .ForMember(dest => dest.ProductItemId, opt => opt.MapFrom(src => src.ProductItemId))
+            .ForMember(dest => dest.ReviewImages, opt => opt.MapFrom(src => src.ReviewImages.Select(ri => ri.ImageUrl).ToList()))
+            .ForMember(dest => dest.RatingValue, opt => opt.MapFrom(src => src.RatingValue))
+            .ForMember(dest => dest.Comment, opt => opt.MapFrom(src => src.Comment));
+
+        CreateMap<ReviewForUpdateDto, Review>()
+            .ForMember(dest => dest.ReviewImages, opt => opt.Ignore());
         #endregion
 
         #region Reply
-        CreateMap<Reply, ReplyDto>();
+        CreateMap<Reply, ReplyDto>()
+            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.UserName));
         CreateMap<ReplyForCreationDto, Reply>();
         CreateMap<ReplyForUpdateDto, Reply>();
         #endregion
 
         #region CartItem
-        CreateMap<CartItem, CartItemDto>();
+        CreateMap<CartItem, CartItemDto>()
+            .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.ProductItem.Price))
+            .ForMember(dest => dest.StockQuantity, opt => opt.MapFrom(src => src.ProductItem.QuantityInStock))
+            .ForMember(dest => dest.MarketPrice, opt => opt.MapFrom(src => src.ProductItem.Price))
+            .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductItem.Product.Id))
+            .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.ProductItem.Product.Name))
+            .ForMember(dest => dest.ProductImageUrl, opt => opt.MapFrom(src =>
+                src.ProductItem.Product.ProductImages
+                    .Where(pi => pi.IsThumbnail)
+                    .Select(pi => pi.ImageUrl)
+                    .FirstOrDefault() ?? string.Empty))
+            .ForMember(dest => dest.VariationOptionValues, opt => opt.MapFrom(src =>
+                src.ProductItem.ProductConfigurations
+                    .Where(pc => pc.VariationOption != null)
+                    .Select(pc => pc.VariationOption.Value)
+                    .ToList()))
+            .ForMember(dest => dest.InStock, opt => opt.MapFrom(src =>
+                !(src.Quantity > src.ProductItem.QuantityInStock)))
+            .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => src.LastUpdatedTime));
         CreateMap<CartItemForCreationDto, CartItem>();
         CreateMap<CartItemForUpdateDto, CartItem>();
         #endregion
@@ -191,6 +297,14 @@ public class MappingProfile : Profile
         CreateMap<User, UserDto>();
         CreateMap<UserForCreationDto, User>();
         CreateMap<UserForUpdateDto, User>();
+
+        #region Blog
+
+        CreateMap<Blog, BlogDto>();
+        CreateMap<BlogForCreationDto, BlogDto>();
+        CreateMap<BlogForUpdateDto, Blog>();
+
+        #endregion
 
 
 
