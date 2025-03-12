@@ -34,9 +34,13 @@ public class UnitOfWork : IUnitOfWork
     private IDbContextTransaction _transaction; 
     private IOrderRepository _orderRepository;
     private IReviewImageRepository _reviewImageRepository;
+    private IOrderDetailRepository _orderDetailRepository;
+    private IStatusChangeRepository _statusChangeRepository;
     public UnitOfWork(SPSSContext context) =>  _context = context;
     
     public IProductImageRepository ProductImages => _productImageRepository ?? (_productImageRepository = new ProductImageRepository(_context));
+    public IStatusChangeRepository StatusChanges => _statusChangeRepository ?? (_statusChangeRepository = new StatusChangeRepository(_context));
+    public IOrderDetailRepository OrderDetails => _orderDetailRepository ?? (_orderDetailRepository = new OrderDetailRepository(_context));
     public IReviewImageRepository ReviewImages => _reviewImageRepository ?? (_reviewImageRepository = new ReviewImageRepository(_context));
     public IOrderRepository Orders => _orderRepository ??= new OrderRepository(_context);
     public ISkinTypeRepository SkinTypes => _skinTypeRepository ??= new SkinTypeRepository(_context);

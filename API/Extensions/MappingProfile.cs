@@ -22,6 +22,7 @@ using BusinessObjects.Dto.VariationOption;
 using BusinessObjects.Dto.SkinType;
 using BusinessObjects.Dto.Order;
 using BusinessObjects.Dto.OrderDetail;
+using BusinessObjects.Dto.StatusChange;
 
 namespace API.Extensions;
 
@@ -36,11 +37,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
             .ForMember(dest => dest.OrderTotal, opt => opt.MapFrom(src => src.OrderTotal))
             .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => src.CreatedTime))
-            .ForMember(dest => dest.OrderDetail, opt => opt.MapFrom(src => src.OrderDetails.FirstOrDefault()));
-
-        // Map Order to OrderWithDetailDto
-        CreateMap<Order, OrderWithDetailDto>()
-            .ForMember(dest => dest.OrderDetail, opt => opt.MapFrom(src =>
+            .ForMember(dest => dest.OrderDetails, opt => opt.MapFrom(src =>
                 src.OrderDetails
                     .Select(od => new OrderDetailDto
                     {
@@ -55,10 +52,30 @@ public class MappingProfile : Profile
                             .ToList(),
                         Quantity = od.Quantity,
                         Price = od.Price
-                    })
-                    .FirstOrDefault()));  // Mapping to the first OrderDetail (if applicable)
+                    }).ToList()));  // Mapping to the first OrderDetail (if applicable)
 
-        CreateMap<OrderForCreationDto, Order>();
+        // Map Order to OrderWithDetailDto
+        CreateMap<Order, OrderWithDetailDto>()
+            .ForMember(dest => dest.OrderDetails, opt => opt.MapFrom(src =>
+                src.OrderDetails
+                    .Select(od => new OrderDetailDto
+                    {
+                        ProductId = od.ProductItemId,
+                        ProductImage = od.ProductItem.Product.ProductImages
+                            .Where(pi => pi.IsThumbnail)  // Filter for thumbnails
+                            .Select(pi => pi.ImageUrl)    // Select image URL
+                            .FirstOrDefault(),            // Get the first thumbnail or null
+                        ProductName = od.ProductItem.Product.Name,
+                        VariationOptionValues = od.ProductItem.ProductConfigurations
+                            .Select(pc => pc.VariationOption.Value)
+                            .ToList(),
+                        Quantity = od.Quantity,
+                        Price = od.Price
+                    }).ToList()));  // Mapping to the first OrderDetail (if applicable)
+
+        CreateMap<OrderForCreationDto, Order>()
+            .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => DateTime.UtcNow))
+            .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => DateTime.UtcNow));
         CreateMap<OrderForUpdateDto, Order>();
         #endregion
 
@@ -71,6 +88,10 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.VariationOptionValues, opt => opt.MapFrom(src => src.ProductItem.ProductConfigurations.Select(pc => pc.VariationOption.Value)))
             .ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Quantity))
             .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price));
+        // Map OrderDetail to OrderDetail (for adding OrderDetails to the Order)
+        CreateMap<OrderDetailForCreationDto, OrderDetail>()
+            .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => DateTime.UtcNow))
+            .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => DateTime.UtcNow));
         #endregion
 
         #region Product
@@ -164,6 +185,12 @@ public class MappingProfile : Profile
                 OptionName = config.VariationOption.Value,
                 OptionId = config.VariationOption.Id
             }).ToList()));
+        #endregion
+
+        #region StatusChange
+        // Map StatusChangeForCreationDto to StatusChange (for tracking status change)
+        CreateMap<StatusChangeForCreationDto, StatusChange>()
+            .ForMember(dest => dest.Date, opt => opt.MapFrom(src => DateTimeOffset.UtcNow));
         #endregion
 
         #region Promotion

@@ -8,6 +8,6 @@ namespace BusinessObjects.Dto.Order
         public string Status { get; set; } = string.Empty;
         public decimal OrderTotal { get; set; }
         public DateTimeOffset CreatedTime { get; set; }
-        public OrderDetailDto OrderDetail { get; set; }
+        public List<OrderDetailDto> OrderDetails { get; set; }
     }
 }
