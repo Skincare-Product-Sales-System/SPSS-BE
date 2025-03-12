@@ -22,12 +22,8 @@ namespace Services.Implementation
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
-        public async Task<IEnumerable<CartItemDto>> GetByUserIdAsync(int userId)
+        public async Task<IEnumerable<CartItemDto>> GetByUserIdAsync(Guid userId)
         {
-            // Validate user ID
-            if (userId <= 0)
-                throw new ArgumentException("Invalid user ID.", nameof(userId));
-
             // Retrieve cart items associated with the user ID
             var cartItems = await _unitOfWork.CartItems.Entities
                 .Include(ci => ci.ProductItem)
@@ -59,7 +55,7 @@ namespace Services.Implementation
             return _mapper.Map<CartItemDto>(cartItem);
         }
 
-        public async Task<CartItemDto> CreateAsync(CartItemForCreationDto cartItemDto, int userId)
+        public async Task<bool> CreateAsync(CartItemForCreationDto cartItemDto, Guid userId)
         {
             if (cartItemDto == null)
                 throw new ArgumentNullException(nameof(cartItemDto), "CartItem data cannot be null.");
@@ -76,7 +72,8 @@ namespace Services.Implementation
                 _unitOfWork.CartItems.Update(existingCartItem);
                 await _unitOfWork.SaveChangesAsync();
 
-                return _mapper.Map<CartItemDto>(existingCartItem);
+                _mapper.Map<CartItemDto>(existingCartItem);
+                return true;
             }
 
             // Nếu chưa tồn tại, tạo mới CartItem
@@ -89,7 +86,8 @@ namespace Services.Implementation
             _unitOfWork.CartItems.Add(cartItem);
             await _unitOfWork.SaveChangesAsync();
 
-            return _mapper.Map<CartItemDto>(cartItem);
+            _mapper.Map<CartItemDto>(cartItem);
+            return true;
         }
 
         public async Task<CartItemDto> UpdateAsync(Guid id, CartItemForUpdateDto cartItemDto)

@@ -19,10 +19,10 @@ public class CartItemController : ControllerBase
     public CartItemController(ICartItemService cartItemService) =>
         _cartItemService = cartItemService ?? throw new ArgumentNullException(nameof(cartItemService));
 
-    [HttpGet("user/{userId:int}")]
+    [HttpGet("user/{userId:Guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetByUserId(int userId)
+    public async Task<IActionResult> GetByUserId(Guid userId)
     {
         var cartItems = await _cartItemService.GetByUserIdAsync(userId);
         if (cartItems == null || !cartItems.Any())
@@ -58,14 +58,13 @@ public class CartItemController : ControllerBase
 
         try
         {
-            int userId = 1; // Hardcoded for now
+            Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); // Hardcoded for now
             var createdCartItem = await _cartItemService.CreateAsync(cartItemDto, userId);
-            var response = ApiResponse<CartItemDto>.SuccessResponse(createdCartItem, "Cart item created successfully");
-            return CreatedAtAction(nameof(GetById), new { id = createdCartItem.Id }, response);
+            return  Ok(ApiResponse<bool>.SuccessResponse(createdCartItem, "Cart item created successfully"));
         }
         catch (ArgumentNullException ex)
         {
-            return BadRequest(ApiResponse<CartItemDto>.FailureResponse(ex.Message));
+            return BadRequest(ApiResponse<bool>.FailureResponse(ex.Message));
         }
     }
 
