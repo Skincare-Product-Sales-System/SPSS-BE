@@ -26,8 +26,11 @@ builder.Services.ConfigureCors();
 builder.Services.ConfigureRepositories();
 builder.Services.ConfigureServices();
 builder.Services.ConfigureDbContext(builder.Configuration);
-builder.Services.ConfigureJwtAuthentication(builder.Configuration); 
-builder.Services.AddAutoMapper(typeof(Program));
+builder.Services.ConfigureJwtAuthentication(builder.Configuration);
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<MappingProfile>();  // Add your mappings profile here
+}, typeof(Program).Assembly);
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {

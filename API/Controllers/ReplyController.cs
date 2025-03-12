@@ -19,38 +19,10 @@ public class ReplyController : ControllerBase
     public ReplyController(IReplyService replyService) =>
         _replyService = replyService ?? throw new ArgumentNullException(nameof(replyService));
 
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id)
-    {
-        try
-        {
-            var reply = await _replyService.GetByIdAsync(id);
-            return Ok(ApiResponse<ReplyDto>.SuccessResponse(reply));
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ApiResponse<ReplyDto>.FailureResponse(ex.Message));
-        }
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> GetPaged(
-        [Range(1, int.MaxValue)] int pageNumber = 1,
-        [Range(1, 100)] int pageSize = 10)
-    {
-        if (!ModelState.IsValid)
-        {
-            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-            return BadRequest(ApiResponse<PagedResponse<ReplyDto>>.FailureResponse("Invalid pagination parameters", errors));
-        }
-        var pagedData = await _replyService.GetPagedAsync(pageNumber, pageSize);
-        return Ok(ApiResponse<PagedResponse<ReplyDto>>.SuccessResponse(pagedData));
-    }
-
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] ReplyForCreationDto replyDto)
+    public async Task<IActionResult> Create([FromBody] ReplyForUpdateDto replyDto)
     {
         if (!ModelState.IsValid)
         {
@@ -60,9 +32,9 @@ public class ReplyController : ControllerBase
 
         try
         {
-            var createdReply = await _replyService.CreateAsync(replyDto);
-            var response = ApiResponse<ReplyDto>.SuccessResponse(createdReply, "Reply created successfully");
-            return CreatedAtAction(nameof(GetById), new { id = createdReply.Id }, response);
+            Guid userId = Guid.Parse("12e6ef03-e72c-407d-894e-fd3d17f66756"); //hard code for testing
+            var createdReply = await _replyService.CreateAsync(userId, replyDto);
+            return Ok(ApiResponse<ReplyDto>.SuccessResponse(createdReply, "Reply created successfully"));
         }
         catch (ArgumentNullException ex)
         {
@@ -82,12 +54,10 @@ public class ReplyController : ControllerBase
             return BadRequest(ApiResponse<ReplyDto>.FailureResponse("Invalid reply data", errors));
         }
 
-        if (id != replyDto.Id)
-            return BadRequest(ApiResponse<ReplyDto>.FailureResponse("Reply ID in URL must match the ID in the body"));
-
         try
         {
-            var updatedReply = await _replyService.UpdateAsync(replyDto);
+            Guid userId = Guid.Parse("12e6ef03-e72c-407d-894e-fd3d17f66756"); //hard code for testing
+            var updatedReply = await _replyService.UpdateAsync(userId, replyDto, id);
             return Ok(ApiResponse<ReplyDto>.SuccessResponse(updatedReply, "Reply updated successfully"));
         }
         catch (KeyNotFoundException ex)
@@ -107,7 +77,8 @@ public class ReplyController : ControllerBase
     {
         try
         {
-            await _replyService.DeleteAsync(id);
+            Guid userId = Guid.Parse("12e6ef03-e72c-407d-894e-fd3d17f66756"); //hard code for testing
+            await _replyService.DeleteAsync(userId, id);
             return Ok(ApiResponse<object>.SuccessResponse(null, "Reply deleted successfully"));
         }
         catch (KeyNotFoundException ex)

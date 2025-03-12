@@ -205,9 +205,31 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.VariationOptionValues, opt => opt.MapFrom(src =>
                 src.ProductItem.ProductConfigurations.Select(pc => pc.VariationOption.Value)))
             .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => src.LastUpdatedTime))
-            .ForMember(dest => dest.Reply, opt => opt.MapFrom(src => src.Reply));
-        CreateMap<ReviewForCreationDto, Review>();
-        CreateMap<ReviewForUpdateDto, Review>();
+            .ForMember(dest => dest.Reply, opt => opt.MapFrom(src => src.Reply)); CreateMap<ReviewForCreationDto, Review>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(_ => Guid.NewGuid()))
+            .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(_ => DateTimeOffset.UtcNow))
+            .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(_ => DateTimeOffset.UtcNow))
+            .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+            .ForMember(dest => dest.LastUpdatedBy, opt => opt.Ignore())
+            .ForMember(dest => dest.UserId, opt => opt.Ignore())
+            .ForMember(dest => dest.ReviewImages, opt => opt.MapFrom(src =>
+                src.ReviewImages != null
+                    ? src.ReviewImages.Select(imageUrl => new ReviewImage
+                    {
+                        Id = Guid.NewGuid(),
+                        ImageUrl = imageUrl
+                    }).ToList()
+                    : new List<ReviewImage>()))
+        .ReverseMap(); // Enable reverse mapping
+
+        CreateMap<Review, ReviewForCreationDto>()
+            .ForMember(dest => dest.ProductItemId, opt => opt.MapFrom(src => src.ProductItemId))
+            .ForMember(dest => dest.ReviewImages, opt => opt.MapFrom(src => src.ReviewImages.Select(ri => ri.ImageUrl).ToList()))
+            .ForMember(dest => dest.RatingValue, opt => opt.MapFrom(src => src.RatingValue))
+            .ForMember(dest => dest.Comment, opt => opt.MapFrom(src => src.Comment));
+
+        CreateMap<ReviewForUpdateDto, Review>()
+            .ForMember(dest => dest.ReviewImages, opt => opt.Ignore());
         #endregion
 
         #region Reply
