@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using BusinessObjects.Dto.Brand;
 using BusinessObjects.Dto.Address;
+using BusinessObjects.Dto.Blog;
 using BusinessObjects.Dto.CancelReason;
 using BusinessObjects.Dto.Product;
 using BusinessObjects.Dto.ProductCategory;
@@ -191,6 +192,14 @@ public class MappingProfile : Profile
         CreateMap<User, UserDto>();
         CreateMap<UserForCreationDto, User>();
         CreateMap<UserForUpdateDto, User>();
+
+        #region Blog
+
+        CreateMap<Blog, BlogDto>();
+        CreateMap<BlogForCreationDto, BlogDto>();
+        CreateMap<BlogForUpdateDto, Blog>();
+
+        #endregion
 
 
 

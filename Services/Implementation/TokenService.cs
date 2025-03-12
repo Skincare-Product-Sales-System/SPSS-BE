@@ -25,16 +25,26 @@ public class TokenService : ITokenService
         _refreshTokenExpiration = TimeSpan.FromDays(double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] ?? "7"));
     }
 
-    public string GenerateAccessToken(User user)
+    public async Task<string> GenerateAccessTokenAsync(User user)
     {
         var claims = new List<Claim>
         {
             new Claim("Id", user.UserId.ToString()),
-            new Claim(ClaimTypes.Name, user.UserName),
-            new Claim(ClaimTypes.Email, user.EmailAddress),
+            new Claim("UserName", user.UserName),
+            new Claim("Email", user.EmailAddress),
             new Claim("AvatarUrl", user.AvatarUrl ?? string.Empty),
-            new Claim(ClaimTypes.Role, user.RoleId?.ToString() ?? string.Empty)
+            new Claim("RoleId", user.RoleId?.ToString() ?? string.Empty),
         };
+
+        // Add role claim if user has a role
+        if (user.RoleId.HasValue)
+        {
+            var role = await _unitOfWork.Roles.GetByIdAsync(user.RoleId.Value);
+            if (role != null && !role.IsDeleted)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role.RoleName));
+            }
+        }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -50,6 +60,8 @@ public class TokenService : ITokenService
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+   
 
     public string GenerateRefreshToken()
     {
@@ -100,29 +112,29 @@ public class TokenService : ITokenService
     {
         // Find the refresh token in the database
         var storedRefreshToken = await _unitOfWork.RefreshTokens.GetByTokenAsync(refreshToken);
-        
+    
         if (storedRefreshToken == null)
             throw new SecurityTokenException("Invalid refresh token");
-            
+        
         if (storedRefreshToken.IsUsed || storedRefreshToken.IsRevoked)
             throw new SecurityTokenException("Refresh token has been used or revoked");
-            
+        
         if (storedRefreshToken.ExpiryTime < DateTimeOffset.UtcNow)
             throw new SecurityTokenException("Refresh token has expired");
 
         // Mark the current refresh token as used
         storedRefreshToken.IsUsed = true;
         _unitOfWork.RefreshTokens.Update(storedRefreshToken);
-        
+    
         // Get the user associated with the refresh token
         var user = await _unitOfWork.Users.GetByIdAsync(storedRefreshToken.UserId);
         if (user == null || user.IsDeleted)
             throw new SecurityTokenException("User not found");
 
-        // Generate new tokens
-        var newAccessToken = GenerateAccessToken(user);
+        // Generate new tokens - add await here
+        var newAccessToken = await GenerateAccessTokenAsync(user);
         var newRefreshToken = GenerateRefreshToken();
-        
+    
         // Save the new refresh token
         var refreshTokenEntity = new RefreshToken
         {
@@ -133,10 +145,10 @@ public class TokenService : ITokenService
             IsRevoked = false,
             IsUsed = false
         };
-        
+    
         _unitOfWork.RefreshTokens.Add(refreshTokenEntity);
         await _unitOfWork.SaveChangesAsync();
-        
+    
         return (newAccessToken, newRefreshToken);
     }
 

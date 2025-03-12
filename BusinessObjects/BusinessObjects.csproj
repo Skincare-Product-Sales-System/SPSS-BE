@@ -24,9 +24,4 @@
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.2" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Dto\QuizResult\" />
-      <Folder Include="Dto\QuizSet\" />
-    </ItemGroup>
-
 </Project>

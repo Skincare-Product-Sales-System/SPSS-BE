@@ -27,6 +27,9 @@ public class UnitOfWork : IUnitOfWork
     private IPaymentMethodRepository _paymentMethodRepository;
     private ICartItemRepository _cartItemRepository;
     private IPromotionTypeRepository _promotionTypeRepository;
+    private IBrandRepository _brandRepository;
+    private IVoucherRepository _voucherRepository;
+    private ISkinTypeRepository _skinTypeRepository;
     private IDbContextTransaction _transaction; 
 
     public UnitOfWork(SPSSContext context) =>  _context = context;
@@ -50,6 +53,9 @@ public class UnitOfWork : IUnitOfWork
     public IPromotionTypeRepository PromotionTypes => _promotionTypeRepository ??= new PromotionTypeRepository(_context);
     public IPaymentMethodRepository PaymentMethods => _paymentMethodRepository ??= new PaymentMethodRepository(_context);
     public ICartItemRepository CartItems => _cartItemRepository ??= new CartItemRepository(_context);
+    public IBrandRepository Brands => _brandRepository ??= new BrandRepository(_context);
+    public IVoucherRepository Vouchers => _voucherRepository ??= new VoucherRepository(_context);
+    public ISkinTypeRepository SkinTypes => _skinTypeRepository ??= new SkinTypeRepository(_context);
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 
     public async Task BeginTransactionAsync()

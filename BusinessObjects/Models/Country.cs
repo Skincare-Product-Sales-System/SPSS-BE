@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class Country : BaseEntity
+public partial class Country 
 {
     public int Id { get; set; }
 

@@ -38,6 +38,7 @@ public static class ServiceExtensions
         services.AddScoped<IVariationService, VariationService>();
         services.AddScoped<IVariationOptionService, VariationOptionService>();
         services.AddScoped<IProductItemService, ProductItemService>();
+        services.AddScoped<IBlogService, BlogService>();
         return services;
     }
 
