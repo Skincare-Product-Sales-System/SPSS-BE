@@ -5,33 +5,13 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class Blog
+public partial class Blog : BaseEntity
 {
     public Guid Id { get; set; }
-
     public string Title { get; set; }
-
     public string Image { get; set; }
-
     public string BlogContent { get; set; }
-
-    public int UserId { get; set; }
-
-    public string CreatedBy { get; set; }
-
-    public string LastUpdatedBy { get; set; }
-
-    public string DeletedBy { get; set; }
-
-    public DateTimeOffset CreatedTime { get; set; }
-
-    public DateTimeOffset? LastUpdatedTime { get; set; }
-
-    public DateTimeOffset? DeletedTime { get; set; }
-
-    public bool IsDeleted { get; set; }
-
+    public Guid UserId { get; set; }
     public virtual ICollection<BlogImage> BlogImages { get; set; } = new List<BlogImage>();
-
     public virtual User User { get; set; }
 }

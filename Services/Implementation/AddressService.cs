@@ -53,14 +53,14 @@ public class AddressService : IAddressService
         return _mapper.Map<AddressDto>(address);
     }
 
-    public async Task<AddressDto> UpdateAsync(AddressForUpdateDto addressForUpdateDto)
+    public async Task<AddressDto> UpdateAsync(Guid addressId, AddressForUpdateDto addressForUpdateDto)
     {
         if (addressForUpdateDto is null)
             throw new ArgumentNullException(nameof(addressForUpdateDto), "Address data cannot be null.");
 
-        var address = await _unitOfWork.Addresses.GetByIdAsync(addressForUpdateDto.Id);
+        var address = await _unitOfWork.Addresses.GetByIdAsync(addressId);
         if (address == null)
-            throw new KeyNotFoundException($"Address with ID {addressForUpdateDto.Id} not found.");
+            throw new KeyNotFoundException($"Address with ID {addressId} not found.");
 
         address.LastUpdatedTime = DateTimeOffset.UtcNow;
         address.LastUpdatedBy = "System"; 

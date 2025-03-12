@@ -4,6 +4,7 @@ using BusinessObjects.Dto.Variation;
 using BusinessObjects.Models;
 using Firebase.Auth;
 using Microsoft.EntityFrameworkCore;
+using Repositories.Implementation;
 using Repositories.Interface;
 using Services.Interface;
 using Services.Response;
@@ -314,4 +315,42 @@ public class ProductService : IProductService
         _unitOfWork.Products.Update(product); 
         await _unitOfWork.SaveChangesAsync();
     }
+
+    public async Task<PagedResponse<ProductDto>> GetByCategoryIdPagedAsync(Guid categoryId, int pageNumber, int pageSize)
+    {
+        var query = _unitOfWork.Products.GetQueryable()
+            .Where(p => p.ProductCategoryId == categoryId && !p.IsDeleted);
+
+        var totalCount = await query.CountAsync();
+
+        var products = await query
+            .OrderByDescending(p => p.CreatedTime)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var productIds = products.Select(p => p.Id).ToList();
+
+        var productImages = await _unitOfWork.ProductImages.Entities
+            .Where(pi => productIds.Contains(pi.ProductId))
+            .ToListAsync();
+
+        foreach (var product in products)
+        {
+            product.ProductImages = productImages
+                .Where(pi => pi.ProductId == product.Id)
+                .ToList();
+        }
+
+        var productDtos = _mapper.Map<IEnumerable<ProductDto>>(products);
+
+        return new PagedResponse<ProductDto>
+        {
+            Items = productDtos,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
 }

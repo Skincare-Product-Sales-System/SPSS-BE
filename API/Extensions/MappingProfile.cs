@@ -16,6 +16,8 @@ using BusinessObjects.Dto.CartItem;
 using BusinessObjects.Dto.Variation;
 using BusinessObjects.Dto.PromotionType;
 using BusinessObjects.Dto.PaymentMethod;
+using BusinessObjects.Dto.Role;
+using BusinessObjects.Dto.User;
 using BusinessObjects.Dto.VariationOption;
 
 namespace API.Extensions;
@@ -183,6 +185,21 @@ public class MappingProfile : Profile
         CreateMap<PaymentMethod, PaymentMethodDto>();
         CreateMap<PaymentMethodForCreationDto, PaymentMethod>();
         CreateMap<PaymentMethodForUpdateDto, PaymentMethod>();
+        #endregion
+        
+        #region User
+        CreateMap<User, UserDto>();
+        CreateMap<UserForCreationDto, User>();
+        CreateMap<UserForUpdateDto, User>();
+
+
+
+        #endregion
+
+        #region Role
+        CreateMap<Role, RoleDto>();
+        CreateMap<RoleForCreationDto, RoleDto>();
+        CreateMap<RoleForUpdateDto, RoleDto>();
         #endregion
     }
 }
