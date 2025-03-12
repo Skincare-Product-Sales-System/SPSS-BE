@@ -16,6 +16,12 @@ public interface IUnitOfWork : IDisposable
     IRoleRepository Roles { get; }
     IRefreshTokenRepository RefreshTokens { get; }
     IBlogRepository Blogs { get; }
+    IReviewRepository Reviews { get; }
+    IReplyRepository Replies { get; }
+    IPromotionTypeRepository PromotionTypes { get; }
+    ICartItemRepository CartItems { get; }
+    IPaymentMethodRepository PaymentMethods { get; }
+
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();
     Task CommitTransactionAsync();

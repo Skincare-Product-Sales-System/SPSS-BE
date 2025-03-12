@@ -2,6 +2,7 @@
 using BusinessObjects.Models;
 using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
+using System.Linq.Expressions;
 
 namespace Repositories.Implementation;
 
@@ -10,13 +11,15 @@ public class RepositoryBase<T, TKey> : IRepositoryBase<T, TKey> where T : class
     protected readonly SPSSContext _context;
 
     public RepositoryBase(SPSSContext context) => _context = context;
-
+    public IQueryable<T> GetQueryable()
+    {
+        return _context.Set<T>().AsQueryable();
+    }
     public async Task<T?> GetByIdAsync(TKey id) => await _context.Set<T>().FindAsync(id);
-    public IQueryable<T> Entities { get; }
-
+    public IQueryable<T> Entities => _context.Set<T>();
     public async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
-        int pageNumber, 
-        int pageSize, 
+        int pageNumber,
+        int pageSize,
         Expression<Func<T, bool>> predicate)
     {
         if (pageNumber < 1) pageNumber = 1;
@@ -28,30 +31,31 @@ public class RepositoryBase<T, TKey> : IRepositoryBase<T, TKey> where T : class
         }
         int totalCount = await query.CountAsync();
         var items = await query
-            .OrderBy(e => EF.Property<DateTimeOffset>(e, "CreatedTime")) 
+            .OrderBy(e => EF.Property<DateTimeOffset>(e, "CreatedTime"))
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
         return (items, totalCount);
     }
-
-    public async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(int pageNumber, int pageSize)
-    {
-        if (pageNumber < 1) pageNumber = 1;
-        if (pageSize < 1) pageSize = 10;
-        var query = _context.Set<T>().AsQueryable();
-        int totalCount = await query.CountAsync();
-        var items = await query
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-        return (items, totalCount);
-    }
-
     public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
     {
         return await _context.Set<T>().Where(predicate).ToListAsync();
     }
+
+    public async Task<IEnumerable<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null)
+    {
+        var query = _context.Set<T>().AsQueryable();
+
+        // Áp dụng bộ lọc nếu có
+        if (filter != null)
+        {
+            query = query.Where(filter);
+        }
+
+        // Trả về danh sách tất cả các đối tượng
+        return await query.ToListAsync();
+    }
+
 
     public void DetachEntities()
     {
@@ -64,11 +68,6 @@ public class RepositoryBase<T, TKey> : IRepositoryBase<T, TKey> where T : class
                 entry.State = EntityState.Detached;
             }
         }
-    }
-
-    public IQueryable<T> GetQueryable()
-    {
-        return _context.Set<T>().AsQueryable();
     }
 
     public void Add(T entity) => _context.Set<T>().Add(entity);

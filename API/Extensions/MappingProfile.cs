@@ -1,17 +1,24 @@
 ﻿using AutoMapper;
-using BusinessObjects.Dto.Address;
 using BusinessObjects.Dto.Brand;
+using BusinessObjects.Dto.Address;
 using BusinessObjects.Dto.CancelReason;
+using BusinessObjects.Dto.Product;
 using BusinessObjects.Dto.ProductCategory;
 using BusinessObjects.Dto.Product;
 using BusinessObjects.Dto.ProductConfiguration;
 using BusinessObjects.Dto.ProductItem;
 using BusinessObjects.Dto.ProductStatus;
 using BusinessObjects.Dto.Promotion;
+using BusinessObjects.Dto.Review;
+using BusinessObjects.Dto.Reply;
+using BusinessObjects.Models;
+using BusinessObjects.Dto.CartItem;
+using BusinessObjects.Dto.Variation;
+using BusinessObjects.Dto.PromotionType;
+using BusinessObjects.Dto.PaymentMethod;
 using BusinessObjects.Dto.Role;
 using BusinessObjects.Dto.User;
-using BusinessObjects.Models;
-using BusinessObjects.Dto.Variation;
+using BusinessObjects.Dto.VariationOption;
 
 namespace API.Extensions;
 
@@ -20,7 +27,9 @@ public class MappingProfile : Profile
     public MappingProfile()
     {
         #region Product
-        CreateMap<Product, ProductDto>();
+        CreateMap<Product, ProductDto>()
+            .ForMember(dest => dest.Thumbnail,
+                opt => opt.MapFrom(src => src.ProductImages.FirstOrDefault(img => img.IsThumbnail).ImageUrl));
         // Mapping từ ProductForCreationDto sang Product
         CreateMap<ProductForCreationDto, Product>()
             .ForMember(dest => dest.ProductItems, opt => opt.Ignore())
@@ -89,12 +98,6 @@ public class MappingProfile : Profile
         CreateMap<CancelReasonForCreationDto, CancelReason>();
         CreateMap<CancelReasonForUpdateDto, CancelReason>();
         #endregion
-        
-        #region Address
-        CreateMap<Address, AddressDto>();
-        CreateMap<AddressForCreationDto, Address>();
-        CreateMap<AddressForUpdateDto, Address>();
-        #endregion
 
         #region ProductStatus
         CreateMap<ProductStatus, ProductStatusDto>();
@@ -130,8 +133,61 @@ public class MappingProfile : Profile
         CreateMap<ProductConfiguration, ProductConfigurationForProductQueryDto>();
         #endregion
 
-        #region User
+        #region Address
+        CreateMap<Address, AddressDto>();
+        CreateMap<AddressForCreationDto, Address>();
+        CreateMap<AddressForUpdateDto, Address>();
+        #endregion
 
+        #region Review
+        CreateMap<Review, ReviewDto>();
+        CreateMap<ReviewForCreationDto, Review>();
+        CreateMap<ReviewForUpdateDto, Review>();
+        #endregion
+
+        #region Reply
+        CreateMap<Reply, ReplyDto>();
+        CreateMap<ReplyForCreationDto, Reply>();
+        CreateMap<ReplyForUpdateDto, Reply>();
+        #endregion
+
+        #region CartItem
+        CreateMap<CartItem, CartItemDto>();
+        CreateMap<CartItemForCreationDto, CartItem>();
+        CreateMap<CartItemForUpdateDto, CartItem>();
+        #endregion
+
+        #region PromotionType
+        CreateMap<PromotionType, PromotionTypeDto>();
+        CreateMap<PromotionTypeForCreationDto, PromotionType>();
+        CreateMap<PromotionTypeForUpdateDto, PromotionType>();
+        #endregion
+
+        #region PaymentMethod
+        CreateMap<PaymentMethod, PaymentMethodDto>();
+        CreateMap<PaymentMethodForCreationDto, PaymentMethod>();
+        CreateMap<PaymentMethodForUpdateDto, PaymentMethod>();
+        #endregion
+
+        #region Variation
+        CreateMap<Variation, VariationDto>();
+        CreateMap<VariationForCreationDto, Variation>();
+        CreateMap<VariationForUpdateDto, Variation>();
+        #endregion
+
+        #region VariationOption
+        CreateMap<VariationOption, VariationOptionDto>();
+        CreateMap<VariationOptionForCreationDto, VariationOption>();
+        CreateMap<VariationOptionForUpdateDto, VariationOption>();
+        #endregion
+
+        #region PaymentMethod
+        CreateMap<PaymentMethod, PaymentMethodDto>();
+        CreateMap<PaymentMethodForCreationDto, PaymentMethod>();
+        CreateMap<PaymentMethodForUpdateDto, PaymentMethod>();
+        #endregion
+        
+        #region User
         CreateMap<User, UserDto>();
         CreateMap<UserForCreationDto, User>();
         CreateMap<UserForUpdateDto, User>();
@@ -141,11 +197,9 @@ public class MappingProfile : Profile
         #endregion
 
         #region Role
-
         CreateMap<Role, RoleDto>();
         CreateMap<RoleForCreationDto, RoleDto>();
         CreateMap<RoleForUpdateDto, RoleDto>();
-
         #endregion
     }
 }

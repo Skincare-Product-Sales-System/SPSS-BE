@@ -33,7 +33,11 @@ namespace Services.Implementation
 
         public async Task<PagedResponse<ProductCategoryDto>> GetPagedAsync(int pageNumber, int pageSize)
         {
-            var (categories, totalCount) = await _unitOfWork.ProductCategories.GetPagedAsync(pageNumber, pageSize);
+            var (categories, totalCount) = await _unitOfWork.ProductCategories.GetPagedAsync(
+                pageNumber,
+                pageSize,
+                cr => cr.IsDeleted == false // Filter out deleted cancel reasons
+            );
             var categoryDtos = _mapper.Map<IEnumerable<ProductCategoryDto>>(categories);
             return new PagedResponse<ProductCategoryDto>
             {

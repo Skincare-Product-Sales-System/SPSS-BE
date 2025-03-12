@@ -22,6 +22,11 @@ public class UnitOfWork : IUnitOfWork
     private IBlogRepository _blogRepository;
     private IUserRepository _userRepository;
     private IRoleRepository _roleRepository;
+    private IReviewRepository _reviewRepository;
+    private IReplyRepository _replyRepository;
+    private IPaymentMethodRepository _paymentMethodRepository;
+    private ICartItemRepository _cartItemRepository;
+    private IPromotionTypeRepository _promotionTypeRepository;
     private IDbContextTransaction _transaction; 
 
     public UnitOfWork(SPSSContext context) =>  _context = context;
@@ -40,6 +45,11 @@ public class UnitOfWork : IUnitOfWork
     public IRoleRepository Roles => _roleRepository ??= new RoleRepository(_context);
     public IRefreshTokenRepository RefreshTokens => _refreshTokenRepository ??= new RefreshTokenRepository(_context);
     public IBlogRepository Blogs => _blogRepository ??= new BlogRepository(_context);
+    public IReviewRepository Reviews => _reviewRepository ??= new ReviewRepository(_context);
+    public IReplyRepository Replies => _replyRepository ??= new ReplyRepository(_context);
+    public IPromotionTypeRepository PromotionTypes => _promotionTypeRepository ??= new PromotionTypeRepository(_context);
+    public IPaymentMethodRepository PaymentMethods => _paymentMethodRepository ??= new PaymentMethodRepository(_context);
+    public ICartItemRepository CartItems => _cartItemRepository ??= new CartItemRepository(_context);
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 
     public async Task BeginTransactionAsync()

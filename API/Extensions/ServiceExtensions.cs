@@ -30,6 +30,13 @@ public static class ServiceExtensions
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IReviewService, ReviewService>();
+        services.AddScoped<IReplyService, ReplyService>();
+        services.AddScoped<ICartItemService, CartItemService>();
+        services.AddScoped<IPromotionTypeService, PromotionTypeService>();
+        services.AddScoped<IPaymentMethodService, PaymentMethodService>();
+        services.AddScoped<IVariationService, VariationService>();
+        services.AddScoped<IVariationOptionService, VariationOptionService>();
         return services;
     }
 

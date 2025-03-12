@@ -1,4 +1,3 @@
-
 using API.Extensions;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -20,10 +19,21 @@ builder.Host.UseSerilog((context, services, configuration) =>
 });
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontendApp",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:3000")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        });
+});
 builder.Services.ConfigureRepositories();
 builder.Services.ConfigureServices();
 builder.Services.ConfigureDbContext(builder.Configuration);
-builder.Services.ConfigureJwtAuthentication(builder.Configuration);
+builder.Services.ConfigureJwtAuthentication(builder.Configuration); 
 builder.Services.AddAutoMapper(typeof(Program));
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
@@ -32,15 +42,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "API V1");
-        c.RoutePrefix = string.Empty; 
+        c.RoutePrefix = string.Empty;
     });
 }
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 app.UseRouting();
+app.UseCors("AllowFrontendApp");
 app.UseMiddleware<API.Middlewares.RequestResponseMiddleware>();
 app.UseAuthentication(); 
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
-
