@@ -14,7 +14,7 @@ public partial class ProductItem : BaseEntity
     public string ImageUrl { get; set; }
 
     public decimal Price { get; set; }
-    //public decimal MarketPrice { get; set; }
+    public decimal MarketPrice { get; set; }
     public Guid ProductId { get; set; }
     public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
 

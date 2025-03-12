@@ -23,11 +23,7 @@ public partial class Product : BaseEntity
 
     public string UsageInstruction { get; set; }
 
-    public double VolumeWeight { get; set; }
-
     public string DetailedIngredients { get; set; }
-
-    public string RegisterNumber { get; set; }
 
     public string MainFunction { get; set; }
 

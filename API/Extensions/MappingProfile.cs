@@ -45,9 +45,7 @@ public class MappingProfile : Profile
             // Mapping Specifications
             .ForMember(dest => dest.StorageInstruction, opt => opt.MapFrom(src => src.Specifications.StorageInstruction))
             .ForMember(dest => dest.UsageInstruction, opt => opt.MapFrom(src => src.Specifications.UsageInstruction))
-            .ForMember(dest => dest.VolumeWeight, opt => opt.MapFrom(src => src.Specifications.VolumeWeight))
             .ForMember(dest => dest.DetailedIngredients, opt => opt.MapFrom(src => src.Specifications.DetailedIngredients))
-            .ForMember(dest => dest.RegisterNumber, opt => opt.MapFrom(src => src.Specifications.RegisterNumber))
             .ForMember(dest => dest.MainFunction, opt => opt.MapFrom(src => src.Specifications.MainFunction))
             .ForMember(dest => dest.Texture, opt => opt.MapFrom(src => src.Specifications.Texture))
             .ForMember(dest => dest.KeyActiveIngredients, opt => opt.MapFrom(src => src.Specifications.KeyActiveIngredients))
@@ -75,9 +73,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.ProductCategory))
             .ForMember(dest => dest.Specifications, opt => opt.MapFrom(src => new ProductSpecifications
             {
-                VolumeWeight = src.VolumeWeight,
                 DetailedIngredients = src.DetailedIngredients,
-                RegisterNumber = src.RegisterNumber,
                 MainFunction = src.MainFunction,
                 Texture = src.Texture,
                 EnglishName = src.EnglishName,

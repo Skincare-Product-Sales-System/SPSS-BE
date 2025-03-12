@@ -10,6 +10,7 @@ public partial class QuizSet : BaseEntity
     public Guid Id { get; set; }
 
     public string Name { get; set; }
+    public bool IsDefault { get; set; }
     public virtual ICollection<QuizQuestion> QuizQuestions { get; set; } = new List<QuizQuestion>();
 
     public virtual ICollection<QuizResult> QuizResults { get; set; } = new List<QuizResult>();
