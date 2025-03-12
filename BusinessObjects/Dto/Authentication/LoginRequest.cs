@@ -5,7 +5,7 @@ namespace BusinessObjects.Dto.Authentication;
 public class LoginRequest
 {
     [Required]
-    public string UserName { get; set; }
+    public string UsernameOrEmail { get; set; }
     
     [Required]
     public string Password { get; set; }
