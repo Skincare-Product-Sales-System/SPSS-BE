@@ -2,5 +2,5 @@
 
 public class QuizResultForCreationDto
 {
-    
+    public string Score { get; set; }
 }

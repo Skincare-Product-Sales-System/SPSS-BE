@@ -30,6 +30,7 @@ public class UnitOfWork : IUnitOfWork
     private IBrandRepository _brandRepository;
     private IVoucherRepository _voucherRepository;
     private ISkinTypeRepository _skinTypeRepository;
+    private IPromotionRepository _promotionRepository;
     private IDbContextTransaction _transaction; 
 
     public UnitOfWork(SPSSContext context) =>  _context = context;
@@ -56,6 +57,7 @@ public class UnitOfWork : IUnitOfWork
     public IBrandRepository Brands => _brandRepository ??= new BrandRepository(_context);
     public IVoucherRepository Vouchers => _voucherRepository ??= new VoucherRepository(_context);
     public ISkinTypeRepository SkinTypes => _skinTypeRepository ??= new SkinTypeRepository(_context);
+    public IPromotionRepository Promotions => _promotionRepository ??= new PromotionRepository(_context);
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 
     public async Task BeginTransactionAsync()

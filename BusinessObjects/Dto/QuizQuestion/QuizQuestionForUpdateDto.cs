@@ -2,5 +2,5 @@
 
 public class QuizQuestionForUpdateDto
 {
-    
+    public string Value { get; set; }
 }
