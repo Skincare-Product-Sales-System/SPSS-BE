@@ -24,6 +24,7 @@ public interface IUnitOfWork : IDisposable
     IBrandRepository Brands { get; }
     IVoucherRepository Vouchers { get; }
     ISkinTypeRepository SkinTypes { get; }
+    IPromotionRepository Promotions { get; }
 
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();

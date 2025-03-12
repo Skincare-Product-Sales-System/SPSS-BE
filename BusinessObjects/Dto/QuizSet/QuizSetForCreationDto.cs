@@ -2,5 +2,5 @@
 
 public class QuizSetForCreationDto
 {
-    
+    public string Name { get; set; }
 }
