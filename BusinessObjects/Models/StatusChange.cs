@@ -5,29 +5,13 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class StatusChange
+public partial class StatusChange : BaseEntity
 {
     public Guid Id { get; set; }
 
     public DateTimeOffset Date { get; set; }
-
     public string Status { get; set; }
 
-    public Guid OrderId { get; set; }
-
-    public string CreatedBy { get; set; }
-
-    public string LastUpdatedBy { get; set; }
-
-    public string DeletedBy { get; set; }
-
-    public DateTimeOffset CreatedTime { get; set; }
-
-    public DateTimeOffset? LastUpdatedTime { get; set; }
-
-    public DateTimeOffset? DeletedTime { get; set; }
-
-    public bool IsDeleted { get; set; }
-
+    public Guid OrderId { get; set; } 
     public virtual Order Order { get; set; }
 }

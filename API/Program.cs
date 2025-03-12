@@ -1,51 +1,41 @@
 using API.Extensions;
 using Microsoft.OpenApi.Models;
-using Serilog;  // Add this
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Configure Serilog
-builder.Host.UseSerilog((context, services, configuration) => 
+builder.Host.UseSerilog((context, services, configuration) =>
 {
     configuration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
-        .WriteTo.Console()  // Logs to console
+        .WriteTo.Console()
         .WriteTo.File(
-            path: "logs/log-.txt",  // Logs to file with date
-            rollingInterval: RollingInterval.Day,  // New file each day
+            path: "logs/log-.txt",
+            rollingInterval: RollingInterval.Day,
             rollOnFileSizeLimit: true,
-            fileSizeLimitBytes: 10485760, // 10MB
-            retainedFileCountLimit: 31);  // Keep 31 days of logs
+            fileSizeLimitBytes: 10485760,
+            retainedFileCountLimit: 31);
 });
-
-// Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddCors(options =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "API",
-        Version = "v1",
-        Description = "A sample ASP.NET Core API",
-        Contact = new OpenApiContact
+    options.AddPolicy("AllowFrontendApp",
+        policy =>
         {
-            Name = "Your Name",
-            Email = "your-email@example.com",
-            Url = new Uri("https://example.com")
-        }
-    });
+            policy.WithOrigins("http://localhost:3000")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        });
 });
 builder.Services.ConfigureRepositories();
 builder.Services.ConfigureServices();
 builder.Services.ConfigureDbContext(builder.Configuration);
+builder.Services.ConfigureJwtAuthentication(builder.Configuration); 
 builder.Services.AddAutoMapper(typeof(Program));
-
 var app = builder.Build();
-
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -55,24 +45,12 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = string.Empty;
     });
 }
-app.UseSerilogRequestLogging();  // Add this for request logging
-
+app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 app.UseRouting();
-
-// Turn off CORS
-app.UseCors(builder =>
-    builder.AllowAnyMethod()
-        .AllowAnyHeader()
-        .AllowCredentials()
-        .WithOrigins("http://localhost:3000"));
-
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapControllers();  // Complete the endpoints configuration
-});
-
+app.UseCors("AllowFrontendApp");
+app.UseMiddleware<API.Middlewares.RequestResponseMiddleware>();
+app.UseAuthentication(); 
+app.UseAuthorization();
+app.MapControllers();
 app.Run();
-
-// Add this at the end to ensure proper shutdown of Serilog
-public partial class Program { }  // Needed for Serilog

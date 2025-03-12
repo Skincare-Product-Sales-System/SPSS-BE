@@ -6,12 +6,16 @@ public interface IUnitOfWork : IDisposable
     IProductImageRepository ProductImages { get; }
     ICancelReasonRepository CancelReasons { get; }
     IProductItemRepository ProductItems { get; }
+    IAddressRepository Addresses { get; }
     IProductConfigurationRepository ProductConfigurations { get; }
     IVariationRepository Variations { get; }
     IVariationOptionRepository VariationOptions { get; }
     IProductStatusRepository ProductStatuses { get; }
     IProductCategoryRepository  ProductCategories { get; }
-    IAddressRepository Addresses { get; }
+    IUserRepository Users { get; }
+    IRoleRepository Roles { get; }
+    IRefreshTokenRepository RefreshTokens { get; }
+    IBlogRepository Blogs { get; }
     IReviewRepository Reviews { get; }
     IReplyRepository Replies { get; }
     IPromotionTypeRepository PromotionTypes { get; }

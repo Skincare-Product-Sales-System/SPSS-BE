@@ -77,7 +77,7 @@ public class AddressController : ControllerBase
         
         try
         {
-            await _addressService.UpdateAsync(addressDto);
+            await _addressService.UpdateAsync(id, addressDto);
             return NoContent();
         }
         catch (KeyNotFoundException ex)

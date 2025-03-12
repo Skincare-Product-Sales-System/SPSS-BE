@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class Product
+public partial class Product : BaseEntity
 {
     public Guid Id { get; set; }
 
@@ -48,21 +48,6 @@ public partial class Product
     public Guid? BrandId { get; set; }
 
     public Guid? ProductCategoryId { get; set; }
-
-    public string CreatedBy { get; set; }
-
-    public string LastUpdatedBy { get; set; }
-
-    public string DeletedBy { get; set; }
-
-    public DateTimeOffset CreatedTime { get; set; }
-
-    public DateTimeOffset? LastUpdatedTime { get; set; }
-
-    public DateTimeOffset? DeletedTime { get; set; }
-
-    public bool IsDeleted { get; set; }
-
     public virtual Brand Brand { get; set; }
 
     public virtual ProductCategory ProductCategory { get; set; }

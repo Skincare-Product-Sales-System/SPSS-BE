@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class ProductItem
+public partial class ProductItem : BaseEntity
 {
     public Guid Id { get; set; }
 
@@ -16,21 +16,6 @@ public partial class ProductItem
     public decimal Price { get; set; }
     //public decimal MarketPrice { get; set; }
     public Guid ProductId { get; set; }
-
-    public string CreatedBy { get; set; }
-
-    public string LastUpdatedBy { get; set; }
-
-    public string DeletedBy { get; set; }
-
-    public DateTimeOffset CreatedTime { get; set; }
-
-    public DateTimeOffset? LastUpdatedTime { get; set; }
-
-    public DateTimeOffset? DeletedTime { get; set; }
-
-    public bool IsDeleted { get; set; }
-
     public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
 
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();

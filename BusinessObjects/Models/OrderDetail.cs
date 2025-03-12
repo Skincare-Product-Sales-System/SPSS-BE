@@ -5,32 +5,14 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class OrderDetail
+public partial class OrderDetail : BaseEntity
 {
     public Guid Id { get; set; }
 
     public int Quantity { get; set; }
-
     public decimal Price { get; set; }
-
     public Guid ProductItemId { get; set; }
-
     public Guid OrderId { get; set; }
-
-    public string CreatedBy { get; set; }
-
-    public string LastUpdatedBy { get; set; }
-
-    public string DeletedBy { get; set; }
-
-    public DateTimeOffset CreatedTime { get; set; }
-
-    public DateTimeOffset? LastUpdatedTime { get; set; }
-
-    public DateTimeOffset? DeletedTime { get; set; }
-
-    public bool IsDeleted { get; set; }
-
     public virtual Order Order { get; set; }
 
     public virtual ProductItem ProductItem { get; set; }
