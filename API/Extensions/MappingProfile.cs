@@ -210,7 +210,8 @@ public class MappingProfile : Profile
         #endregion
 
         #region Reply
-        CreateMap<Reply, ReplyDto>();
+        CreateMap<Reply, ReplyDto>()
+            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.UserName));
         CreateMap<ReplyForCreationDto, Reply>();
         CreateMap<ReplyForUpdateDto, Reply>();
         #endregion
