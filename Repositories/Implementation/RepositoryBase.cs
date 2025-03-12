@@ -70,6 +70,14 @@ public class RepositoryBase<T, TKey> : IRepositoryBase<T, TKey> where T : class
         }
     }
 
+    public async Task<T?> SingleOrDefaultAsync(Expression<Func<T, bool>> predicate)
+    {
+        if (predicate == null)
+            throw new ArgumentNullException(nameof(predicate), "Predicate cannot be null.");
+
+        return await _context.Set<T>().SingleOrDefaultAsync(predicate);
+    }
+
     public void Add(T entity) => _context.Set<T>().Add(entity);
     public void Update(T entity) => _context.Set<T>().Update(entity);
     public void Delete(T entity) => _context.Set<T>().Remove(entity);

@@ -36,6 +36,8 @@ public class ProductService : IProductService
             .Include(p => p.ProductImages) 
             .Include(p => p.PromotionTargets)
                 .ThenInclude(pt => pt.Promotion) 
+            .Include(p => p.ProductForSkinTypes)
+                .ThenInclude(pst => pst.SkinType)
             .FirstOrDefaultAsync(p => p.Id == id);
         if (product == null)
             throw new KeyNotFoundException($"Product with ID {id} not found.");
@@ -89,6 +91,14 @@ public class ProductService : IProductService
                 throw new ArgumentNullException($"Category with ID {productDto.ProductCategoryId} not found.");
             }
 
+            var brandExists = await _unitOfWork.Brands.Entities
+                .AnyAsync(c => c.Id == productDto.BrandId);
+            if (!categoryExists)
+            {
+                throw new ArgumentNullException($"Brand with ID {productDto.BrandId} not found.");
+            }
+
+
             // Step 5: Map the product DTO to the Product entity
             var productEntity = _mapper.Map<Product>(productDto);
             foreach (var item in productEntity.ProductItems)
@@ -97,6 +107,29 @@ public class ProductService : IProductService
                 {
                     item.Id = Guid.NewGuid();
                 }
+            }
+
+            // Kiểm tra và xử lý SkinTypeIds
+            foreach (var skinTypeId in productDto.SkinTypeIds)
+            {
+                var skinTypeExists = await _unitOfWork.SkinTypes.Entities
+                    .AnyAsync(st => st.Id == skinTypeId);
+                if (!skinTypeExists)
+                {
+                    throw new ArgumentException($"SkinType with ID {skinTypeId} does not exist.");
+                }
+
+                // Thêm bản ghi vào bảng trung gian ProductForSkinType
+                productEntity.ProductForSkinTypes.Add(new ProductForSkinType
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = productEntity.Id,
+                    SkinTypeId = skinTypeId,
+                    CreatedBy = userId,
+                    LastUpdatedBy = userId,
+                    CreatedTime = DateTime.UtcNow,
+                    LastUpdatedTime = DateTime.UtcNow
+                });
             }
 
             productEntity.Id = Guid.NewGuid();

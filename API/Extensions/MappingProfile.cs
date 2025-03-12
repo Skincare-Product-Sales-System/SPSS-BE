@@ -17,6 +17,7 @@ using BusinessObjects.Dto.Variation;
 using BusinessObjects.Dto.PromotionType;
 using BusinessObjects.Dto.PaymentMethod;
 using BusinessObjects.Dto.VariationOption;
+using BusinessObjects.Dto.SkinType;
 
 namespace API.Extensions;
 
@@ -83,7 +84,15 @@ public class MappingProfile : Profile
                 UsageInstruction = src.UsageInstruction,
                 ExpiryDate = src.ExpiryDate,
                 SkinIssues = src.SkinIssues
-            }));
+            }))
+            .ForMember(dest => dest.skinTypes, opt => opt.MapFrom(src => src.ProductForSkinTypes
+                .Where(pst => pst.SkinType != null)
+                .Select(pst => new SkinTypeForProductQueryDto
+                {
+                    Id = pst.SkinType.Id,
+                    Name = pst.SkinType.Name
+                })
+                .ToList()));
         // Mapping from VariationCombinationDto to ProductItem
         CreateMap<VariationCombinationDto, ProductItem>()
             .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price))
@@ -150,7 +159,25 @@ public class MappingProfile : Profile
         #endregion
 
         #region CartItem
-        CreateMap<CartItem, CartItemDto>();
+        CreateMap<CartItem, CartItemDto>()
+            .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.ProductItem.Price))
+            .ForMember(dest => dest.StockQuantity, opt => opt.MapFrom(src => src.ProductItem.QuantityInStock))
+            .ForMember(dest => dest.MarketPrice, opt => opt.MapFrom(src => src.ProductItem.Price))
+            .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductItem.Product.Id))
+            .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.ProductItem.Product.Name))
+            .ForMember(dest => dest.ProductImageUrl, opt => opt.MapFrom(src =>
+                src.ProductItem.Product.ProductImages
+                    .Where(pi => pi.IsThumbnail)
+                    .Select(pi => pi.ImageUrl)
+                    .FirstOrDefault() ?? string.Empty))
+            .ForMember(dest => dest.VariationOptionValues, opt => opt.MapFrom(src =>
+                src.ProductItem.ProductConfigurations
+                    .Where(pc => pc.VariationOption != null)
+                    .Select(pc => pc.VariationOption.Value)
+                    .ToList()))
+            .ForMember(dest => dest.InStock, opt => opt.MapFrom(src =>
+                !(src.Quantity > src.ProductItem.QuantityInStock)))
+            .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => src.LastUpdatedTime));
         CreateMap<CartItemForCreationDto, CartItem>();
         CreateMap<CartItemForUpdateDto, CartItem>();
         #endregion

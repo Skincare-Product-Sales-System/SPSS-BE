@@ -24,16 +24,19 @@ public class UnitOfWork : IUnitOfWork
     private IReviewRepository _reviewRepository;
     private IReplyRepository _replyRepository;
     private ICartItemRepository _cartItemRepository;
-
+    private IBrandRepository _brandRepository;
+    private ISkinTypeRepository _skinTypeRepository;
     public UnitOfWork(SPSSContext context) =>  _context = context;
     
     public IProductImageRepository ProductImages => _productImageRepository ?? (_productImageRepository = new ProductImageRepository(_context));
+    public ISkinTypeRepository SkinTypes => _skinTypeRepository ??= new SkinTypeRepository(_context);
     public IProductRepository Products => _productRepository ??= new ProductRepository(_context);
     public IPromotionTypeRepository PromotionTypes => _promotionTypeRepository ??= new PromotionTypeRepository(_context);
     public ICancelReasonRepository CancelReasons => _cancelReasonRepository ??= new CancelReasonRepository(_context);
     public IProductConfigurationRepository ProductConfigurations => _productConfigurationRepository ??= new ProductConfigurationRepository(_context);
     public IProductItemRepository ProductItems => _productItemRepository ??= new ProductItemRepository(_context);
     public IVariationRepository Variations => _variationRepository ??= new VariationRepository(_context);
+    public IBrandRepository Brands => _brandRepository ??= new BrandRepository(_context);
     public IVariationOptionRepository VariationOptions => _variationOptionRepository ??= new VariationOptionRepository(_context);
     public IProductStatusRepository ProductStatuses => _productStatusRepository ??= new ProductStatusRepository(_context);
     public IProductCategoryRepository ProductCategories => _productCategoryRepository ??= new ProductCategoryRepository(_context);

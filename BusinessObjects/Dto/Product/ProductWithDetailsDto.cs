@@ -2,6 +2,7 @@
 using BusinessObjects.Dto.ProductCategory;
 using BusinessObjects.Dto.ProductItem;
 using BusinessObjects.Dto.Promotion;
+using BusinessObjects.Dto.SkinType;
 using BusinessObjects.Models;
 
 namespace BusinessObjects.Dto.Product
@@ -21,6 +22,7 @@ namespace BusinessObjects.Dto.Product
         public decimal MarketPrice { get; set; }
         public string Status { get; set; } = null!;
 
+        public List<SkinTypeForProductQueryDto> skinTypes { get; set; } = new();
         public List<string> ProductImageUrls { get; set; } = new();
         public List<ProductItemDto> ProductItems { get; set; } = new();
         public PromotionForProductQueryDto? Promotion { get; set; }

@@ -7,6 +7,7 @@ public interface IUnitOfWork : IDisposable
     ICancelReasonRepository CancelReasons { get; }
     IProductItemRepository ProductItems { get; }
     IProductConfigurationRepository ProductConfigurations { get; }
+    IBrandRepository Brands { get; }
     IVariationRepository Variations { get; }
     IVariationOptionRepository VariationOptions { get; }
     IProductStatusRepository ProductStatuses { get; }
@@ -17,7 +18,7 @@ public interface IUnitOfWork : IDisposable
     IPromotionTypeRepository PromotionTypes { get; }
     ICartItemRepository CartItems { get; }
     IPaymentMethodRepository PaymentMethods { get; }
-
+    ISkinTypeRepository SkinTypes { get; }
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();
     Task CommitTransactionAsync();

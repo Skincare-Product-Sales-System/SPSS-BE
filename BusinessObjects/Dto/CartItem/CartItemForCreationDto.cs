@@ -8,9 +8,7 @@ namespace BusinessObjects.Dto.CartItem
 {
     public class CartItemForCreationDto
     {
-        public int UserId { get; set; }
         public Guid ProductItemId { get; set; }
         public int Quantity { get; set; }
-        public string CreatedBy { get; set; }
     }
 }
