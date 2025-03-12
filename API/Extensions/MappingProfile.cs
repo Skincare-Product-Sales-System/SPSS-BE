@@ -173,10 +173,11 @@ public class MappingProfile : Profile
         CreateMap<Review, ReviewDto>()
             .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.UserName)) // Lấy tên người dùng
             .ForMember(dest => dest.AvatarUrl, opt => opt.MapFrom(src => src.User.AvatarUrl)) // Lấy Avatar URL
+            .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.ProductItem.Product.Name)) // Lấy tên sản phẩm
             .ForMember(dest => dest.ProductImage, opt => opt.MapFrom(src =>
-                src.ProductItem.Product.ProductImages != null && src.ProductItem.Product.ProductImages.Any()
-                    ? src.ProductItem.Product.ProductImages.FirstOrDefault().ImageUrl
-                    : null)) // Lấy URL hình ảnh sản phẩm đầu tiên
+                        src.ProductItem.Product.ProductImages.Any(img => img.IsThumbnail)
+                            ? src.ProductItem.Product.ProductImages.FirstOrDefault(img => img.IsThumbnail).ImageUrl
+                            : null)) // Check for IsThumbnail without null-propagating // Lấy URL hình ảnh sản phẩm đầu tiên
             .ForMember(dest => dest.ReviewImages, opt => opt.MapFrom(src =>
                 src.ReviewImages != null && src.ReviewImages.Any()
                     ? src.ReviewImages.Select(ri => ri.ImageUrl).ToList()
