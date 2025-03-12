@@ -21,10 +21,17 @@ namespace Services.Implementation
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
-
-        public async Task<IEnumerable<CartItemDto>> GetByUserIdAsync(Guid userId)
+        public async Task<PagedResponse<CartItemDto>> GetByUserIdAsync(Guid userId, int pageNumber, int pageSize)
         {
-            // Retrieve cart items associated with the user ID
+            // Tính toán số bản ghi cần bỏ qua
+            var skip = (pageNumber - 1) * pageSize;
+
+            // Truy vấn tổng số bản ghi
+            var totalCount = await _unitOfWork.CartItems.Entities
+                .Where(ci => ci.UserId == userId && !ci.IsDeleted)
+                .CountAsync();
+
+            // Truy vấn dữ liệu với phân trang
             var cartItems = await _unitOfWork.CartItems.Entities
                 .Include(ci => ci.ProductItem)
                     .ThenInclude(p => p.Product)
@@ -39,20 +46,22 @@ namespace Services.Implementation
                     .ThenInclude(p => p.ProductConfigurations)
                         .ThenInclude(pi => pi.VariationOption)
                 .Where(ci => ci.UserId == userId && !ci.IsDeleted)
-                .OrderByDescending(ci => ci.LastUpdatedTime)
+                .OrderByDescending(ci => ci.LastUpdatedTime) // Sắp xếp theo thời gian cập nhật gần đây nhất
+                .Skip(skip) // Bỏ qua số lượng phần tử theo trang
+                .Take(pageSize) // Lấy số lượng phần tử theo kích thước trang
                 .ToListAsync();
 
-            // Map to DTOs using AutoMapper
-            return _mapper.Map<IEnumerable<CartItemDto>>(cartItems);
-        }
+            // Ánh xạ sang DTOs bằng AutoMapper
+            var mappedItems = _mapper.Map<IEnumerable<CartItemDto>>(cartItems);
 
-        public async Task<CartItemDto> GetByIdAsync(Guid id)
-        {
-            var cartItem = await _unitOfWork.CartItems.GetByIdAsync(id);
-            if (cartItem == null)
-                throw new KeyNotFoundException($"CartItem with ID {id} not found.");
-
-            return _mapper.Map<CartItemDto>(cartItem);
+            // Tạo đối tượng PagedResponse
+            return new PagedResponse<CartItemDto>
+            {
+                Items = mappedItems,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
 
         public async Task<bool> CreateAsync(CartItemForCreationDto cartItemDto, Guid userId)

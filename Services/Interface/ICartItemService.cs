@@ -11,8 +11,7 @@ namespace Services.Interface
 {
     public interface ICartItemService
     {
-        Task<CartItemDto> GetByIdAsync(Guid id);
-        Task<IEnumerable<CartItemDto>> GetByUserIdAsync(Guid userId);
+        Task<PagedResponse<CartItemDto>> GetByUserIdAsync(Guid userId, int pageNumber, int pageSize);
         Task<bool> CreateAsync(CartItemForCreationDto reviewDto, Guid userId);
         Task<CartItemDto> UpdateAsync(Guid id, CartItemForUpdateDto reviewDto);
         Task DeleteAsync(Guid id);

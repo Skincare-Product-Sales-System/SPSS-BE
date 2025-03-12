@@ -39,6 +39,7 @@ public static class ServiceExtensions
         services.AddScoped<IVariationOptionService, VariationOptionService>();
         services.AddScoped<IProductItemService, ProductItemService>();
         services.AddScoped<IBlogService, BlogService>();
+        services.AddScoped<IOrderService, OrderService>();
         return services;
     }
 

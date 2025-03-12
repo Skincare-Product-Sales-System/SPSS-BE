@@ -5,7 +5,6 @@ using BusinessObjects.Dto.Blog;
 using BusinessObjects.Dto.CancelReason;
 using BusinessObjects.Dto.Product;
 using BusinessObjects.Dto.ProductCategory;
-using BusinessObjects.Dto.Product;
 using BusinessObjects.Dto.ProductConfiguration;
 using BusinessObjects.Dto.ProductItem;
 using BusinessObjects.Dto.ProductStatus;
@@ -21,6 +20,8 @@ using BusinessObjects.Dto.Role;
 using BusinessObjects.Dto.User;
 using BusinessObjects.Dto.VariationOption;
 using BusinessObjects.Dto.SkinType;
+using BusinessObjects.Dto.Order;
+using BusinessObjects.Dto.OrderDetail;
 
 namespace API.Extensions;
 
@@ -28,6 +29,29 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
+        #region Order
+        // Mapping Order -> OrderDto
+        CreateMap<Order, OrderDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
+            .ForMember(dest => dest.OrderTotal, opt => opt.MapFrom(src => src.OrderTotal))
+            .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => src.CreatedTime))
+            .ForMember(dest => dest.OrderDetail, opt => opt.MapFrom(src => src.OrderDetails.FirstOrDefault()));
+        CreateMap<OrderForCreationDto, Order>();
+        CreateMap<OrderForUpdateDto, Order>();
+        #endregion
+
+        #region OrderDetail
+        // Mapping OrderDetail -> OrderDetailDto
+        CreateMap<OrderDetail, OrderDetailDto>()
+            .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductItem.ProductId))
+            .ForMember(dest => dest.ProductImage, opt => opt.MapFrom(src => src.ProductItem.Product.ProductImages.FirstOrDefault().ImageUrl))
+            .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.ProductItem.Product.Name))
+            .ForMember(dest => dest.VariationOptionValues, opt => opt.MapFrom(src => src.ProductItem.ProductConfigurations.Select(pc => pc.VariationOption.Value)))
+            .ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Quantity))
+            .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price));
+        #endregion
+
         #region Product
         CreateMap<Product, ProductDto>()
             .ForMember(dest => dest.Thumbnail,

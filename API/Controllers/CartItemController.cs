@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using BusinessObjects.Dto.CartItem;
 using Services.Dto.Api;
 using Services.Response;
+using Microsoft.AspNetCore.Authorization;
 
 namespace API.Controllers;
 
@@ -19,30 +20,24 @@ public class CartItemController : ControllerBase
     public CartItemController(ICartItemService cartItemService) =>
         _cartItemService = cartItemService ?? throw new ArgumentNullException(nameof(cartItemService));
 
-    [HttpGet("user/{userId:Guid}")]
+    [HttpGet("user/cart")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetByUserId(Guid userId)
+    public async Task<IActionResult> GetCart(
+    [Range(1, int.MaxValue)] int pageNumber = 1,
+    [Range(1, 100)] int pageSize = 10)
     {
-        var cartItems = await _cartItemService.GetByUserIdAsync(userId);
-        if (cartItems == null || !cartItems.Any())
-            return NotFound(ApiResponse<IEnumerable<CartItemDto>>.FailureResponse("No cart items found for the specified user."));
+        var userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); // Hardcoded for now
 
-        return Ok(ApiResponse<IEnumerable<CartItemDto>>.SuccessResponse(cartItems, "Cart items retrieved successfully"));
-    }
+        // Gọi service để lấy cart items.
+        var cartItems = await _cartItemService.GetByUserIdAsync(userId, pageNumber, pageSize);
 
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id)
-    {
-        try
-        {
-            var cartItem = await _cartItemService.GetByIdAsync(id);
-            return Ok(ApiResponse<CartItemDto>.SuccessResponse(cartItem));
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ApiResponse<CartItemDto>.FailureResponse(ex.Message));
-        }
+        // Xử lý nếu không có cart items.
+        if (cartItems == null || !cartItems.Items.Any())
+            return NotFound(ApiResponse<PagedResponse<CartItemDto>>.FailureResponse("No cart items found for the specified user."));
+
+        // Trả về kết quả thành công.
+        return Ok(ApiResponse<PagedResponse<CartItemDto>>.SuccessResponse(cartItems, "Cart items retrieved successfully"));
     }
 
     [HttpPost]
