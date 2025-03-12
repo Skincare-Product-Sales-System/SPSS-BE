@@ -19,6 +19,18 @@ public class CartItemController : ControllerBase
     public CartItemController(ICartItemService cartItemService) =>
         _cartItemService = cartItemService ?? throw new ArgumentNullException(nameof(cartItemService));
 
+    [HttpGet("user/{userId:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetByUserId(int userId)
+    {
+        var cartItems = await _cartItemService.GetByUserIdAsync(userId);
+        if (cartItems == null || !cartItems.Any())
+            return NotFound(ApiResponse<IEnumerable<CartItemDto>>.FailureResponse("No cart items found for the specified user."));
+
+        return Ok(ApiResponse<IEnumerable<CartItemDto>>.SuccessResponse(cartItems, "Cart items retrieved successfully"));
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
@@ -31,20 +43,6 @@ public class CartItemController : ControllerBase
         {
             return NotFound(ApiResponse<CartItemDto>.FailureResponse(ex.Message));
         }
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> GetPaged(
-        [Range(1, int.MaxValue)] int pageNumber = 1,
-        [Range(1, 100)] int pageSize = 10)
-    {
-        if (!ModelState.IsValid)
-        {
-            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-            return BadRequest(ApiResponse<PagedResponse<CartItemDto>>.FailureResponse("Invalid pagination parameters", errors));
-        }
-        var pagedData = await _cartItemService.GetPagedAsync(pageNumber, pageSize);
-        return Ok(ApiResponse<PagedResponse<CartItemDto>>.SuccessResponse(pagedData));
     }
 
     [HttpPost]
@@ -60,7 +58,8 @@ public class CartItemController : ControllerBase
 
         try
         {
-            var createdCartItem = await _cartItemService.CreateAsync(cartItemDto);
+            int userId = 1; // Hardcoded for now
+            var createdCartItem = await _cartItemService.CreateAsync(cartItemDto, userId);
             var response = ApiResponse<CartItemDto>.SuccessResponse(createdCartItem, "Cart item created successfully");
             return CreatedAtAction(nameof(GetById), new { id = createdCartItem.Id }, response);
         }
@@ -82,12 +81,9 @@ public class CartItemController : ControllerBase
             return BadRequest(ApiResponse<CartItemDto>.FailureResponse("Invalid cart item data", errors));
         }
 
-        if (id != cartItemDto.Id)
-            return BadRequest(ApiResponse<CartItemDto>.FailureResponse("Cart item ID in URL must match the ID in the body"));
-
         try
         {
-            var updatedCartItem = await _cartItemService.UpdateAsync(cartItemDto);
+            var updatedCartItem = await _cartItemService.UpdateAsync(id, cartItemDto);
             return Ok(ApiResponse<CartItemDto>.SuccessResponse(updatedCartItem, "Cart item updated successfully"));
         }
         catch (KeyNotFoundException ex)

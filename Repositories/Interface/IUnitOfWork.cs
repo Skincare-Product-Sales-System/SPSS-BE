@@ -8,6 +8,7 @@ public interface IUnitOfWork : IDisposable
     IProductItemRepository ProductItems { get; }
     IAddressRepository Addresses { get; }
     IProductConfigurationRepository ProductConfigurations { get; }
+    IBrandRepository Brands { get; }
     IVariationRepository Variations { get; }
     IVariationOptionRepository VariationOptions { get; }
     IProductStatusRepository ProductStatuses { get; }
@@ -21,7 +22,6 @@ public interface IUnitOfWork : IDisposable
     IPromotionTypeRepository PromotionTypes { get; }
     ICartItemRepository CartItems { get; }
     IPaymentMethodRepository PaymentMethods { get; }
-    IBrandRepository Brands { get; }
     IVoucherRepository Vouchers { get; }
     ISkinTypeRepository SkinTypes { get; }
     IPromotionRepository Promotions { get; }

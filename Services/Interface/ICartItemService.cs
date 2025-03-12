@@ -12,9 +12,9 @@ namespace Services.Interface
     public interface ICartItemService
     {
         Task<CartItemDto> GetByIdAsync(Guid id);
-        Task<PagedResponse<CartItemDto>> GetPagedAsync(int pageNumber, int pageSize);
-        Task<CartItemDto> CreateAsync(CartItemForCreationDto reviewDto);
-        Task<CartItemDto> UpdateAsync(CartItemForUpdateDto reviewDto);
+        Task<IEnumerable<CartItemDto>> GetByUserIdAsync(int userId);
+        Task<CartItemDto> CreateAsync(CartItemForCreationDto reviewDto, int userId);
+        Task<CartItemDto> UpdateAsync(Guid id, CartItemForUpdateDto reviewDto);
         Task DeleteAsync(Guid id);
     }
 }

@@ -12,6 +12,7 @@ public interface IRepositoryBase<T, TKey> where T : class
         Expression<Func<T, bool>> predicate);
     Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate);
     Task<IEnumerable<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null);
+    Task<T?> SingleOrDefaultAsync(Expression<Func<T, bool>> predicate);
     void Add(T entity);
     void Update(T entity);
     void Delete(T entity);
