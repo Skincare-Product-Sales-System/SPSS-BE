@@ -17,6 +17,23 @@ public class ReviewController : ControllerBase
     public ReviewController(IReviewService reviewService) =>
         _reviewService = reviewService ?? throw new ArgumentNullException(nameof(reviewService));
 
+    // Lấy danh sách đánh giá phân trang theo sản phẩm
+    [HttpGet("product/{productId:guid}")]
+    public async Task<IActionResult> GetByProductId(
+        Guid productId,
+        [Range(1, int.MaxValue)] int pageNumber = 1,
+        [Range(1, 100)] int pageSize = 10)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse<PagedResponse<ReviewForProductQueryDto>>.FailureResponse("Invalid pagination parameters", errors));
+        }
+
+        var pagedData = await _reviewService.GetReviewsByProductIdAsync(productId, pageNumber, pageSize);
+        return Ok(ApiResponse<PagedResponse<ReviewForProductQueryDto>>.SuccessResponse(pagedData));
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {

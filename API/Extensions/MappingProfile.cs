@@ -170,7 +170,41 @@ public class MappingProfile : Profile
         #endregion
 
         #region Review
-        CreateMap<Review, ReviewDto>();
+        CreateMap<Review, ReviewDto>()
+            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.UserName)) // Lấy tên người dùng
+            .ForMember(dest => dest.AvatarUrl, opt => opt.MapFrom(src => src.User.AvatarUrl)) // Lấy Avatar URL
+            .ForMember(dest => dest.ProductImage, opt => opt.MapFrom(src =>
+                src.ProductItem.Product.ProductImages != null && src.ProductItem.Product.ProductImages.Any()
+                    ? src.ProductItem.Product.ProductImages.FirstOrDefault().ImageUrl
+                    : null)) // Lấy URL hình ảnh sản phẩm đầu tiên
+            .ForMember(dest => dest.ReviewImages, opt => opt.MapFrom(src =>
+                src.ReviewImages != null && src.ReviewImages.Any()
+                    ? src.ReviewImages.Select(ri => ri.ImageUrl).ToList()
+                    : new List<string>())) // Lấy danh sách URL của ReviewImages
+            .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductItem.ProductId)) // Ánh xạ ProductId
+            .ForMember(dest => dest.VariationOptionValues, opt => opt.MapFrom(src =>
+                src.ProductItem.ProductConfigurations
+                    .Select(pc => pc.VariationOption.Value).ToList())) // Lấy danh sách giá trị của VariationOption
+            .ForMember(dest => dest.RatingValue, opt => opt.MapFrom(src => src.RatingValue)) // Ánh xạ RatingValue
+            .ForMember(dest => dest.Comment, opt => opt.MapFrom(src => src.Comment)) // Ánh xạ Comment
+            .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => src.LastUpdatedTime)) // Ánh xạ thời gian cập nhật cuối
+            .ForMember(dest => dest.Reply, opt => opt.MapFrom(src => src.Reply != null
+                ? new ReplyDto
+                {
+                    Id = src.Reply.Id,
+                    UserName = src.Reply.User.UserName,
+                    ReplyContent = src.Reply.ReplyContent,
+                    LastUpdatedTime = src.Reply.LastUpdatedTime
+                }
+                : null)); // Ánh xạ Reply nếu tồn tại
+        CreateMap<Review, ReviewForProductQueryDto>()
+            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.UserName))
+            .ForMember(dest => dest.AvatarUrl, opt => opt.MapFrom(src => src.User.AvatarUrl))
+            .ForMember(dest => dest.ReviewImages, opt => opt.MapFrom(src => src.ReviewImages.Select(ri => ri.ImageUrl)))
+            .ForMember(dest => dest.VariationOptionValues, opt => opt.MapFrom(src =>
+                src.ProductItem.ProductConfigurations.Select(pc => pc.VariationOption.Value)))
+            .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => src.LastUpdatedTime))
+            .ForMember(dest => dest.Reply, opt => opt.MapFrom(src => src.Reply));
         CreateMap<ReviewForCreationDto, Review>();
         CreateMap<ReviewForUpdateDto, Review>();
         #endregion
