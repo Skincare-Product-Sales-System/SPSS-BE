@@ -31,6 +31,7 @@ public static class ServiceExtensions
         services.AddScoped<IPaymentMethodService, PaymentMethodService>();
         services.AddScoped<IVariationService, VariationService>();
         services.AddScoped<IVariationOptionService, VariationOptionService>();
+        services.AddScoped<IProductItemService, ProductItemService>();
         return services;
     }
 
