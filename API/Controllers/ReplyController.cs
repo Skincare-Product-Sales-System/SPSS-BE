@@ -22,7 +22,7 @@ public class ReplyController : ControllerBase
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] ReplyForUpdateDto replyDto)
+    public async Task<IActionResult> Create([FromBody] ReplyForCreationDto replyDto)
     {
         if (!ModelState.IsValid)
         {

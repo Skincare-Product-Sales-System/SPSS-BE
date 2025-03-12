@@ -11,7 +11,7 @@ namespace Services.Interface
 {
     public interface IReplyService
     {
-        Task<ReplyDto> CreateAsync(Guid userId, ReplyForUpdateDto replyDto);
+        Task<ReplyDto> CreateAsync(Guid userId, ReplyForCreationDto replyDto);
         Task<ReplyDto> UpdateAsync(Guid userId, ReplyForUpdateDto replyDto, Guid id);
         Task DeleteAsync(Guid userId, Guid id);
     }

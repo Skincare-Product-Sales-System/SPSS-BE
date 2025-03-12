@@ -22,7 +22,7 @@ namespace Services.Implementation
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
-        public async Task<ReplyDto> CreateAsync(Guid userId, ReplyForUpdateDto replyDto)
+        public async Task<ReplyDto> CreateAsync(Guid userId, ReplyForCreationDto replyDto)
         {
             if (replyDto == null)
                 throw new ArgumentNullException(nameof(replyDto), "Reply data cannot be null.");
