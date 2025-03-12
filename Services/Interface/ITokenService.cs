@@ -1,12 +1,12 @@
-﻿using System.Security.Claims;
-using BusinessObjects.Dto.User;
-using BusinessObjects.Models;
+﻿using BusinessObjects.Models;
 
 namespace Services.Interface;
 
 public interface ITokenService
 {
-    string GenerateAccessToken(UserDto user);
+    string GenerateAccessToken(User user);
     string GenerateRefreshToken();
-    ClaimsPrincipal GetPrincipalFromExpiredToken(string token);
+    bool ValidateAccessToken(string token, out Guid userId);
+    Task<(string accessToken, string refreshToken)> RefreshTokenAsync(string accessToken, string refreshToken);
+    Task RevokeRefreshTokenAsync(string refreshToken);
 }

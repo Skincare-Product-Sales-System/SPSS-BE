@@ -11,7 +11,7 @@ public partial class Blog : BaseEntity
     public string Title { get; set; }
     public string Image { get; set; }
     public string BlogContent { get; set; }
-    public int UserId { get; set; }
+    public Guid UserId { get; set; }
     public virtual ICollection<BlogImage> BlogImages { get; set; } = new List<BlogImage>();
     public virtual User User { get; set; }
 }

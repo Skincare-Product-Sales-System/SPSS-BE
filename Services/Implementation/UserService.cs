@@ -18,7 +18,7 @@ public class UserService : IUserService
         _mapper = mapper;
     }
 
-    public async Task<UserDto> GetByIdAsync(int id)
+    public async Task<UserDto> GetByIdAsync(Guid id)
     {
         var user = await _unitOfWork.Users.GetByIdAsync(id);
 
@@ -84,7 +84,7 @@ public class UserService : IUserService
         return _mapper.Map<UserDto>(user);
     }
 
-    public async Task<UserDto> UpdateAsync(int userId, UserForUpdateDto userForUpdateDto)
+    public async Task<UserDto> UpdateAsync(Guid userId, UserForUpdateDto userForUpdateDto)
     {
         if (userForUpdateDto == null)
             throw new ArgumentNullException(nameof(userForUpdateDto), "User data cannot be null.");
@@ -105,7 +105,7 @@ public class UserService : IUserService
         return _mapper.Map<UserDto>(user);
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(Guid id)
     {
         var user = await _unitOfWork.Users.GetByIdAsync(id);
 

@@ -1,5 +1,7 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using BusinessObjects.Dto.User;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services.Dto.Api;
 using Services.Interface;
@@ -13,12 +15,37 @@ public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
 
-    public UserController(IUserService userService) => _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+    public UserController(IUserService userService)
+    {
+        _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+    }
 
-    [HttpGet("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetById(int id)
+  
+    private Guid GetUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            throw new UnauthorizedAccessException("User ID not found in token");
+
+        return userId;
+    }
+
+    
+    [HttpGet]
+    // [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetPaged(
+        [Range(1, int.MaxValue)] int pageNumber = 1,
+        [Range(1, 100)] int pageSize = 10)
+    {
+        var pagedUsers = await _userService.GetPagedAsync(pageNumber, pageSize);
+        return Ok(ApiResponse<PagedResponse<UserDto>>.SuccessResponse(pagedUsers));
+    }
+
+
+    [HttpGet("{id:guid}")]
+    // [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetById(Guid id)
     {
         try
         {
@@ -31,22 +58,8 @@ public class UserController : ControllerBase
         }
     }
 
-    [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> GetPaged([Range(1, int.MaxValue)] int pageNumber = 1, [Range(1, 100)] int pageSize = 10)
-    {
-        if (!ModelState.IsValid)
-        {
-            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-            return BadRequest(ApiResponse<PagedResponse<UserDto>>.FailureResponse("Invalid pagination parameters", errors));
-        }
-
-        var pagedData = await _userService.GetPagedAsync(pageNumber, pageSize);
-        return Ok(ApiResponse<PagedResponse<UserDto>>.SuccessResponse(pagedData));
-    }
-
     [HttpPost]
+    // [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] UserForCreationDto userDto)
@@ -59,8 +72,8 @@ public class UserController : ControllerBase
 
         try
         {
-            var user = await _userService.CreateAsync(userDto);
-            return CreatedAtAction(nameof(GetById), new { id = user.UserId }, ApiResponse<UserDto>.SuccessResponse(user));
+            var createdUser = await _userService.CreateAsync(userDto);
+            return CreatedAtAction(nameof(GetById), new { id = createdUser.UserId }, ApiResponse<UserDto>.SuccessResponse(createdUser));
         }
         catch (Exception ex)
         {
@@ -68,17 +81,23 @@ public class UserController : ControllerBase
         }
     }
 
-    [HttpPut("{id:int}")]
+
+    [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(int id, [FromBody] UserForUpdateDto userDto)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UserForUpdateDto userDto)
     {
         if (!ModelState.IsValid)
         {
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<UserDto>.FailureResponse("Invalid user data", errors));
         }
+
+        var currentUserId = GetUserId();
+        var isAdmin = User.IsInRole("Admin");
+
+        if (!isAdmin && id != currentUserId)
+            return Forbid("You can only update your own profile.");
 
         try
         {
@@ -91,10 +110,12 @@ public class UserController : ControllerBase
         }
     }
 
-    [HttpDelete("{id:int}")]
+  
+    [HttpDelete("{id:guid}")]
+    // [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(Guid id)
     {
         try
         {

@@ -3,8 +3,8 @@ using BusinessObjects.Models;
 
 namespace Repositories.Interface;
 
-public interface IUserRepository : IRepositoryBase<User, int>
+public interface IUserRepository : IRepositoryBase<User, Guid>
 {
-    Task<UserDto> GetByEmailAsync(string email);
-    Task<UserDto> GetByUserNameAsync(string userName);
+    Task<User> GetByEmailAsync(string email);
+    Task<User> GetByUserNameAsync(string userName);
 }

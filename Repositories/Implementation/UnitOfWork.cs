@@ -18,6 +18,8 @@ public class UnitOfWork : IUnitOfWork
     private IVariationOptionRepository _variationOptionRepository;
     private IProductStatusRepository _productStatusRepository;
     private IProductCategoryRepository _productCategoryRepository;
+    private IRefreshTokenRepository _refreshTokenRepository;
+    private IBlogRepository _blogRepository;
     private IUserRepository _userRepository;
     private IRoleRepository _roleRepository;
     private IDbContextTransaction _transaction; 
@@ -36,6 +38,8 @@ public class UnitOfWork : IUnitOfWork
     public IUserRepository Users => _userRepository ??= new UserRepository(_context);
     public IAddressRepository Addresses => _addressRepository ??= new AddressRepository(_context);
     public IRoleRepository Roles => _roleRepository ??= new RoleRepository(_context);
+    public IRefreshTokenRepository RefreshTokens => _refreshTokenRepository ??= new RefreshTokenRepository(_context);
+    public IBlogRepository Blogs => _blogRepository ??= new BlogRepository(_context);
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 
     public async Task BeginTransactionAsync()

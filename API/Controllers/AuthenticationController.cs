@@ -2,72 +2,67 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interface;
-using System;
-using System.Threading.Tasks;
 
-namespace API.Controllers
+namespace API.Controllers;
+
+[Route("api/authentications")]
+[ApiController]
+public class AuthenticationController : ControllerBase
 {
-    [Route("api/authentications")]
-    [ApiController]
-    public class AuthController : ControllerBase
+    private readonly IAuthenticationService _authService;
+
+    public AuthenticationController(IAuthenticationService authService)
     {
-        private readonly IAuthenticationService _authService;
+        _authService = authService;
+    }
 
-        public AuthController(IAuthenticationService authService)
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequest loginRequest)
+    {
+        try
         {
-            _authService = authService;
+            var response = await _authService.LoginAsync(loginRequest);
+            return Ok(response);
         }
-
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest loginRequest)
+        catch (UnauthorizedAccessException ex)
         {
-            try
-            {
-                var response = await _authService.LoginAsync(loginRequest);
-                return Ok(response);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            return Unauthorized(new { message = ex.Message });
         }
-
-        [HttpPost("refresh-token")]
-        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest refreshTokenRequest)
+        catch (Exception ex)
         {
-            try
-            {
-                var response = await _authService.RefreshTokenAsync(refreshTokenRequest);
-                return Ok(response);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            return StatusCode(500, new { message = ex.Message });
         }
+    }
 
-        [Authorize]
-        [HttpPost("logout")]
-        public async Task<IActionResult> Logout()
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest refreshRequest)
+    {
+        try
         {
-            try
-            {
-                var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value);
-                await _authService.LogoutAsync(userId);
-                return Ok(new { message = "Logged out successfully" });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var response = await _authService.RefreshTokenAsync(
+                refreshRequest.AccessToken, 
+                refreshRequest.RefreshToken);
+                
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(401, new { message = ex.Message });
+        }
+    }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout([FromBody] LogoutRequest logoutRequest)
+    {
+        try
+        {
+            await _authService.LogoutAsync(logoutRequest.RefreshToken);
+            return Ok(new { message = "Logged out successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message });
         }
     }
 }

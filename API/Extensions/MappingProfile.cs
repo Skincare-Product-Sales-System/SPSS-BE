@@ -8,6 +8,8 @@ using BusinessObjects.Dto.ProductConfiguration;
 using BusinessObjects.Dto.ProductItem;
 using BusinessObjects.Dto.ProductStatus;
 using BusinessObjects.Dto.Promotion;
+using BusinessObjects.Dto.Role;
+using BusinessObjects.Dto.User;
 using BusinessObjects.Models;
 using BusinessObjects.Dto.Variation;
 
@@ -126,6 +128,24 @@ public class MappingProfile : Profile
 
         #region ProductConfiguration
         CreateMap<ProductConfiguration, ProductConfigurationForProductQueryDto>();
+        #endregion
+
+        #region User
+
+        CreateMap<User, UserDto>();
+        CreateMap<UserForCreationDto, User>();
+        CreateMap<UserForUpdateDto, User>();
+
+
+
+        #endregion
+
+        #region Role
+
+        CreateMap<Role, RoleDto>();
+        CreateMap<RoleForCreationDto, RoleDto>();
+        CreateMap<RoleForUpdateDto, RoleDto>();
+
         #endregion
     }
 }

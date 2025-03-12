@@ -11,7 +11,7 @@ public partial class Order : BaseEntity
     public string Status { get; set; }
     public decimal OrderTotal { get; set; }
     public Guid? CancelReasonId { get; set; }
-    public int UserId { get; set; }
+    public Guid UserId { get; set; }
     public Guid PaymentMethodId { get; set; }
     public Guid AddressId { get; set; }
     public Guid? VoucherId { get; set; }

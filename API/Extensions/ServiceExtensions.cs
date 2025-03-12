@@ -3,6 +3,7 @@ using BusinessObjects.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Repositories.Implementation;
 using Repositories.Interface;
 using Services.Implementation;
@@ -12,7 +13,6 @@ namespace API.Extensions;
 
 public static class ServiceExtensions
 {
-    
     public static IServiceCollection ConfigureRepositories(this IServiceCollection services)
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -29,12 +29,13 @@ public static class ServiceExtensions
         services.AddScoped<IProductCategoryService, ProductCategoryService>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<ITokenService, TokenService>();
-        services.AddScoped<IPasswordHasher, PasswordHasher>();
+        services.AddScoped<IUserService, UserService>();
         return services;
     }
-    
+
     public static IServiceCollection ConfigureJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
+        // Configure JWT authentication
         services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -51,11 +52,75 @@ public static class ServiceExtensions
                     ValidIssuer = configuration["Jwt:Issuer"],
                     ValidAudience = configuration["Jwt:Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"])),
-                    ClockSkew = TimeSpan.Zero // Recommended to reduce the default 5-minute clock skew
+                    ClockSkew = TimeSpan.Zero
+                };
+
+                // Configure to handle expired tokens gracefully
+                options.Events = new JwtBearerEvents
+                {
+                    OnAuthenticationFailed = context =>
+                    {
+                        if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+                        {
+                            context.Response.Headers.Add("Token-Expired", "true");
+                        }
+                        return Task.CompletedTask;
+                    },
+                    OnMessageReceived = context =>
+                    {
+                        return Task.CompletedTask;
+                    }
                 };
             });
 
-        return services;
+        // Configure Swagger to use JWT
+        services.ConfigureSwaggerForJwt();
+
+        return services; 
+    }
+
+    public static void ConfigureSwaggerForJwt(this IServiceCollection services)
+    {
+        services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Title = "API",
+                Version = "v1",
+                Description = "A sample ASP.NET Core API with JWT authentication",
+                Contact = new OpenApiContact
+                {
+                    Name = "Your Name",
+                    Email = "your-email@example.com",
+                    Url = new Uri("https://example.com")
+                }
+            });
+
+            // Add JWT Authentication
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.ApiKey,
+                Scheme = "Bearer"
+            });
+
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    Array.Empty<string>()
+                }
+            });
+        });
     }
 
     public static IServiceCollection ConfigureDbContext(this IServiceCollection services, IConfiguration configuration)
