@@ -19,13 +19,27 @@ namespace Services.Implementation
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
-        public async Task<OrderDto> GetByIdAsync(Guid id)
+        public async Task<OrderWithDetailDto> GetByIdAsync(Guid id)
         {
-            var order = await _unitOfWork.Orders.GetByIdAsync(id);
-            if (order == null || order.IsDeleted)
-                throw new KeyNotFoundException($"Order with ID {id} not found or has been deleted.");
+            var order = await _unitOfWork.Orders
+                .GetQueryable()
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.ProductItem)
+                        .ThenInclude(pi => pi.Product)
+                            .ThenInclude(p => p.ProductImages)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(pi => pi.ProductItem)
+                        .ThenInclude(pc => pc.ProductConfigurations)
+                            .ThenInclude(vo => vo.VariationOption)
+                .Include(a => a.Address)
+                    .ThenInclude(u => u.User)
+                .Include(a => a.Address)
+                    .ThenInclude(c => c.Country)
+                .FirstOrDefaultAsync(p => p.Id == id);
+            if (order == null)
+                throw new KeyNotFoundException($"Order with ID {id} not found.");
 
-            return _mapper.Map<OrderDto>(order);
+            return _mapper.Map<OrderWithDetailDto>(order);
         }
 
         public async Task<PagedResponse<OrderDto>> GetPagedAsync(int pageNumber, int pageSize)

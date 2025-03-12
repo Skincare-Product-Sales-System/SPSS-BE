@@ -21,7 +21,7 @@ namespace API.Controllers
             try
             {
                 var order = await _orderService.GetByIdAsync(id);
-                return Ok(ApiResponse<OrderDto>.SuccessResponse(order));
+                return Ok(ApiResponse<OrderWithDetailDto>.SuccessResponse(order));
             }
             catch (KeyNotFoundException ex)
             {
