@@ -1,0 +1,18 @@
+﻿namespace BusinessObjects.Dto.Voucher;
+
+public class VoucherDto
+{
+    public Guid Id { get; set; }
+    public string Code { get; set; }
+    public string Description { get; set; }
+    public string Status { get; set; }
+
+    public double DiscountRate { get; set; }
+    public string UsageLimit { get; set; }
+
+    public double MinimumOrderValue { get; set; }
+
+    public DateTimeOffset StartDate { get; set; }
+
+    public DateTimeOffset EndDate { get; set; }
+}
