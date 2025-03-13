@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using BusinessObjects.Dto.Address;
 using BusinessObjects.Dto.Order;
 using BusinessObjects.Dto.OrderDetail;
 using BusinessObjects.Dto.StatusChange;
@@ -268,24 +269,84 @@ namespace Services.Implementation
             }
         }
 
-
-
-        public async Task<OrderDto> UpdateAsync(Guid id, OrderForUpdateDto orderDto, Guid userId)
+        public async Task<bool> UpdateOrderStatusAsync(Guid id, string newStatus, Guid userId)
         {
-            if (orderDto == null)
-                throw new ArgumentNullException(nameof(orderDto), "Order data cannot be null.");
+            if (string.IsNullOrWhiteSpace(newStatus))
+                throw new ArgumentNullException(nameof(newStatus), "Order status cannot be null or empty.");
 
             var order = await _unitOfWork.Orders.GetByIdAsync(id);
             if (order == null || order.IsDeleted)
                 throw new KeyNotFoundException($"Order with ID {id} not found or has been deleted.");
 
+            // Handle restocking for cancelled orders
+            if (newStatus.Equals(StatusForOrder.Cancelled, StringComparison.OrdinalIgnoreCase))
+            {
+                var orderDetails = await _unitOfWork.OrderDetails.Entities
+                    .Where(od => od.OrderId == id && !od.IsDeleted)
+                    .ToListAsync();
+
+                foreach (var orderDetail in orderDetails)
+                {
+                    var productItem = await _unitOfWork.ProductItems.Entities
+                        .FirstOrDefaultAsync(pi => pi.Id == orderDetail.ProductItemId);
+
+                    if (productItem == null)
+                        throw new KeyNotFoundException($"ProductItem with ID {orderDetail.ProductItemId} not found.");
+
+                    // Restock the quantity
+                    productItem.QuantityInStock += orderDetail.Quantity;
+
+                    // Update the product item
+                    _unitOfWork.ProductItems.Update(productItem);
+                }
+            }
+
+            // Update the order's status
+            order.Status = newStatus;
             order.LastUpdatedTime = DateTimeOffset.UtcNow;
             order.LastUpdatedBy = userId.ToString();
 
-            _mapper.Map(orderDto, order);
+            // Create a status change record
+            var statusChange = new StatusChange
+            {
+                Id = Guid.NewGuid(),
+                OrderId = order.Id,
+                Status = order.Status,
+                Date = DateTimeOffset.UtcNow,
+                CreatedTime = DateTime.UtcNow,
+                CreatedBy = userId.ToString(),
+                LastUpdatedTime = DateTime.UtcNow,
+                LastUpdatedBy = userId.ToString(),
+                IsDeleted = false
+            };
+
+            // Add the status change record
+            _unitOfWork.StatusChanges.Add(statusChange);
+
+            // Update the order
+            _unitOfWork.Orders.Update(order);
+
+            // Save changes
+            await _unitOfWork.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<bool> UpdateOrderAddressAsync(Guid id, Guid newAddressId, Guid userId)
+        {
+
+            var order = await _unitOfWork.Orders.GetByIdAsync(id);
+            if (order == null || order.IsDeleted)
+                throw new KeyNotFoundException($"Order with ID {id} not found or has been deleted.");
+
+            order.AddressId = newAddressId;
+            order.LastUpdatedTime = DateTimeOffset.UtcNow;
+            order.LastUpdatedBy = userId.ToString();
+
             _unitOfWork.Orders.Update(order);
             await _unitOfWork.SaveChangesAsync();
-            return _mapper.Map<OrderDto>(order);
+
+            return true;
         }
 
         public async Task DeleteAsync(Guid id, Guid userId)
