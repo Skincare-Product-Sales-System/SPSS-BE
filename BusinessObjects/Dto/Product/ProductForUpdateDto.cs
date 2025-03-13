@@ -13,8 +13,6 @@ public class ProductForUpdateDto
     public decimal MarketPrice { get; set; }
     public List<Guid> SkinTypeIds { get; set; } = new List<Guid>();
     public List<string> ProductImageUrls { get; set; } = new List<string>();
-    public List<ProductItemForUpdateDto> ProductItems { get; set; } = new List<ProductItemForUpdateDto>();
-    public List<VariationForProductCreationDto> Variations { get; set; } = [];
-    public List<VariationCombinationDto> NewProductItems { get; set; } = [];
-    public ProductSpecifications Specifications { get; set; } = new();
+    public List<VariationForProductUpdateDto>? Variations { get; set; }
+    public List<VariationCombinationUpdateDto>? VariationCombinations { get; set; }
 }

@@ -10,6 +10,7 @@ using BusinessObjects.Dto.Variation;
 using BusinessObjects.Models;
 using Firebase.Auth;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic;
 using Repositories.Implementation;
 using Repositories.Interface;
 using Services.Interface;
@@ -479,50 +480,40 @@ public class ProductService : IProductService
                 });
             }
 
-            // Step 5: Update ProductItems
-            var existingProductItemIds = existingProduct.ProductItems.Select(pi => pi.Id).ToList();
-            var productItemsToRemove = existingProduct.ProductItems.Where(pi => !productDto.ProductItems.Any(piu => piu.Id == pi.Id)).ToList();
-
-            foreach (var itemToRemove in productItemsToRemove)
+            if (productDto.Variations != null)
             {
-                _unitOfWork.ProductItems.Delete(itemToRemove);
-                var relatedConfigurations = await _unitOfWork.ProductConfigurations.Entities
-                    .Where(pc => pc.ProductItemId == itemToRemove.Id)
-                    .ToListAsync();
-
-                _unitOfWork.ProductConfigurations.DeleteRange(relatedConfigurations);
-            }
-
-            foreach (var itemToUpdate in productDto.ProductItems)
-            {
-                var existingItem = existingProduct.ProductItems.FirstOrDefault(pi => pi.Id == itemToUpdate.Id);
-                if (existingItem != null)
+                foreach (var variationDto in productDto.Variations)
                 {
-                    existingItem.Price = itemToUpdate.Price;
-                    existingItem.QuantityInStock = itemToUpdate.QuantityInStock;
-                    existingItem.ImageUrl = itemToUpdate.ImageUrl;
-                    existingItem.LastUpdatedBy = userId.ToString();
-                    existingItem.LastUpdatedTime = DateTime.UtcNow;
+
+                    var variationExists = await _unitOfWork.Variations.Entities
+                        .AnyAsync(v => v.Id == variationDto.Id);
+                    if (!variationExists)
+                    {
+                        throw new ArgumentException("Variation not found.");
+                    }
+
+                    if (variationDto.VariationOptionIds != null)
+                    {
+                        foreach (var variationOptionId in variationDto.VariationOptionIds)
+                        {
+                            var variationOptionExists = await _unitOfWork.VariationOptions.Entities
+                                .AnyAsync(vo => vo.Id == variationOptionId && vo.VariationId == variationDto.Id);
+                            if (!variationOptionExists)
+                            {
+                                throw new ArgumentException("Variation Option Not Belong To Variation.");
+                            }
+                        }
+                    }
                 }
             }
 
-            // Step 6: Handle Variations and New ProductItems
-            var variationOptionIdsPerVariation = new Dictionary<Guid, List<Guid>>();
-            foreach (var variation in productDto.Variations)
+            if (productDto.VariationCombinations != null)
             {
-                var variationExists = await _unitOfWork.Variations.Entities
-                    .AnyAsync(v => v.Id == variation.Id);
-
-                if (!variationExists)
-                {
-                    throw new ArgumentException($"Variation with ID {variation.Id} not found.");
-                }
-
-                variationOptionIdsPerVariation[variation.Id] = variation.VariationOptionIds;
+                await UpdateVariationOptionsForProduct(existingProduct, productDto.VariationCombinations, userId);
             }
 
-            var newCombinations = GetVariationOptionCombinations(variationOptionIdsPerVariation);
-            await AddVariationOptionsToProduct(existingProduct, newCombinations, userId.ToString());
+            existingProduct.LastUpdatedBy = userId.ToString();
+            existingProduct.LastUpdatedTime = DateTime.UtcNow;
 
             // Step 7: Save Changes
             await _unitOfWork.SaveChangesAsync();
@@ -534,6 +525,45 @@ public class ProductService : IProductService
         {
             await _unitOfWork.RollbackTransactionAsync();
             throw;
+        }
+    }
+
+    public async Task UpdateVariationOptionsForProduct(Product product, List<VariationCombinationUpdateDto> variationCombinations, Guid userId)
+    {
+        // Delete all existing ProductItems and ProductConfigurations associated with this product
+        var productItems = product.ProductItems.ToList();
+        _unitOfWork.ProductItems.DeleteRange(productItems);
+
+        // Insert updated ProductItems and ProductConfigurations
+        foreach (var combination in variationCombinations)
+        {
+            var productItem = new ProductItem
+            {
+                Id = Guid.NewGuid(),
+                ImageUrl = combination.ImageUrl,
+                ProductId = product.Id,
+                Price = combination.Price ?? 0,  // Defaulting to 0 if Price is not provided
+                QuantityInStock = combination.QuantityInStock ?? 0,  // Defaulting to 0 if QuantityInStock is not provided
+                CreatedBy = userId.ToString(),
+                LastUpdatedBy = userId.ToString()
+            };
+
+            _unitOfWork.ProductItems.Add(productItem);
+
+            if (combination.VariationOptionIds != null)
+            {
+                foreach (var variationOptionId in combination.VariationOptionIds)
+                {
+                    var productConfiguration = new ProductConfiguration
+                    {
+                        Id = Guid.NewGuid(),
+                        ProductItemId = productItem.Id,
+                        VariationOptionId = variationOptionId
+                    };
+
+                    _unitOfWork.ProductConfigurations.Add(productConfiguration);
+                }
+            }
         }
     }
 
