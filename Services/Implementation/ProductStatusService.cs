@@ -5,6 +5,7 @@ using BusinessObjects.Models;
 using Repositories.Interface;
 using Services.Interface;
 using Services.Response;
+using Shared.Constants;
 
 namespace Services.Implementation
 {
@@ -21,7 +22,7 @@ namespace Services.Implementation
 
         public async Task<Guid?> GetFirstAvailableProductStatusIdAsync()
         {
-            var productStatuses = await _unitOfWork.ProductStatuses.FindAsync(ps => !ps.IsDeleted && !string.IsNullOrEmpty(ps.StatusName));
+            var productStatuses = await _unitOfWork.ProductStatuses.FindAsync(ps => !ps.IsDeleted && ps.StatusName == StatusForProduct.Available);
             return productStatuses.Select(ps => ps.Id).FirstOrDefault();
         }
 

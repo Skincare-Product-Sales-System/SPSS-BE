@@ -1,5 +1,11 @@
 ﻿using AutoMapper;
+using BusinessObjects.Dto.Brand;
 using BusinessObjects.Dto.Product;
+using BusinessObjects.Dto.ProductCategory;
+using BusinessObjects.Dto.ProductConfiguration;
+using BusinessObjects.Dto.ProductItem;
+using BusinessObjects.Dto.Promotion;
+using BusinessObjects.Dto.SkinType;
 using BusinessObjects.Dto.Variation;
 using BusinessObjects.Models;
 using Firebase.Auth;
@@ -26,6 +32,7 @@ public class ProductService : IProductService
 
     public async Task<ProductWithDetailsDto> GetByIdAsync(Guid id)
     {
+        // Lấy sản phẩm từ database
         var product = await _unitOfWork.Products
             .GetQueryable()
             .Include(p => p.ProductCategory)
@@ -33,17 +40,89 @@ public class ProductService : IProductService
                 .ThenInclude(pi => pi.ProductConfigurations)
                     .ThenInclude(pc => pc.VariationOption)
                         .ThenInclude(vo => vo.Variation)
-            .Include(p => p.Brand)  
-            .Include(p => p.ProductImages) 
+            .Include(p => p.Brand)
+            .Include(p => p.ProductImages)
             .Include(p => p.PromotionTargets)
-                .ThenInclude(pt => pt.Promotion) 
+                .ThenInclude(pt => pt.Promotion)
             .Include(p => p.ProductForSkinTypes)
                 .ThenInclude(pst => pst.SkinType)
+            .Include(ps => ps.ProductStatus)
             .FirstOrDefaultAsync(p => p.Id == id);
+
+        // Kiểm tra null
         if (product == null)
             throw new KeyNotFoundException($"Product with ID {id} not found.");
 
-        return _mapper.Map<ProductWithDetailsDto>(product);
+        // Thủ công map dữ liệu từ entity sang DTO
+        var productDto = new ProductWithDetailsDto
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Description = product.Description,
+            Price = product.Price,
+            MarketPrice = product.MarketPrice,
+            Rating = product.Rating,
+            SoldCount = product.SoldCount,
+            Status = product.ProductStatus.StatusName,
+            Category = new ProductCategoryDto
+            {
+                Id = product.ProductCategory.Id,
+                CategoryName = product.ProductCategory.CategoryName
+            },
+            Brand = new BrandDto
+            {
+                Id = product.Brand.Id,
+                Name = product.Brand.Name,
+                Title = product.Brand.Title,
+                Description = product.Brand.Description,
+                ImageUrl = product.Brand.ImageUrl
+            },
+            ProductImageUrls = product.ProductImages.Select(pi => pi.ImageUrl).ToList(),
+            ProductItems = product.ProductItems.Select(pi => new ProductItemDto
+            {
+                Id = pi.Id,
+                Price = pi.Price,
+                QuantityInStock = pi.QuantityInStock,
+                ImageUrl = pi.ImageUrl,
+                Configurations = pi.ProductConfigurations.Select(pc => new ProductConfigurationForProductQueryDto
+                {
+                    VariationName = pc.VariationOption.Variation.Name,
+                    OptionName = pc.VariationOption.Value,
+                    OptionId = pc.VariationOption.Id
+                }).ToList()
+            }).ToList(),
+            Promotion = product.PromotionTargets?
+                .Where(pt => pt.Promotion != null)
+                .Select(pt => new PromotionForProductQueryDto
+                {
+                    Id = pt.Promotion.Id,
+                    Name = pt.Promotion.Name,
+                    Type = pt.Promotion.Type,
+                    Description = pt.Promotion.Description,
+                    DiscountRate = pt.Promotion.DiscountRate,
+                    StartDate = pt.Promotion.StartDate,
+                    EndDate = pt.Promotion.EndDate
+                })
+                .FirstOrDefault(),
+            SkinTypes = product.ProductForSkinTypes.Select(pst => new SkinTypeForProductQueryDto
+            {
+                Id = pst.SkinType.Id,
+                Name = pst.SkinType.Name
+            }).ToList(),
+            Specifications = new ProductSpecifications
+            {
+                StorageInstruction = product.StorageInstruction,
+                UsageInstruction = product.UsageInstruction,
+                DetailedIngredients = product.DetailedIngredients,
+                MainFunction = product.MainFunction,
+                Texture = product.Texture,
+                KeyActiveIngredients = product.KeyActiveIngredients,
+                ExpiryDate = product.ExpiryDate,
+                SkinIssues = product.SkinIssues
+            }
+        };
+
+        return productDto;
     }
 
     public async Task<PagedResponse<ProductDto>> GetPagedAsync(int pageNumber, int pageSize)
@@ -136,6 +215,8 @@ public class ProductService : IProductService
             productEntity.Id = Guid.NewGuid();
             productEntity.CreatedTime = DateTime.UtcNow;
             productEntity.LastUpdatedTime = DateTime.UtcNow;
+            productEntity.SoldCount = 0;
+            productEntity.Rating = 0;
             // Map hình ảnh từ ProductImageUrls
             for (int i = 0; i < productDto.ProductImageUrls.Count; i++)
             {
@@ -319,22 +400,141 @@ public class ProductService : IProductService
         return result.Select(c => c.ToList());
     }
 
-    public async Task<ProductDto> UpdateAsync(ProductForUpdateDto productDto, Guid userId, Guid productId)
+    public async Task<bool> UpdateAsync(ProductForUpdateDto productDto, Guid userId, Guid productId)
     {
-        if (productDto == null)
-            throw new ArgumentNullException(nameof(productDto), "Product data cannot be null.");
+        await _unitOfWork.BeginTransactionAsync();
 
-        var product = await _unitOfWork.Products.GetByIdAsync(productId);
-        if (product == null || product.IsDeleted)
-            throw new KeyNotFoundException($"Product with ID {productId} not found or has been deleted.");
+        try
+        {
+            // Step 1: Retrieve the existing product
+            var existingProduct = await _unitOfWork.Products.Entities
+                .Include(p => p.ProductItems)
+                .Include(p => p.ProductImages)
+                .Include(p => p.ProductForSkinTypes)
+                .FirstOrDefaultAsync(p => p.Id == productId);
 
-        product.LastUpdatedTime = DateTimeOffset.UtcNow;
-        product.LastUpdatedBy = userId.ToString();
+            if (existingProduct == null)
+            {
+                throw new ArgumentException("Product not found.");
+            }
 
-        _mapper.Map(productDto, product);
-        _unitOfWork.Products.Update(product);
-        await _unitOfWork.SaveChangesAsync();
-        return _mapper.Map<ProductDto>(product);
+            // Step 2: Update simple fields
+            if (!string.IsNullOrEmpty(productDto.Name)) existingProduct.Name = productDto.Name;
+            if (!string.IsNullOrEmpty(productDto.Description)) existingProduct.Description = productDto.Description;
+            if (productDto.BrandId.HasValue) existingProduct.BrandId = productDto.BrandId.Value;
+            if (productDto.ProductCategoryId.HasValue) existingProduct.ProductCategoryId = productDto.ProductCategoryId.Value;
+            existingProduct.Price = productDto.Price;
+            existingProduct.MarketPrice = productDto.MarketPrice;
+            existingProduct.LastUpdatedBy = userId.ToString();
+            existingProduct.LastUpdatedTime = DateTime.UtcNow;
+
+            // Step 3: Update SkinTypeIds
+            var existingSkinTypeIds = existingProduct.ProductForSkinTypes.Select(pfs => pfs.SkinTypeId).ToList();
+            var skinTypesToRemove = existingSkinTypeIds.Except(productDto.SkinTypeIds).ToList();
+            var skinTypesToAdd = productDto.SkinTypeIds.Except(existingSkinTypeIds).ToList();
+
+            foreach (var skinTypeId in skinTypesToRemove)
+            {
+                var toRemove = existingProduct.ProductForSkinTypes.FirstOrDefault(pfs => pfs.SkinTypeId == skinTypeId);
+                if (toRemove != null)
+                    _unitOfWork.ProductForSkinTypes.Delete(toRemove);
+            }
+
+            foreach (var skinTypeId in skinTypesToAdd)
+            {
+                _unitOfWork.ProductForSkinTypes.Add(new ProductForSkinType
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = productId,
+                    SkinTypeId = skinTypeId,
+                    CreatedBy = userId.ToString(),
+                    LastUpdatedBy = userId.ToString(),
+                    CreatedTime = DateTime.UtcNow,
+                    LastUpdatedTime = DateTime.UtcNow
+                });
+            }
+
+            // Step 4: Update ProductImages
+            var existingImageUrls = existingProduct.ProductImages.Select(pi => pi.ImageUrl).ToList();
+            var imagesToRemove = existingProduct.ProductImages.Where(pi => !productDto.ProductImageUrls.Contains(pi.ImageUrl)).ToList();
+            var imagesToAdd = productDto.ProductImageUrls.Except(existingImageUrls).ToList();
+
+            foreach (var image in imagesToRemove)
+            {
+                _unitOfWork.ProductImages.Delete(image);
+            }
+
+            for (int i = 0; i < imagesToAdd.Count; i++)
+            {
+                _unitOfWork.ProductImages.Add(new ProductImage
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = productId,
+                    ImageUrl = imagesToAdd[i],
+                    IsThumbnail = (i == 0 && !existingProduct.ProductImages.Any(pi => pi.IsThumbnail)),
+                    CreatedBy = userId.ToString(),
+                    LastUpdatedBy = userId.ToString(),
+                    CreatedTime = DateTime.UtcNow,
+                    LastUpdatedTime = DateTime.UtcNow
+                });
+            }
+
+            // Step 5: Update ProductItems
+            var existingProductItemIds = existingProduct.ProductItems.Select(pi => pi.Id).ToList();
+            var productItemsToRemove = existingProduct.ProductItems.Where(pi => !productDto.ProductItems.Any(piu => piu.Id == pi.Id)).ToList();
+
+            foreach (var itemToRemove in productItemsToRemove)
+            {
+                _unitOfWork.ProductItems.Delete(itemToRemove);
+                var relatedConfigurations = await _unitOfWork.ProductConfigurations.Entities
+                    .Where(pc => pc.ProductItemId == itemToRemove.Id)
+                    .ToListAsync();
+
+                _unitOfWork.ProductConfigurations.DeleteRange(relatedConfigurations);
+            }
+
+            foreach (var itemToUpdate in productDto.ProductItems)
+            {
+                var existingItem = existingProduct.ProductItems.FirstOrDefault(pi => pi.Id == itemToUpdate.Id);
+                if (existingItem != null)
+                {
+                    existingItem.Price = itemToUpdate.Price;
+                    existingItem.QuantityInStock = itemToUpdate.QuantityInStock;
+                    existingItem.ImageUrl = itemToUpdate.ImageUrl;
+                    existingItem.LastUpdatedBy = userId.ToString();
+                    existingItem.LastUpdatedTime = DateTime.UtcNow;
+                }
+            }
+
+            // Step 6: Handle Variations and New ProductItems
+            var variationOptionIdsPerVariation = new Dictionary<Guid, List<Guid>>();
+            foreach (var variation in productDto.Variations)
+            {
+                var variationExists = await _unitOfWork.Variations.Entities
+                    .AnyAsync(v => v.Id == variation.Id);
+
+                if (!variationExists)
+                {
+                    throw new ArgumentException($"Variation with ID {variation.Id} not found.");
+                }
+
+                variationOptionIdsPerVariation[variation.Id] = variation.VariationOptionIds;
+            }
+
+            var newCombinations = GetVariationOptionCombinations(variationOptionIdsPerVariation);
+            await AddVariationOptionsToProduct(existingProduct, newCombinations, userId.ToString());
+
+            // Step 7: Save Changes
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitTransactionAsync();
+
+            return true;
+        }
+        catch (Exception)
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
     }
 
     public async Task DeleteAsync(Guid id , string userId)

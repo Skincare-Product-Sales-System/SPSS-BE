@@ -81,4 +81,12 @@ public class RepositoryBase<T, TKey> : IRepositoryBase<T, TKey> where T : class
     public void Add(T entity) => _context.Set<T>().Add(entity);
     public void Update(T entity) => _context.Set<T>().Update(entity);
     public void Delete(T entity) => _context.Set<T>().Remove(entity);
+    public void DeleteRange(IEnumerable<T> entities)
+    {
+        if (entities == null || !entities.Any())
+            throw new ArgumentNullException(nameof(entities), "Entities to delete cannot be null or empty.");
+
+        _context.Set<T>().RemoveRange(entities);
+    }
+
 }

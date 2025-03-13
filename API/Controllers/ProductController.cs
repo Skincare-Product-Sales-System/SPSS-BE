@@ -70,8 +70,8 @@ public class ProductController : ControllerBase
         }
     }
 
-    // PUT: api/products/{id}
-    [HttpPut("{id:guid}")]
+    // PATCH: api/products/{id}
+    [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -87,7 +87,7 @@ public class ProductController : ControllerBase
         try
         {
             var updatedProduct = await _productService.UpdateAsync(productDto, userId, id);
-            return Ok(ApiResponse<ProductDto>.SuccessResponse(updatedProduct, "Product updated successfully"));
+            return Ok(ApiResponse<bool>.SuccessResponse(updatedProduct, "Product updated successfully"));
         }
         catch (KeyNotFoundException ex)
         {
