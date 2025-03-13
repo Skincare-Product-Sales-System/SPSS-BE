@@ -1,8 +1,10 @@
+using BusinessObjects.Dto.VNPay;
+
 namespace Services.Interface;
 
     public interface IVNPayService
     {
-        Task<string> GetTransactionStatusVNPay(string orderId, Guid userId, String urlReturn);
+        Task<string> GetTransactionStatusVNPay(Guid orderId, Guid userId, String urlReturn);
 
         Task<VNPAYResponse> VNPAYPayment(VNPAYRequest request);
 
