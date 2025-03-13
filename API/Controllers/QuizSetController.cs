@@ -1,6 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using BusinessObjects.Dto.QuizSet;
+using BusinessObjects.Dto.SkinType;
+using Microsoft.AspNetCore.Mvc;
+using Services.Dto.Api;
+using Services.Implementation;
 using Services.Interface;
+using Services.Response;
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 
 namespace API.Controllers
@@ -25,6 +31,21 @@ namespace API.Controllers
 
             var result = await _quizSetService.GetQuizSetWithQuestionsAsync(quizSetId, pageNumber, pageSize);
             return Ok(new { data = result });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPaged(
+        [Range(1, int.MaxValue)] int pageNumber = 1,
+        [Range(1, 100)] int pageSize = 10)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<PagedResponse<QuizSetDto>>.FailureResponse("Invalid pagination parameters", errors));
+            }
+
+            var pagedData = await _quizSetService.GetPagedAsync(pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResponse<QuizSetDto>>.SuccessResponse(pagedData));
         }
     }
 }

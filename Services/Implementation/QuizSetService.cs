@@ -9,16 +9,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BusinessObjects.Dto.SkinType;
+using AutoMapper;
 
 namespace Services.Implementation
 {
     public class QuizSetService : IQuizSetService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public QuizSetService(IUnitOfWork unitOfWork)
+        public QuizSetService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         public async Task<PagedResponse<QuizSetQuestionAndAnswerDto>> GetQuizSetWithQuestionsAsync(Guid quizSetId, int pageNumber, int pageSize)
@@ -85,6 +89,21 @@ namespace Services.Implementation
             {
                 Items = new List<QuizSetQuestionAndAnswerDto> { result },
                 TotalCount = await _unitOfWork.QuizQuestions.Entities.CountAsync(q => q.SetId == quizSetId),
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+        }
+
+        public async Task<PagedResponse<QuizSetDto>> GetPagedAsync(int pageNumber, int pageSize)
+        {
+            var (quizSets, totalCount) = await _unitOfWork.QuizSets.GetPagedAsync(
+                pageNumber, pageSize, s => s.IsDeleted == false);
+
+            var quizSetDtos = _mapper.Map<IEnumerable<QuizSetDto>>(quizSets);
+            return new PagedResponse<QuizSetDto>
+            {
+                Items = quizSetDtos,
+                TotalCount = totalCount,
                 PageNumber = pageNumber,
                 PageSize = pageSize
             };
