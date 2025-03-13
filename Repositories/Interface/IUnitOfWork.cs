@@ -32,6 +32,12 @@ public interface IUnitOfWork : IDisposable
 
     IProductForSkinTypeRepository ProductForSkinTypes { get; }
 
+    IQuizSetRepository QuizSets { get; }
+    IQuizQuestionRepository QuizQuestions { get; }
+    IQuizOptionRepository QuizOptions { get;
+    }
+
+
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();
     Task CommitTransactionAsync();
