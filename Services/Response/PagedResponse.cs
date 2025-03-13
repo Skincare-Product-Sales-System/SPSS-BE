@@ -1,4 +1,6 @@
 ﻿// Services.Dto.Api/PagedResponse.cs
+using BusinessObjects.Dto.ProductForSkinType;
+
 namespace Services.Response
 {
     public class PagedResponse<TItem>
