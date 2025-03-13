@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/quiz-sets")]
     [ApiController]
     public class QuizSetController : ControllerBase
     {
