@@ -24,6 +24,8 @@ using BusinessObjects.Dto.Order;
 using BusinessObjects.Dto.OrderDetail;
 using BusinessObjects.Dto.StatusChange;
 using BusinessObjects.Dto.ProductForSkinType;
+using BusinessObjects.Dto.QuizSet;
+using BusinessObjects.Dto.QuizResult;
 
 namespace API.Extensions;
 
@@ -385,5 +387,18 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.SkinTypeId, opt => opt.MapFrom(src => src.SkinTypeId))
             .ForMember(dest => dest.Products, opt => opt.Ignore());
         #endregion
+
+        #region QuizSet
+        CreateMap<QuizSet, QuizSetDto>();
+        #endregion
+
+        #region QuizResult
+        CreateMap<QuizResult, QuizResultDto>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.SkinType.Name))
+            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.SkinType.Description))
+            .ForMember(dest => dest.Routine, opt => opt.MapFrom(src => src.SkinType.Routine));
+        #endregion
+
+
     }
 }

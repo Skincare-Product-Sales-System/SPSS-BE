@@ -29,8 +29,12 @@ public interface IUnitOfWork : IDisposable
     IReviewImageRepository ReviewImages { get; }
     IOrderDetailRepository OrderDetails { get; }
     IStatusChangeRepository StatusChanges { get; }
-
     IProductForSkinTypeRepository ProductForSkinTypes { get; }
+    IQuizSetRepository QuizSets { get; }
+    IQuizQuestionRepository QuizQuestions { get; }
+    IQuizOptionRepository QuizOptions { get; }
+    IQuizResultRepository QuizResults { get; }
+
 
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();
