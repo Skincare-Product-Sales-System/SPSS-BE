@@ -55,24 +55,30 @@ public class MappingProfile : Profile
                         Price = od.Price
                     }).ToList()));  // Mapping to the first OrderDetail (if applicable)
 
-        // Map Order to OrderWithDetailDto
         CreateMap<Order, OrderWithDetailDto>()
             .ForMember(dest => dest.OrderDetails, opt => opt.MapFrom(src =>
-                src.OrderDetails
-                    .Select(od => new OrderDetailDto
+                src.OrderDetails.Select(od => new OrderDetailDto
+                {
+                    ProductId = od.ProductItemId,
+                    ProductImage = od.ProductItem.Product.ProductImages
+                        .Where(pi => pi.IsThumbnail)
+                        .Select(pi => pi.ImageUrl)
+                        .FirstOrDefault(),
+                    ProductName = od.ProductItem.Product.Name,
+                    VariationOptionValues = od.ProductItem.ProductConfigurations
+                        .Select(pc => pc.VariationOption.Value)
+                        .ToList(),
+                    Quantity = od.Quantity,
+                    Price = od.Price,
+                }).ToList()))
+            .ForMember(dest => dest.StatusChanges, opt => opt.MapFrom(src =>
+                src.StatusChanges.OrderBy(sc => sc.Date)
+                    .Select(sc => new StatusChangeDto
                     {
-                        ProductId = od.ProductItemId,
-                        ProductImage = od.ProductItem.Product.ProductImages
-                            .Where(pi => pi.IsThumbnail)  // Filter for thumbnails
-                            .Select(pi => pi.ImageUrl)    // Select image URL
-                            .FirstOrDefault(),            // Get the first thumbnail or null
-                        ProductName = od.ProductItem.Product.Name,
-                        VariationOptionValues = od.ProductItem.ProductConfigurations
-                            .Select(pc => pc.VariationOption.Value)
-                            .ToList(),
-                        Quantity = od.Quantity,
-                        Price = od.Price
-                    }).ToList()));  // Mapping to the first OrderDetail (if applicable)
+                        Status = sc.Status,
+                        Date = sc.Date,
+                    }).ToList()));
+
 
         CreateMap<OrderForCreationDto, Order>()
             .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => DateTime.UtcNow))

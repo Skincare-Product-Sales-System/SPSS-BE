@@ -319,17 +319,17 @@ public class ProductService : IProductService
         return result.Select(c => c.ToList());
     }
 
-    public async Task<ProductDto> UpdateAsync(ProductForUpdateDto productDto, string userId)
+    public async Task<ProductDto> UpdateAsync(ProductForUpdateDto productDto, Guid userId, Guid productId)
     {
         if (productDto == null)
             throw new ArgumentNullException(nameof(productDto), "Product data cannot be null.");
 
-        var product = await _unitOfWork.Products.GetByIdAsync(productDto.Id);
+        var product = await _unitOfWork.Products.GetByIdAsync(productId);
         if (product == null || product.IsDeleted)
-            throw new KeyNotFoundException($"Product with ID {productDto.Id} not found or has been deleted.");
+            throw new KeyNotFoundException($"Product with ID {productId} not found or has been deleted.");
 
         product.LastUpdatedTime = DateTimeOffset.UtcNow;
-        product.LastUpdatedBy = userId;
+        product.LastUpdatedBy = userId.ToString();
 
         _mapper.Map(productDto, product);
         _unitOfWork.Products.Update(product);

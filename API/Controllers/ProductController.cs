@@ -82,13 +82,11 @@ public class ProductController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<ProductDto>.FailureResponse("Invalid product data", errors));
         }
-        string userId = "123"; // Get the user ID from the request context
-        if (id != productDto.Id)
-            return BadRequest(ApiResponse<ProductDto>.FailureResponse("Product ID in URL must match the ID in the body"));
+        Guid userId = Guid.Parse("12e6ef03-e72c-407d-894e-fd3d17f66756");
 
         try
         {
-            var updatedProduct = await _productService.UpdateAsync(productDto, userId);
+            var updatedProduct = await _productService.UpdateAsync(productDto, userId, id);
             return Ok(ApiResponse<ProductDto>.SuccessResponse(updatedProduct, "Product updated successfully"));
         }
         catch (KeyNotFoundException ex)

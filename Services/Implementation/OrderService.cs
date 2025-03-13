@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using BusinessObjects.Dto.Order;
+using BusinessObjects.Dto.OrderDetail;
 using BusinessObjects.Dto.StatusChange;
 using BusinessObjects.Models;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +26,7 @@ namespace Services.Implementation
         {
             var order = await _unitOfWork.Orders
                 .GetQueryable()
+                .Include(os => os.StatusChanges)
                 .Include(o => o.OrderDetails)
                     .ThenInclude(od => od.ProductItem)
                         .ThenInclude(pi => pi.Product)
@@ -156,90 +158,116 @@ namespace Services.Implementation
                     }
                 }
 
-                // Step 6: Map and create the Order entity from DTO
-                var orderEntity = _mapper.Map<Order>(orderDto);
-                orderEntity.Id = Guid.NewGuid();  // Generate new ID for Order
-                orderEntity.Status = StatusForOrder.Pending; // Set the default status as Pending
-                orderEntity.CreatedTime = DateTime.UtcNow;
-                orderEntity.CreatedBy = userId.ToString();
-                orderEntity.LastUpdatedTime = DateTime.UtcNow;
-                orderEntity.LastUpdatedBy = userId.ToString();
-                orderEntity.UserId = userId;
-                orderEntity.IsDeleted = false;
-
-                // Step 5: Calculate Order Total based on Price and Quantity
+                // Step 5: Calculate Order Total and update stock
                 decimal orderTotal = 0;
+                var orderDetailsEntities = new List<OrderDetail>();
                 foreach (var orderDetail in orderDto.OrderDetail)
                 {
-                    // Find the ProductItem from the database
+                    // Find the ProductItem
                     var productItem = await _unitOfWork.ProductItems.Entities
                         .FirstOrDefaultAsync(pi => pi.Id == orderDetail.ProductItemId);
 
                     if (productItem == null)
                         throw new ArgumentException($"Product item with ID {orderDetail.ProductItemId} does not exist.");
 
-                    // Ensure that we get the correct price from the ProductItem
-                    decimal price = productItem.Price;
-                    orderTotal += price * orderDetail.Quantity;
-
-                    // Update the QuantityInStock of the ProductItem after the order is placed
-                    productItem.QuantityInStock -= orderDetail.Quantity;
-                    if (productItem.QuantityInStock < 0)
+                    // Ensure sufficient stock
+                    if (productItem.QuantityInStock < orderDetail.Quantity)
                     {
                         throw new ArgumentException($"Not enough stock for ProductItem ID {orderDetail.ProductItemId}. Available stock: {productItem.QuantityInStock}");
                     }
 
-                    _unitOfWork.ProductItems.Update(productItem); // Update the ProductItem with the new quantity
+                    // Update stock
+                    productItem.QuantityInStock -= orderDetail.Quantity;
+                    _unitOfWork.ProductItems.Update(productItem);
 
-                    // Map to OrderDetail entity and set the price from the ProductItem
-                    var orderDetailEntity = _mapper.Map<OrderDetail>(orderDetail);
-                    orderDetailEntity.Price = price;  // Ensure the price is set from the ProductItem
-                    orderDetailEntity.Id = Guid.NewGuid();
-                    orderDetailEntity.CreatedTime = DateTime.UtcNow;
-                    orderDetailEntity.CreatedBy = userId.ToString();
-                    orderDetailEntity.LastUpdatedTime = DateTime.UtcNow;
-                    orderDetailEntity.LastUpdatedBy = userId.ToString();
-                    orderDetailEntity.IsDeleted = false;
-                    orderDetailEntity.OrderId = orderEntity.Id;  // Set the correct OrderId from the orderEntity
-                    _unitOfWork.OrderDetails.Add(orderDetailEntity); // Add the OrderDetail entity to UnitOfWork
+                    // Calculate total
+                    decimal price = productItem.Price;
+                    orderTotal += price * orderDetail.Quantity;
+
+                    // Create OrderDetail entity
+                    var orderDetailEntity = new OrderDetail
+                    {
+                        Id = Guid.NewGuid(),
+                        ProductItemId = orderDetail.ProductItemId,
+                        Quantity = orderDetail.Quantity,
+                        Price = price,
+                        CreatedTime = DateTime.UtcNow,
+                        CreatedBy = userId.ToString(),
+                        LastUpdatedTime = DateTime.UtcNow,
+                        LastUpdatedBy = userId.ToString(),
+                        IsDeleted = false
+                    };
+                    orderDetailsEntities.Add(orderDetailEntity);
                 }
 
-                // Step 7: Add the Order entity to the UnitOfWork first (before OrderDetails)
-                _unitOfWork.Orders.Add(orderEntity);
-
-                // Step 9: Create StatusChange for the new Order
-                var statusChangeDto = new StatusChangeForCreationDto
+                // Step 6: Create Order entity
+                var orderEntity = new Order
                 {
-                    Date = DateTimeOffset.UtcNow,
-                    Status = orderEntity.Status,
-                    OrderId = orderEntity.Id
+                    Id = Guid.NewGuid(),
+                    AddressId = orderDto.AddressId,
+                    PaymentMethodId = orderDto.PaymentMethodId,
+                    VoucherId = orderDto.VoucherId,
+                    Status = StatusForOrder.Pending,
+                    OrderTotal = orderTotal,
+                    CreatedTime = DateTime.UtcNow,
+                    CreatedBy = userId.ToString(),
+                    LastUpdatedTime = DateTime.UtcNow,
+                    LastUpdatedBy = userId.ToString(),
+                    UserId = userId,
+                    IsDeleted = false
                 };
 
-                // Map StatusChange entity from the DTO
-                var statusChangeEntity = _mapper.Map<StatusChange>(statusChangeDto);
-                statusChangeEntity.Id = Guid.NewGuid();
-                statusChangeEntity.CreatedTime = DateTime.UtcNow;
-                statusChangeEntity.CreatedBy = userId.ToString();
-                statusChangeEntity.LastUpdatedTime = DateTime.UtcNow;
-                statusChangeEntity.LastUpdatedBy = userId.ToString();
-                statusChangeEntity.IsDeleted = false;
-                _unitOfWork.StatusChanges.Add(statusChangeEntity); // Add the StatusChange entity to UnitOfWork
+                // Add Order entity to UnitOfWork
+                _unitOfWork.Orders.Add(orderEntity);
 
-                // Step 9: Save Changes to the Database
+                // Associate OrderDetails with Order and add them to UnitOfWork
+                foreach (var orderDetailEntity in orderDetailsEntities)
+                {
+                    orderDetailEntity.OrderId = orderEntity.Id;
+                    _unitOfWork.OrderDetails.Add(orderDetailEntity);
+                }
+
+                // Step 7: Create StatusChange entity
+                var statusChangeEntity = new StatusChange
+                {
+                    Id = Guid.NewGuid(),
+                    OrderId = orderEntity.Id,
+                    Status = orderEntity.Status,
+                    Date = DateTimeOffset.UtcNow,
+                    CreatedTime = DateTime.UtcNow,
+                    CreatedBy = userId.ToString(),
+                    LastUpdatedTime = DateTime.UtcNow,
+                    LastUpdatedBy = userId.ToString(),
+                    IsDeleted = false
+                };
+
+                // Add StatusChange entity to UnitOfWork
+                _unitOfWork.StatusChanges.Add(statusChangeEntity);
+
+                // Step 8: Save changes
                 await _unitOfWork.SaveChangesAsync();
 
-                // Step 10: Commit the Transaction
+                // Step 9: Commit transaction
                 await _unitOfWork.CommitTransactionAsync();
 
-                // Step 11: Map and return the OrderDto
-                return _mapper.Map<OrderDto>(orderEntity);
+                // Step 10: Map Order entity to OrderDto
+                var orderDtoResult = new OrderDto
+                {
+                    Id = orderEntity.Id,
+                    Status = orderEntity.Status,
+                    OrderTotal = orderEntity.OrderTotal,
+                    CreatedTime = orderEntity.CreatedTime,
+                };
+
+                return orderDtoResult;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 throw;
             }
         }
+
 
 
         public async Task<OrderDto> UpdateAsync(Guid id, OrderForUpdateDto orderDto, Guid userId)
