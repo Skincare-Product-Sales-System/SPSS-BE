@@ -30,6 +30,8 @@ public interface IUnitOfWork : IDisposable
     IOrderDetailRepository OrderDetails { get; }
     IStatusChangeRepository StatusChanges { get; }
 
+    IProductForSkinTypeRepository ProductForSkinTypes { get; }
+
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();
     Task CommitTransactionAsync();

@@ -23,6 +23,7 @@ using BusinessObjects.Dto.SkinType;
 using BusinessObjects.Dto.Order;
 using BusinessObjects.Dto.OrderDetail;
 using BusinessObjects.Dto.StatusChange;
+using BusinessObjects.Dto.ProductForSkinType;
 
 namespace API.Extensions;
 
@@ -373,6 +374,16 @@ public class MappingProfile : Profile
         CreateMap<Role, RoleDto>();
         CreateMap<RoleForCreationDto, RoleDto>();
         CreateMap<RoleForUpdateDto, RoleDto>();
+        #endregion
+
+        #region ProductForSkinType
+        CreateMap<Product, ProductDto>()
+            .ForMember(dest => dest.Thumbnail,
+                opt => opt.MapFrom(src => src.ProductImages.FirstOrDefault(img => img.IsThumbnail).ImageUrl));
+        // Map ProductForSkinType -> ProductForSkinTypeDto (chỉ lấy SkinTypeId, Product sẽ xử lý riêng)
+        CreateMap<ProductForSkinType, ProductForSkinTypeDto>()
+            .ForMember(dest => dest.SkinTypeId, opt => opt.MapFrom(src => src.SkinTypeId))
+            .ForMember(dest => dest.Products, opt => opt.Ignore());
         #endregion
     }
 }
