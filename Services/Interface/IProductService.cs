@@ -5,9 +5,11 @@ namespace Services.Interface;
 
 public interface IProductService
 {
-    Task<ProductDto> GetByIdAsync(Guid id);
+    Task<ProductWithDetailsDto> GetByIdAsync(Guid id);
     Task<PagedResponse<ProductDto>> GetPagedAsync(int pageNumber, int pageSize);
-    Task<ProductDto> CreateAsync(ProductForCreationDto productDto);
-    Task<ProductDto> UpdateAsync(ProductForUpdateDto productDto); 
-    Task DeleteAsync(Guid id);
+    Task<bool> CreateAsync(ProductForCreationDto productDto, string userId);
+    Task<ProductDto> UpdateAsync(ProductForUpdateDto productDto, string userId); 
+    Task DeleteAsync(Guid id, string userId);
+
+    Task<PagedResponse<ProductDto>> GetByCategoryIdPagedAsync(Guid categoryId, int pageNumber, int pageSize);
 }

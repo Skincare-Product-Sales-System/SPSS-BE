@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class PromotionType
+public partial class PromotionType : BaseEntity
 {
     public Guid Id { get; set; }
 
