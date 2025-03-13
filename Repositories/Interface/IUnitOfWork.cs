@@ -27,6 +27,10 @@ public interface IUnitOfWork : IDisposable
     IPromotionRepository Promotions { get; }
     IOrderRepository Orders { get; }
     IReviewImageRepository ReviewImages { get; }
+    IOrderDetailRepository OrderDetails { get; }
+    IStatusChangeRepository StatusChanges { get; }
+
+    IProductForSkinTypeRepository ProductForSkinTypes { get; }
 
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();

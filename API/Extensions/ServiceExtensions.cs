@@ -41,6 +41,7 @@ public static class ServiceExtensions
         services.AddScoped<IBlogService, BlogService>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IVNPayService, VNPAYService>();
+        services.AddScoped<IProductForSkinTypeService, ProductForSkinTypeService>();
         return services;
     }
 

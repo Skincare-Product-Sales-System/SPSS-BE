@@ -22,6 +22,8 @@ using BusinessObjects.Dto.VariationOption;
 using BusinessObjects.Dto.SkinType;
 using BusinessObjects.Dto.Order;
 using BusinessObjects.Dto.OrderDetail;
+using BusinessObjects.Dto.StatusChange;
+using BusinessObjects.Dto.ProductForSkinType;
 
 namespace API.Extensions;
 
@@ -36,8 +38,45 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
             .ForMember(dest => dest.OrderTotal, opt => opt.MapFrom(src => src.OrderTotal))
             .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => src.CreatedTime))
-            .ForMember(dest => dest.OrderDetail, opt => opt.MapFrom(src => src.OrderDetails.FirstOrDefault()));
-        CreateMap<OrderForCreationDto, Order>();
+            .ForMember(dest => dest.OrderDetails, opt => opt.MapFrom(src =>
+                src.OrderDetails
+                    .Select(od => new OrderDetailDto
+                    {
+                        ProductId = od.ProductItemId,
+                        ProductImage = od.ProductItem.Product.ProductImages
+                            .Where(pi => pi.IsThumbnail)  // Filter for thumbnails
+                            .Select(pi => pi.ImageUrl)    // Select image URL
+                            .FirstOrDefault(),            // Get the first thumbnail or null
+                        ProductName = od.ProductItem.Product.Name,
+                        VariationOptionValues = od.ProductItem.ProductConfigurations
+                            .Select(pc => pc.VariationOption.Value)
+                            .ToList(),
+                        Quantity = od.Quantity,
+                        Price = od.Price
+                    }).ToList()));  // Mapping to the first OrderDetail (if applicable)
+
+        // Map Order to OrderWithDetailDto
+        CreateMap<Order, OrderWithDetailDto>()
+            .ForMember(dest => dest.OrderDetails, opt => opt.MapFrom(src =>
+                src.OrderDetails
+                    .Select(od => new OrderDetailDto
+                    {
+                        ProductId = od.ProductItemId,
+                        ProductImage = od.ProductItem.Product.ProductImages
+                            .Where(pi => pi.IsThumbnail)  // Filter for thumbnails
+                            .Select(pi => pi.ImageUrl)    // Select image URL
+                            .FirstOrDefault(),            // Get the first thumbnail or null
+                        ProductName = od.ProductItem.Product.Name,
+                        VariationOptionValues = od.ProductItem.ProductConfigurations
+                            .Select(pc => pc.VariationOption.Value)
+                            .ToList(),
+                        Quantity = od.Quantity,
+                        Price = od.Price
+                    }).ToList()));  // Mapping to the first OrderDetail (if applicable)
+
+        CreateMap<OrderForCreationDto, Order>()
+            .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => DateTime.UtcNow))
+            .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => DateTime.UtcNow));
         CreateMap<OrderForUpdateDto, Order>();
         #endregion
 
@@ -50,6 +89,10 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.VariationOptionValues, opt => opt.MapFrom(src => src.ProductItem.ProductConfigurations.Select(pc => pc.VariationOption.Value)))
             .ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Quantity))
             .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price));
+        // Map OrderDetail to OrderDetail (for adding OrderDetails to the Order)
+        CreateMap<OrderDetailForCreationDto, OrderDetail>()
+            .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => DateTime.UtcNow))
+            .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => DateTime.UtcNow));
         #endregion
 
         #region Product
@@ -145,6 +188,12 @@ public class MappingProfile : Profile
             }).ToList()));
         #endregion
 
+        #region StatusChange
+        // Map StatusChangeForCreationDto to StatusChange (for tracking status change)
+        CreateMap<StatusChangeForCreationDto, StatusChange>()
+            .ForMember(dest => dest.Date, opt => opt.MapFrom(src => DateTimeOffset.UtcNow));
+        #endregion
+
         #region Promotion
         CreateMap<Promotion, PromotionForProductQueryDto>();
         #endregion
@@ -164,7 +213,18 @@ public class MappingProfile : Profile
         #endregion
 
         #region Address
-        CreateMap<Address, AddressDto>();
+        // Map Address to AddressDto
+        CreateMap<Address, AddressDto>()
+            .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.User.LastName + " " + src.User.SurName))
+            .ForMember(dest => dest.CountryName, opt => opt.MapFrom(src => src.Country.CountryName))
+            .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.User.PhoneNumber))
+            .ForMember(dest => dest.StreetNumber, opt => opt.MapFrom(src => src.StreetNumber))
+            .ForMember(dest => dest.AddressLine1, opt => opt.MapFrom(src => src.AddressLine1))
+            .ForMember(dest => dest.AddressLine2, opt => opt.MapFrom(src => src.AddressLine2))
+            .ForMember(dest => dest.City, opt => opt.MapFrom(src => src.City))
+            .ForMember(dest => dest.Ward, opt => opt.MapFrom(src => src.Ward))
+            .ForMember(dest => dest.Postcode, opt => opt.MapFrom(src => src.Postcode))
+            .ForMember(dest => dest.Province, opt => opt.MapFrom(src => src.Province));
         CreateMap<AddressForCreationDto, Address>();
         CreateMap<AddressForUpdateDto, Address>();
         #endregion
@@ -314,6 +374,16 @@ public class MappingProfile : Profile
         CreateMap<Role, RoleDto>();
         CreateMap<RoleForCreationDto, RoleDto>();
         CreateMap<RoleForUpdateDto, RoleDto>();
+        #endregion
+
+        #region ProductForSkinType
+        CreateMap<Product, ProductDto>()
+            .ForMember(dest => dest.Thumbnail,
+                opt => opt.MapFrom(src => src.ProductImages.FirstOrDefault(img => img.IsThumbnail).ImageUrl));
+        // Map ProductForSkinType -> ProductForSkinTypeDto (chỉ lấy SkinTypeId, Product sẽ xử lý riêng)
+        CreateMap<ProductForSkinType, ProductForSkinTypeDto>()
+            .ForMember(dest => dest.SkinTypeId, opt => opt.MapFrom(src => src.SkinTypeId))
+            .ForMember(dest => dest.Products, opt => opt.Ignore());
         #endregion
     }
 }

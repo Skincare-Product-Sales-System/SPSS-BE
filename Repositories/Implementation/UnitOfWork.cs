@@ -34,9 +34,14 @@ public class UnitOfWork : IUnitOfWork
     private IDbContextTransaction _transaction; 
     private IOrderRepository _orderRepository;
     private IReviewImageRepository _reviewImageRepository;
+    private IOrderDetailRepository _orderDetailRepository;
+    private IStatusChangeRepository _statusChangeRepository;
+    private IProductForSkinTypeRepository _productForSkinTypeRepository;
     public UnitOfWork(SPSSContext context) =>  _context = context;
     
     public IProductImageRepository ProductImages => _productImageRepository ?? (_productImageRepository = new ProductImageRepository(_context));
+    public IStatusChangeRepository StatusChanges => _statusChangeRepository ?? (_statusChangeRepository = new StatusChangeRepository(_context));
+    public IOrderDetailRepository OrderDetails => _orderDetailRepository ?? (_orderDetailRepository = new OrderDetailRepository(_context));
     public IReviewImageRepository ReviewImages => _reviewImageRepository ?? (_reviewImageRepository = new ReviewImageRepository(_context));
     public IOrderRepository Orders => _orderRepository ??= new OrderRepository(_context);
     public ISkinTypeRepository SkinTypes => _skinTypeRepository ??= new SkinTypeRepository(_context);
@@ -61,6 +66,8 @@ public class UnitOfWork : IUnitOfWork
     public ICartItemRepository CartItems => _cartItemRepository ??= new CartItemRepository(_context);
     public IVoucherRepository Vouchers => _voucherRepository ??= new VoucherRepository(_context);
     public IPromotionRepository Promotions => _promotionRepository ??= new PromotionRepository(_context);
+
+    public IProductForSkinTypeRepository ProductForSkinTypes => _productForSkinTypeRepository ??= new ProductForSkinTypeRepository(_context);
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 
     public async Task BeginTransactionAsync()
