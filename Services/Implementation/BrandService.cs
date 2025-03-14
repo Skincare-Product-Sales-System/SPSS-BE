@@ -58,6 +58,8 @@ public class BrandService : IBrandService
         brand.CreatedTime = DateTimeOffset.UtcNow;
         brand.CreatedBy = "System"; 
         brand.IsDeleted = false;
+        brand.LastUpdatedBy = "System";
+        brand.LastUpdatedTime = DateTimeOffset.UtcNow;
 
         _unitOfWork.Brands.Add(brand);
         await _unitOfWork.SaveChangesAsync();

@@ -208,6 +208,8 @@ public class MappingProfile : Profile
 
         #region Brand
         CreateMap<Brand, BrandDto>();
+        CreateMap<BrandForCreationDto, Brand>();
+        CreateMap<BrandForUpdateDto, Brand>();
         #endregion
 
         #region ProductCategory
@@ -261,6 +263,7 @@ public class MappingProfile : Profile
                 ? new ReplyDto
                 {
                     Id = src.Reply.Id,
+                    AvatarUrl = src.Reply.User.AvatarUrl,
                     UserName = src.Reply.User.UserName,
                     ReplyContent = src.Reply.ReplyContent,
                     LastUpdatedTime = src.Reply.LastUpdatedTime
