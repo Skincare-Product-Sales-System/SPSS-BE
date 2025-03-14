@@ -12,5 +12,4 @@ public class ProductDto
     public decimal Price { get; set; }
 
     public decimal MarketPrice { get; set; }
-    public ProductSpecifications Specifications { get; set; } = new();
 }

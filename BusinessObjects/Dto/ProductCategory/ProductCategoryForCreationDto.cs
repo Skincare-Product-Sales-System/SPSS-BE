@@ -9,8 +9,5 @@ namespace BusinessObjects.Dto.ProductCategory
         public string CategoryName { get; set; }
 
         public Guid? ParentCategoryId { get; set; }
-
-        [Required]
-        public string CreatedBy { get; set; }
     }
 }

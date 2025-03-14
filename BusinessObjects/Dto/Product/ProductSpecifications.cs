@@ -2,9 +2,7 @@
 {
     public class ProductSpecifications
     {
-        public double VolumeWeight { get; set; }
         public string? DetailedIngredients { get; set; }
-        public string? RegisterNumber { get; set; }
         public string? MainFunction { get; set; }
         public string? Texture { get; set; }
         public string? EnglishName { get; set; }

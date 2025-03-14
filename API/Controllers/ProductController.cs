@@ -70,8 +70,8 @@ public class ProductController : ControllerBase
         }
     }
 
-    // PUT: api/products/{id}
-    [HttpPut("{id:guid}")]
+    // PATCH: api/products/{id}
+    [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -82,14 +82,12 @@ public class ProductController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<ProductDto>.FailureResponse("Invalid product data", errors));
         }
-        string userId = "123"; // Get the user ID from the request context
-        if (id != productDto.Id)
-            return BadRequest(ApiResponse<ProductDto>.FailureResponse("Product ID in URL must match the ID in the body"));
+        Guid userId = Guid.Parse("12e6ef03-e72c-407d-894e-fd3d17f66756");
 
         try
         {
-            var updatedProduct = await _productService.UpdateAsync(productDto, userId);
-            return Ok(ApiResponse<ProductDto>.SuccessResponse(updatedProduct, "Product updated successfully"));
+            var updatedProduct = await _productService.UpdateAsync(productDto, userId, id);
+            return Ok(ApiResponse<bool>.SuccessResponse(updatedProduct, "Product updated successfully"));
         }
         catch (KeyNotFoundException ex)
         {
