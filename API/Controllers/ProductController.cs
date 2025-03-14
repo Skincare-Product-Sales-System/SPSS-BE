@@ -31,6 +31,39 @@ public class ProductController : ControllerBase
         }
     }
 
+    [HttpGet("by-skin-type/{skinTypeId:guid}")]
+    public async Task<IActionResult> GetBySkinType(
+    Guid skinTypeId,
+    [FromQuery, Range(1, int.MaxValue)] int pageNumber = 1,
+    [FromQuery, Range(1, 100)] int pageSize = 10)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse<PagedResponse<ProductDto>>.FailureResponse("Invalid pagination parameters", errors));
+        }
+
+        var pagedData = await _productService.GetPagedBySkinTypeAsync(skinTypeId, pageNumber, pageSize);
+        return Ok(ApiResponse<PagedResponse<ProductDto>>.SuccessResponse(pagedData));
+    }
+
+    [HttpGet("by-brand/{brandId:guid}")]
+    public async Task<IActionResult> GetByBrand(
+    Guid brandId,
+    [FromQuery, Range(1, int.MaxValue)] int pageNumber = 1,
+    [FromQuery, Range(1, 100)] int pageSize = 10)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse<PagedResponse<ProductDto>>.FailureResponse("Invalid pagination parameters", errors));
+        }
+
+        var pagedData = await _productService.GetPagedByBrandAsync(brandId, pageNumber, pageSize);
+        return Ok(ApiResponse<PagedResponse<ProductDto>>.SuccessResponse(pagedData));
+    }
+
+
     // Add this method to the ProductController
     [HttpGet("best-sellers")]
     public async Task<IActionResult> GetBestSellers(
