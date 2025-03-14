@@ -21,7 +21,7 @@ public class VNPAYService : IVNPayService
         }
 
         public string vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-        public string vnp_ReturnUrl = "/api/VNPAY/vnpay-payment";
+        public string vnp_ReturnUrl = "http://localhost:3000/profile/orders";
         public string vnp_TmnCode = "99EBBM2U";
         public string vnp_HashSecret = "HMYDH7PAL07DLX77WG37DY5I0VIJEJIB";
         public string vnp_apiUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
