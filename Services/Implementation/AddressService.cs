@@ -46,6 +46,7 @@ public class AddressService : IAddressService
         {
             Id = a.Id,
             CustomerName = a.User?.UserName ?? "Unknown",
+            IsDefault = a.IsDefault,
             PhoneNumber = a.User?.PhoneNumber ?? "N/A",
             CountryName = a.Country?.CountryName ?? "Unknown",
             StreetNumber = a.StreetNumber,

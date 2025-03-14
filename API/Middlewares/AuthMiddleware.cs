@@ -28,7 +28,6 @@ public class AuthMiddleware
             }
         }
 
-        // Token validation logic...
         if (context.Request.Headers.ContainsKey("Authorization"))
         {
             var token = context.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
@@ -38,11 +37,21 @@ public class AuthMiddleware
                 try
                 {
                     var jwtToken = tokenHandler.ReadJwtToken(token);
+
+                    // Kiểm tra thời gian hết hạn của token
                     if (jwtToken.ValidTo < DateTime.UtcNow)
                     {
                         context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                         await context.Response.WriteAsync("Token has expired");
                         return;
+                    }
+
+                    // Lấy userId từ token
+                    var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "Id")?.Value;
+                    if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out Guid userId))
+                    {
+                        // Lưu userId vào HttpContext.Items
+                        context.Items["UserId"] = userId;
                     }
                 }
                 catch (SecurityTokenException)

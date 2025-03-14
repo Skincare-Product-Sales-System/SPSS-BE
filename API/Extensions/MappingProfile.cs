@@ -45,7 +45,7 @@ public class MappingProfile : Profile
                 src.OrderDetails
                     .Select(od => new OrderDetailDto
                     {
-                        ProductId = od.ProductItemId,
+                        ProductId = od.ProductItem.Product.Id,
                         ProductImage = od.ProductItem.Product.ProductImages
                             .Where(pi => pi.IsThumbnail)  // Filter for thumbnails
                             .Select(pi => pi.ImageUrl)    // Select image URL
@@ -62,7 +62,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.OrderDetails, opt => opt.MapFrom(src =>
                 src.OrderDetails.Select(od => new OrderDetailDto
                 {
-                    ProductId = od.ProductItemId,
+                    ProductId = od.ProductItem.Product.Id,
                     ProductImage = od.ProductItem.Product.ProductImages
                         .Where(pi => pi.IsThumbnail)
                         .Select(pi => pi.ImageUrl)
