@@ -2,6 +2,7 @@
 
 public class PromotionForCreationDto
 {
+    public Guid PromotionTypeId { get; set; }
     public string Name { get; set; }
 
     public string Type { get; set; }

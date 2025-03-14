@@ -29,6 +29,8 @@ public interface IUnitOfWork : IDisposable
     IReviewImageRepository ReviewImages { get; }
     IOrderDetailRepository OrderDetails { get; }
     IStatusChangeRepository StatusChanges { get; }
+    ICountryRepository Countries { get; }
+    IPromotionTargetRepository PromotionTargets { get; }
 
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();

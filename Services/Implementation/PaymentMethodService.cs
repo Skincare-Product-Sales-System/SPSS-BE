@@ -52,6 +52,7 @@ namespace Services.Implementation
                 throw new ArgumentNullException(nameof(paymentMethodDto), "Payment method data cannot be null.");
 
             var paymentMethod = _mapper.Map<PaymentMethod>(paymentMethodDto);
+            paymentMethod.Id = Guid.NewGuid();
             paymentMethod.CreatedTime = DateTimeOffset.UtcNow;
             paymentMethod.CreatedBy = userId;
             paymentMethod.LastUpdatedTime = DateTimeOffset.UtcNow;

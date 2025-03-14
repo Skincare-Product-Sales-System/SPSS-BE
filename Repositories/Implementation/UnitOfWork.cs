@@ -36,10 +36,18 @@ public class UnitOfWork : IUnitOfWork
     private IReviewImageRepository _reviewImageRepository;
     private IOrderDetailRepository _orderDetailRepository;
     private IStatusChangeRepository _statusChangeRepository;
+    private ICountryRepository _countryRepository;
+    private IPromotionTargetRepository _promotionTargetRepository;
     public UnitOfWork(SPSSContext context) =>  _context = context;
     
     public IProductImageRepository ProductImages => _productImageRepository ?? (_productImageRepository = new ProductImageRepository(_context));
     public IStatusChangeRepository StatusChanges => _statusChangeRepository ?? (_statusChangeRepository = new StatusChangeRepository(_context));
+    public ICountryRepository Countries => _countryRepository ?? (_countryRepository = new CountryRepository(_context));
+
+    public IPromotionTargetRepository PromotionTargets => _promotionTargetRepository ??
+                                                          (_promotionTargetRepository =
+                                                              new PromotionTargetRepository(_context));
+
     public IOrderDetailRepository OrderDetails => _orderDetailRepository ?? (_orderDetailRepository = new OrderDetailRepository(_context));
     public IReviewImageRepository ReviewImages => _reviewImageRepository ?? (_reviewImageRepository = new ReviewImageRepository(_context));
     public IOrderRepository Orders => _orderRepository ??= new OrderRepository(_context);

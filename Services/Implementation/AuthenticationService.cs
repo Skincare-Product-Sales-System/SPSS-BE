@@ -60,7 +60,7 @@ public class AuthenticationService : IAuthenticationService
         {
             AccessToken = accessToken,
             RefreshToken = refreshToken,
-            AuthUserDto = authUserDto
+            // AuthUserDto = authUserDto
         };
     }
     public async Task<TokenResponse> RefreshTokenAsync(string accessToken, string refreshToken)

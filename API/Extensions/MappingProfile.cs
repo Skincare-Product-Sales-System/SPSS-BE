@@ -13,6 +13,7 @@ using BusinessObjects.Dto.Review;
 using BusinessObjects.Dto.Reply;
 using BusinessObjects.Models;
 using BusinessObjects.Dto.CartItem;
+using BusinessObjects.Dto.Country;
 using BusinessObjects.Dto.Variation;
 using BusinessObjects.Dto.PromotionType;
 using BusinessObjects.Dto.PaymentMethod;
@@ -22,7 +23,9 @@ using BusinessObjects.Dto.VariationOption;
 using BusinessObjects.Dto.SkinType;
 using BusinessObjects.Dto.Order;
 using BusinessObjects.Dto.OrderDetail;
+using BusinessObjects.Dto.PromotionTarget;
 using BusinessObjects.Dto.StatusChange;
+using BusinessObjects.Dto.Voucher;
 
 namespace API.Extensions;
 
@@ -373,6 +376,44 @@ public class MappingProfile : Profile
         CreateMap<Role, RoleDto>();
         CreateMap<RoleForCreationDto, RoleDto>();
         CreateMap<RoleForUpdateDto, RoleDto>();
+        #endregion
+
+        #region Voucher
+        CreateMap<Voucher, VoucherDto>();
+        CreateMap<VoucherForCreationDto, Voucher>();
+        CreateMap<VoucherForUpdateDto, Voucher>();
+        #endregion
+
+        #region SkinTypes
+        CreateMap<SkinType, SkinTypeDto>();
+        CreateMap<SkinTypeForCreationDto, SkinType>();
+        CreateMap<SkinTypeForUpdateDto, SkinType>();
+        #endregion
+
+        #region Brands
+
+        CreateMap<Brand, BrandDto>();
+        CreateMap<BrandForCreationDto, Brand>();
+        CreateMap<BrandForUpdateDto, Brand>();
+
+        #endregion
+
+        #region Countries
+        CreateMap<Country, CountryDto>();
+        CreateMap<CountryForCreationDto, Country>();
+        CreateMap<CountryForUpdateDto, Country>();
+        #endregion
+
+        #region Promotion
+        CreateMap<Promotion, PromotionDto>();
+        CreateMap<PromotionForCreationDto, Promotion>();
+        CreateMap<PromotionForUpdateDto, Promotion>();
+        #endregion
+
+        #region PromotionTarget
+        CreateMap<PromotionTarget, PromotionTypeDto>();
+        CreateMap<PromotionTargetForCreationDto, PromotionTarget>();
+        CreateMap<PromotionTargetForUpdateDto, PromotionTarget>();
         #endregion
     }
 }

@@ -52,6 +52,7 @@ namespace Services.Implementation
                 throw new ArgumentNullException(nameof(cancelReasonDto), "Cancel reason data cannot be null.");
 
             var cancelReason = _mapper.Map<CancelReason>(cancelReasonDto);
+            cancelReason.Id = Guid.NewGuid();
             cancelReason.CreatedTime = DateTimeOffset.UtcNow;
             cancelReason.CreatedBy = userId.ToString();
             cancelReason.LastUpdatedTime = DateTimeOffset.UtcNow;

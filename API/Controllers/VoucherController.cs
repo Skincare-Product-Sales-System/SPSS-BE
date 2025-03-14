@@ -67,7 +67,7 @@ public class VoucherController : ControllerBase
         }
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Update(Guid id, [FromBody] VoucherForUpdateDto voucherDto)
@@ -86,6 +86,23 @@ public class VoucherController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return NotFound(ApiResponse<VoucherDto>.FailureResponse(ex.Message));
+        }
+    }
+    
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        try
+        {
+            string userId = "System";
+            await _voucherService.DeleteAsync(id);
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Voucher deleted successfully"));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.FailureResponse(ex.Message));
         }
     }
 }

@@ -40,6 +40,12 @@ public static class ServiceExtensions
         services.AddScoped<IProductItemService, ProductItemService>();
         services.AddScoped<IBlogService, BlogService>();
         services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<IVoucherService, VoucherService>();
+        services.AddScoped<ISkinTypeService, SkinTypeService>();
+        services.AddScoped<IBrandService, BrandService>();
+        services.AddScoped<ICountryService, CountryService>();
+        services.AddScoped<IPromotionService, PromotionService>();
+        services.AddScoped<IPromotionTargetService, PromotionTargetService>();
         return services;
     }
 

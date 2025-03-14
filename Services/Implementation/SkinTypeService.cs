@@ -47,6 +47,7 @@ public class SkinTypeService : ISkinTypeService
             throw new ArgumentNullException(nameof(skinTypeForCreationDto), "SkinType data cannot be null.");
 
         var skinType = _mapper.Map<SkinType>(skinTypeForCreationDto);
+        skinType.Id = Guid.NewGuid();
         skinType.CreatedTime = DateTimeOffset.UtcNow;
         skinType.CreatedBy = "System"; // You can replace "System" with actual user context
         skinType.IsDeleted = false;
