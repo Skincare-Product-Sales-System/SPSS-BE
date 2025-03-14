@@ -26,6 +26,7 @@ using BusinessObjects.Dto.StatusChange;
 using BusinessObjects.Dto.ProductForSkinType;
 using BusinessObjects.Dto.QuizSet;
 using BusinessObjects.Dto.QuizResult;
+using BusinessObjects.Dto.Country;
 
 namespace API.Extensions;
 
@@ -413,6 +414,12 @@ public class MappingProfile : Profile
         CreateMap<SkinType, SkinTypeDto>();
         CreateMap<SkinTypeForCreationDto, SkinTypeDto>();
         CreateMap<SkinTypeForUpdateDto, SkinTypeDto>();
+        #endregion
+
+        #region Country
+        CreateMap<Country, CountryDto>();
+        CreateMap<CountryForCreationDto, CountryDto>();
+        CreateMap<CountryForUpdateDto, CountryDto>();
         #endregion
 
 
