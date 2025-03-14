@@ -1,6 +1,7 @@
 using AutoMapper;
 using BusinessObjects.Dto.Address;
 using BusinessObjects.Models;
+using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
 using Services.Interface;
 using Services.Response;
@@ -25,6 +26,47 @@ public class AddressService : IAddressService
             throw new KeyNotFoundException($"Address with ID {id} not found.");
         return _mapper.Map<AddressDto>(address);
     }
+
+    public async Task<PagedResponse<AddressDto>> GetByUserIdPagedAsync(Guid userId, int pageNumber, int pageSize)
+    {
+        var query = _unitOfWork.Addresses.Entities
+            .Include(a => a.User)        
+            .Include(a => a.Country)     
+            .Where(a => a.UserId == userId && !a.IsDeleted);
+
+        int totalCount = await query.CountAsync();
+
+        var allAddresses = await query
+            .OrderBy(a => a.CreatedTime)  
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var addressDtos = allAddresses.Select(a => new AddressDto
+        {
+            Id = a.Id,
+            CustomerName = a.User?.UserName ?? "Unknown",
+            PhoneNumber = a.User?.PhoneNumber ?? "N/A",
+            CountryName = a.Country?.CountryName ?? "Unknown",
+            StreetNumber = a.StreetNumber,
+            AddressLine1 = a.AddressLine1,
+            AddressLine2 = a.AddressLine2,
+            City = a.City,
+            Ward = a.Ward,
+            Postcode = a.Postcode,
+            Province = a.Province
+        }).ToList();
+
+        return new PagedResponse<AddressDto>
+        {
+            Items = addressDtos,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
+
 
     public async Task<PagedResponse<AddressDto>> GetPagedAsync(int pageNumber, int pageSize)
     {
