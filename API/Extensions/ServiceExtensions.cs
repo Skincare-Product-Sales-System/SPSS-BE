@@ -44,6 +44,8 @@ public static class ServiceExtensions
         services.AddScoped<IQuizSetService, QuizSetService>();
         services.AddScoped<IQuizResultService, QuizResultService>();
         services.AddScoped<ISkinTypeService, SkinTypeService>();
+        services.AddScoped<ICountryService, CountryService>();
+        services.AddScoped<ICountryRepository, CountryRepository>();
         return services;
     }
 
