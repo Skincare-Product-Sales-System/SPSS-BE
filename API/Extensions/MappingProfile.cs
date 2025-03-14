@@ -405,6 +405,12 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Routine, opt => opt.MapFrom(src => src.SkinType.Routine));
         #endregion
 
+        #region SkinType
+        CreateMap<SkinType, SkinTypeDto>();
+        CreateMap<SkinTypeForCreationDto, SkinTypeDto>();
+        CreateMap<SkinTypeForUpdateDto, SkinTypeDto>();
+        #endregion
+
 
     }
 }
