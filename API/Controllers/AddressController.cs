@@ -28,8 +28,8 @@ public class AddressController : ControllerBase
         }
     }
 
-    [HttpGet("user/{userId:guid}")]
-    public async Task<IActionResult> GetByUserId(Guid userId,
+    [HttpGet("user")]
+    public async Task<IActionResult> GetByUserId(
     [Range(1, int.MaxValue)] int pageNumber = 1,
     [Range(1, 100)] int pageSize = 10)
     {
@@ -38,7 +38,7 @@ public class AddressController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<PagedResponse<AddressDto>>.FailureResponse("Invalid pagination parameters", errors));
         }
-
+        Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0");
         var pagedData = await _addressService.GetByUserIdPagedAsync(userId, pageNumber, pageSize);
         return Ok(ApiResponse<PagedResponse<AddressDto>>.SuccessResponse(pagedData));
     }

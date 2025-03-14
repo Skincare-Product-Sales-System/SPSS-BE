@@ -48,6 +48,7 @@ public static class ServiceExtensions
         services.AddScoped<IBrandService, BrandService>();
         services.AddScoped<ICountryService, CountryService>();
         services.AddScoped<ICountryRepository, CountryRepository>();
+        services.AddScoped<IAccountService, AccountService>();
         return services;
     }
 
