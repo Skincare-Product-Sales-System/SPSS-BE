@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using BusinessObjects.Dto.Reply;
 using BusinessObjects.Models;
+using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
 using Services.Interface;
 using Services.Response;
@@ -21,11 +22,15 @@ namespace Services.Implementation
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
-
         public async Task<ReplyDto> CreateAsync(Guid userId, ReplyForCreationDto replyDto)
         {
             if (replyDto == null)
                 throw new ArgumentNullException(nameof(replyDto), "Reply data cannot be null.");
+
+            // Kiểm tra reviewId có tồn tại hay không
+            var reviewExists = await _unitOfWork.Reviews.Entities.AnyAsync(r => r.Id == replyDto.ReviewId);
+            if (!reviewExists)
+                throw new ArgumentException("The specified reviewId does not exist.", nameof(replyDto.ReviewId));
 
             var reply = _mapper.Map<Reply>(replyDto);
             reply.Id = Guid.NewGuid();
@@ -34,6 +39,7 @@ namespace Services.Implementation
             reply.CreatedBy = userId.ToString();
             reply.LastUpdatedTime = DateTimeOffset.UtcNow;
             reply.LastUpdatedBy = userId.ToString();
+            reply.IsDeleted = false;
 
             _unitOfWork.Replies.Add(reply);
             await _unitOfWork.SaveChangesAsync();
