@@ -2,7 +2,7 @@ namespace BusinessObjects.Dto.Address;
 
 public class AddressForCreationDto
 {
-    public int UserId { get; set; }
+    public Guid UserId { get; set; }
 
     public int CountryId { get; set; }
 

@@ -87,6 +87,7 @@ public class AddressService : IAddressService
             throw new ArgumentNullException(nameof(addressForCreationDto), "Address data cannot be null.");
 
         var address = _mapper.Map<Address>(addressForCreationDto);
+        address.Id = Guid.NewGuid();
         address.CreatedTime = DateTimeOffset.UtcNow;
         address.CreatedBy = "System"; 
         address.IsDeleted = false;
