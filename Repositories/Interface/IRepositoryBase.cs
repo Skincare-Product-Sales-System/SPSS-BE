@@ -16,7 +16,7 @@ public interface IRepositoryBase<T, TKey> where T : class
     void Add(T entity);
     void Update(T entity);
     void Delete(T entity);
-    void DeleteRange(IEnumerable<T> entities);
+    void RemoveRange(IEnumerable<T> entities);
     void DetachEntities();
     IQueryable<T> GetQueryable();
     Task<IQueryable<T>> GetQueryableAsync();

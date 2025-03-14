@@ -159,6 +159,17 @@ namespace Services.Implementation
                     }
                 }
 
+                // Step 4.1: Remove CartItems associated with the user's product items
+                var productItemIds = orderDto.OrderDetail.Select(od => od.ProductItemId).ToList();
+                var cartItemsToRemove = await _unitOfWork.CartItems.Entities
+                    .Where(ci => ci.UserId == userId && productItemIds.Contains(ci.ProductItemId))
+                    .ToListAsync();
+
+                if (cartItemsToRemove.Any())
+                {
+                    _unitOfWork.CartItems.RemoveRange(cartItemsToRemove);
+                }
+
                 // Step 5: Calculate Order Total and update stock
                 decimal orderTotal = 0;
                 var orderDetailsEntities = new List<OrderDetail>();

@@ -532,7 +532,7 @@ public class ProductService : IProductService
     {
         // Delete all existing ProductItems and ProductConfigurations associated with this product
         var productItems = product.ProductItems.ToList();
-        _unitOfWork.ProductItems.DeleteRange(productItems);
+        _unitOfWork.ProductItems.RemoveRange(productItems);
 
         // Insert updated ProductItems and ProductConfigurations
         foreach (var combination in variationCombinations)

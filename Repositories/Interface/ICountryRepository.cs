@@ -4,12 +4,7 @@ using System.Threading.Tasks;
 
 namespace Repositories.Interface
 {
-    public interface ICountryRepository
+    public interface ICountryRepository : IRepositoryBase<Country, Guid>
     {
-        Task<Country?> GetByIdAsync(int id);
-        Task<IEnumerable<Country>> GetAllAsync();
-        Task AddAsync(Country country);
-        Task UpdateAsync(Country country);
-        Task DeleteAsync(int id);
     }
 }
