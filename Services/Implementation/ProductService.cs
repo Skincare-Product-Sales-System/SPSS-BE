@@ -159,6 +159,40 @@ public class ProductService : IProductService
         };
     }
 
+    public async Task<PagedResponse<ProductDto>> GetBestSellerAsync(int pageNumber, int pageSize)
+    {
+        var (products, totalCount) = await _unitOfWork.Products.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            cr => cr.IsDeleted == false
+        );
+
+        // Sort by SoldCount in descending order
+        var orderedProducts = products.OrderByDescending(p => p.SoldCount).ToList();
+
+        var productIds = orderedProducts.Select(p => p.Id).ToList();
+        var productImages = await _unitOfWork.ProductImages.Entities
+            .Where(pi => productIds.Contains(pi.ProductId))
+            .ToListAsync();
+
+        foreach (var product in orderedProducts)
+        {
+            product.ProductImages = productImages
+                .Where(pi => pi.ProductId == product.Id)
+                .ToList();
+        }
+
+        var productDtos = _mapper.Map<IEnumerable<ProductDto>>(orderedProducts);
+
+        return new PagedResponse<ProductDto>
+        {
+            Items = productDtos,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
     public async Task<bool> CreateAsync(ProductForCreationDto productDto, string userId)
     {
         await _unitOfWork.BeginTransactionAsync();

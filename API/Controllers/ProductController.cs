@@ -31,6 +31,22 @@ public class ProductController : ControllerBase
         }
     }
 
+    // Add this method to the ProductController
+    [HttpGet("best-sellers")]
+    public async Task<IActionResult> GetBestSellers(
+        [FromQuery, Range(1, int.MaxValue)] int pageNumber = 1,
+        [FromQuery, Range(1, 100)] int pageSize = 10)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse<PagedResponse<ProductDto>>.FailureResponse("Invalid pagination parameters", errors));
+        }
+
+        var pagedData = await _productService.GetBestSellerAsync(pageNumber, pageSize);
+        return Ok(ApiResponse<PagedResponse<ProductDto>>.SuccessResponse(pagedData));
+    }
+
     // GET: api/products?pageNumber=1&pageSize=10
     [HttpGet]
     public async Task<IActionResult> GetPaged(
