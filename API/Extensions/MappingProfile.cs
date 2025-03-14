@@ -370,6 +370,7 @@ public class MappingProfile : Profile
         #region Blog
 
         CreateMap<Blog, BlogDto>();
+        CreateMap<Blog, BlogWithDetailDto>();
         CreateMap<BlogForCreationDto, BlogDto>();
         CreateMap<BlogForUpdateDto, Blog>();
 

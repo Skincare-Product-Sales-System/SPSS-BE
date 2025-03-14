@@ -53,6 +53,12 @@ namespace Services.Implementation
             if (categoryDto == null)
                 throw new ArgumentNullException(nameof(categoryDto), "Product Category data cannot be null.");
             var category = _mapper.Map<ProductCategory>(categoryDto);
+            category.Id = Guid.NewGuid();
+            category.CreatedBy = "System";
+            category.CreatedTime = DateTime.UtcNow;
+            category.IsDeleted = false;
+            category.LastUpdatedBy = "System";
+            category.LastUpdatedTime = DateTime.UtcNow;
             _unitOfWork.ProductCategories.Add(category);
             await _unitOfWork.SaveChangesAsync();
             return _mapper.Map<ProductCategoryDto>(category);

@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using BusinessObjects.Dto.Blog;
+using BusinessObjects.Dto.BlogImage;
 using BusinessObjects.Models;
+using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
 using Services.Interface;
 using Services.Response;
@@ -18,16 +20,29 @@ public class BlogService : IBlogService
         _mapper = mapper;
     }
 
-    public async Task<BlogDto> GetByIdAsync(Guid id)
+    public async Task<BlogWithDetailDto> GetByIdAsync(Guid id)
     {
-        var blog = await _unitOfWork.Blogs.GetByIdAsync(id);
+        var blogQuery = await _unitOfWork.Blogs.GetQueryableAsync();
+        var blog = await blogQuery
+            .Include(bi => bi.BlogImages)
+            .FirstOrDefaultAsync(b => b.Id == id);
 
         if (blog == null || blog.IsDeleted)
             throw new KeyNotFoundException($"Blog with ID {id} not found.");
 
-        return _mapper.Map<BlogDto>(blog);
-    }
+        // Map thủ công từ Blog entity sang BlogWithDetailDto
+        var blogDto = new BlogWithDetailDto
+        {
+            Id = blog.Id,
+            Title = blog.Title,
+            Thumbnail = blog.Image,
+            BlogContent = blog.BlogContent,
+            UserId = blog.UserId,
+            BlogImages = blog.BlogImages?.Select(bi => bi.ImageUrl).ToList() ?? new List<string>()
+        };
 
+        return blogDto;
+    }
     public async Task<PagedResponse<BlogDto>> GetPagedAsync(int pageNumber, int pageSize)
     {
         var (blogs, totalCount) = await _unitOfWork.Blogs.GetPagedAsync(
