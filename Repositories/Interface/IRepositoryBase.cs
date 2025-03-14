@@ -19,4 +19,5 @@ public interface IRepositoryBase<T, TKey> where T : class
     void DeleteRange(IEnumerable<T> entities);
     void DetachEntities();
     IQueryable<T> GetQueryable();
+    Task<IQueryable<T>> GetQueryableAsync();
 }
