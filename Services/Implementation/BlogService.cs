@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using BusinessObjects.Dto.Blog;
 using BusinessObjects.Dto.BlogImage;
+using BusinessObjects.Dto.BlogSection;
 using BusinessObjects.Models;
 using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
@@ -35,8 +36,7 @@ public class BlogService : IBlogService
         {
             Id = blog.Id,
             Title = blog.Title,
-            Thumbnail = blog.Image,
-            BlogContent = blog.BlogContent,
+            Thumbnail = blog.Thumbnail,
             UserId = blog.UserId,
             BlogImages = blog.BlogImages?.Select(bi => bi.ImageUrl).ToList() ?? new List<string>()
         };
@@ -62,52 +62,56 @@ public class BlogService : IBlogService
         };
     }
 
-    public async Task<BlogDto> CreateAsync(BlogForCreationDto? blogForCreationDto, Guid userId)
+    public async Task<BlogDto> CreateBlogAsync(BlogForCreationDto blogDto, Guid userId)
     {
-        if (blogForCreationDto == null)
-            throw new ArgumentNullException(nameof(blogForCreationDto), "Blog data cannot be null.");
+        if (blogDto == null)
+            throw new ArgumentNullException(nameof(blogDto));
 
-        // Manually map properties from DTO to the Blog entity
         var blog = new Blog
         {
             Id = Guid.NewGuid(),
-            Title = blogForCreationDto.Title,
-            Image = blogForCreationDto.Image,
-            BlogContent = blogForCreationDto.BlogContent,
+            Title = blogDto.Title,
+            Description = blogDto.Description,
+            Thumbnail = blogDto.Thumbnail,
             UserId = userId,
             CreatedTime = DateTimeOffset.UtcNow,
-            CreatedBy = "System", // Replace with the current user if needed
-            IsDeleted = false
+            LastUpdatedTime = DateTimeOffset.UtcNow,
+            CreatedBy = userId.ToString(),
+            LastUpdatedBy = userId.ToString(),
+            IsDeleted = false,
         };
 
-        // Add the Blog entity
+        foreach (var sectionDto in blogDto.Sections.OrderBy(s => s.Order))
+        {
+            blog.BlogSections.Add(new BlogSection
+            {
+                Id = Guid.NewGuid(),
+                ContentType = sectionDto.ContentType,
+                Subtitle = sectionDto.Subtitle,
+                Content = sectionDto.Content,
+                Order = sectionDto.Order,
+                CreatedTime = DateTimeOffset.UtcNow,
+                LastUpdatedTime = DateTimeOffset.UtcNow
+            });
+        }
+
         _unitOfWork.Blogs.Add(blog);
         await _unitOfWork.SaveChangesAsync();
 
-        // Logic to create BlogImages and associate them with the blog
-        if (blogForCreationDto.BlogImages != null && blogForCreationDto.BlogImages.Any())
-        {
-            var blogImages = blogForCreationDto.BlogImages.Select(imageUrl => new BlogImage
-            {
-                Id = Guid.NewGuid(),
-                BlogId = blog.Id,
-                ImageUrl = imageUrl,
-                CreatedTime = DateTimeOffset.UtcNow
-            }).ToList();
-
-            _unitOfWork.BlogImages.AddRange(blogImages);
-            await _unitOfWork.SaveChangesAsync();
-        }
-
-        // Manually map Blog entity and BlogImages to BlogDto
-        var blogDto = new BlogDto
+        return new BlogDto
         {
             Id = blog.Id,
             Title = blog.Title,
-            Image = blog.Image
+            Description = blog.Description,
+            Thumbnail = blog.Thumbnail,
+            Sections = blog.BlogSections.Select(s => new BlogSectionDto
+            {
+                Subtitle = s.Subtitle,
+                ContentType = s.ContentType,
+                Content = s.Content,
+                Order = s.Order
+            }).ToList()
         };
-
-        return blogDto;
     }
 
     public async Task<BlogDto> UpdateAsync(Guid blogId, BlogForUpdateDto blogForUpdateDto, Guid userId)
