@@ -80,5 +80,33 @@ namespace API.Controllers
                 return BadRequest(ApiResponse<IList<ProductImageByIdResponse>>.FailureResponse(ex.Message));
             }
         }
+        
+        [HttpPost("/migrateToFirebaseLinks")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> MigrateToFirebaseLink([FromForm] List<IFormFile> files)
+        {
+            if (!ModelState.IsValid || files == null || files.Count == 0)
+            {
+                return BadRequest(ApiResponse<bool>.FailureResponse("No files uploaded"));
+            }
+
+            try
+            {
+                var result = await _productImageService.MigrateToFirebaseLinkList(files);
+                if (result != null && result.Any())
+                {
+                    return Ok(ApiResponse<IList<string>>.SuccessResponse(result, "Images uploaded successfully"));
+                }
+                else
+                {
+                    return BadRequest(ApiResponse<bool>.FailureResponse("Failed to upload images"));
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<bool>.FailureResponse(ex.Message));
+            }
+        }
     }
 }
