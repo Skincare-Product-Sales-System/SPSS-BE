@@ -60,7 +60,7 @@ public class PromotionTypeController : ControllerBase
         Guid? userId = HttpContext.Items["UserId"] as Guid?;
         try
         {
-            var createdPromotionType = await _promotionTypeService.CreateAsync(promotionTypeDto, userId);
+            var createdPromotionType = await _promotionTypeService.CreateAsync(promotionTypeDto, userId.ToString());
             var response = ApiResponse<PromotionTypeDto>.SuccessResponse(createdPromotionType, "Promotion type created successfully");
             return CreatedAtAction(nameof(GetById), new { id = createdPromotionType.Id }, response);
         }
@@ -84,7 +84,7 @@ public class PromotionTypeController : ControllerBase
         Guid? userId = HttpContext.Items["UserId"] as Guid?;
         try
         {
-            var updatedPromotionType = await _promotionTypeService.UpdateAsync(id, promotionTypeDto, userId);
+            var updatedPromotionType = await _promotionTypeService.UpdateAsync(id, promotionTypeDto, userId.ToString());
             return Ok(ApiResponse<PromotionTypeDto>.SuccessResponse(updatedPromotionType, "Promotion type updated successfully"));
         }
         catch (KeyNotFoundException ex)
@@ -105,7 +105,7 @@ public class PromotionTypeController : ControllerBase
         try
         {
             Guid? userId = HttpContext.Items["UserId"] as Guid?;
-            await _promotionTypeService.DeleteAsync(id, userId);
+            await _promotionTypeService.DeleteAsync(id, userId.ToString());
             return Ok(ApiResponse<object>.SuccessResponse(null, "Promotion type deleted successfully"));
         }
         catch (KeyNotFoundException ex)
