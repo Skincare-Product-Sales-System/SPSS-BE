@@ -97,7 +97,7 @@ public class BlogController : ControllerBase
                 return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
             }
             return Ok(ApiResponse<BlogDto>.SuccessResponse(
-            await _blogService.UpdateAsync(id, blogDto, userId.Value), "Blog updated successfully"));
+            await _blogService.UpdateBlogAsync(id, blogDto, userId.Value), "Blog updated successfully"));
         }
         catch (KeyNotFoundException ex)
         {

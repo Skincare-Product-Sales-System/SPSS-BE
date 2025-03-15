@@ -139,25 +139,84 @@ public class BlogService : IBlogService
         };
     }
 
-    public async Task<BlogDto> UpdateAsync(Guid blogId, BlogForUpdateDto blogForUpdateDto, Guid userId)
+    public async Task<BlogDto> UpdateBlogAsync(Guid blogId, BlogForUpdateDto blogDto, Guid userId)
     {
-        if (blogForUpdateDto == null)
-            throw new ArgumentNullException(nameof(blogForUpdateDto), "Blog data cannot be null.");
+        if (blogDto == null)
+            throw new ArgumentNullException(nameof(blogDto));
 
-        var blog = await _unitOfWork.Blogs.GetByIdAsync(blogId);
+        var blogQuery = await _unitOfWork.Blogs.GetQueryableAsync();
+        var blog = await blogQuery
+            .Include(b => b.BlogSections) // Load các BlogSections liên quan
+            .FirstOrDefaultAsync(b => b.Id == blogId);
 
         if (blog == null || blog.IsDeleted)
             throw new KeyNotFoundException($"Blog with ID {blogId} not found.");
 
+        // Cập nhật các thuộc tính chính của blog
+        blog.Title = blogDto.Title;
+        blog.Description = blogDto.Description;
+        blog.Thumbnail = blogDto.Thumbnail;
         blog.LastUpdatedTime = DateTimeOffset.UtcNow;
-        blog.LastUpdatedBy = "System"; // Optionally replace with current user
+        blog.LastUpdatedBy = userId.ToString();
 
-        _mapper.Map(blogForUpdateDto, blog);
+        // Cập nhật hoặc thêm mới các BlogSections
+        var existingSections = blog.BlogSections.ToList();
 
-        _unitOfWork.Blogs.Update(blog);
-        await _unitOfWork.SaveChangesAsync();
+        foreach (var sectionDto in blogDto.Sections)
+        {
+            var existingSection = existingSections.FirstOrDefault(s => s.Id == sectionDto.Id);
+            if (existingSection != null)
+            {
+                // Cập nhật BlogSection đã tồn tại
+                existingSection.ContentType = sectionDto.ContentType;
+                existingSection.Subtitle = sectionDto.Subtitle;
+                existingSection.Content = sectionDto.Content;
+                existingSection.Order = sectionDto.Order;
+            }
+            else
+            {
+                // Thêm mới BlogSection
+                blog.BlogSections.Add(new BlogSection
+                {
+                    Id = Guid.NewGuid(),
+                    ContentType = sectionDto.ContentType,
+                    Subtitle = sectionDto.Subtitle,
+                    Content = sectionDto.Content,
+                    Order = sectionDto.Order,
+                    BlogId = blog.Id
+                });
+            }
+        }
 
-        return _mapper.Map<BlogDto>(blog);
+        // Xóa các BlogSections không còn tồn tại trong DTO
+        var sectionIdsInDto = blogDto.Sections.Select(s => s.Id).ToList();
+        foreach (var section in existingSections)
+        {
+            if (!sectionIdsInDto.Contains(section.Id))
+            {
+                blog.BlogSections.Remove(section);
+            }
+        }
+
+        try
+        {
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log lỗi chi tiết
+            Console.WriteLine($"Error: {ex.Message}");
+            throw;
+        }
+
+        return new BlogDto
+        {
+            Id = blog.Id,
+            Title = blog.Title,
+            Description = blog.Description,
+            Thumbnail = blog.Thumbnail,
+            LastUpdatedTime = blog.LastUpdatedTime
+        };
     }
 
     public async Task<bool> DeleteAsync(Guid id, Guid userId)
