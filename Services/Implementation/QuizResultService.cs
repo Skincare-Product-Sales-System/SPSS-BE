@@ -1,6 +1,10 @@
 ﻿using AutoMapper;
 using BusinessObjects.Dto.Brand;
+using BusinessObjects.Dto.Product;
+using BusinessObjects.Dto.ProductCategory;
 using BusinessObjects.Dto.QuizResult;
+using BusinessObjects.Dto.SkincareRoutinStep;
+using BusinessObjects.Dto.SkinType;
 using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
 using Services.Interface;
@@ -17,14 +21,9 @@ namespace Services.Implementation
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public QuizResultService(IUnitOfWork unitOfWork, IMapper mapper)
-        {
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-        }
-
         public async Task<QuizResultDto> GetByPointAndSetIdAsync(string score, Guid quizSetId)
         {
+            // Lấy QuizResult và SkinType
             var quizResult = await _unitOfWork.QuizResults.Entities
                 .Include(q => q.SkinType)
                 .FirstOrDefaultAsync(q => q.Score == score && q.SetId == quizSetId);
@@ -32,7 +31,49 @@ namespace Services.Implementation
             if (quizResult == null)
                 throw new KeyNotFoundException($"QuizResult with Score {score} and QuizSetId {quizSetId} not found.");
 
-            return _mapper.Map<QuizResultDto>(quizResult);
+            // Lấy RoutineSteps từ SkinTypeRoutineStep
+            var routineSteps = _unitOfWork.SkinTypeRoutineSteps.Entities
+                .Include(rs => rs.Category)
+                .Where(rs => rs.SkinTypeId == quizResult.SkinTypeId)
+                .Select(rs => new SkinTypeRoutineStepDto
+                {
+                    StepName = rs.StepName,
+                    Category = new ProductCategoryOverviewDto
+                    {
+                        Id = rs.Category.Id,
+                        CategoryName = rs.Category.CategoryName
+                    }, // Lấy tên danh mục
+                    Instruction = rs.Instruction, // Hướng dẫn cho bước routine
+                    Products = _unitOfWork.Products.Entities
+                        .Where(p => p.ProductCategoryId == rs.CategoryId)
+                        .OrderByDescending(p => p.SoldCount) // Ưu tiên sản phẩm bán chạy
+                        .ThenByDescending(p => p.CreatedTime) // Ưu tiên sản phẩm mới
+                        .Take(5) // Lấy tối đa 5 sản phẩm
+                        .Select(p => new ProductForQuizResultDto
+                        {
+                            Id = p.Id,
+                            Name = p.Name,
+                            Thumbnail = p.ProductImages.Where(p => p.IsThumbnail).Select(p => p.ImageUrl).FirstOrDefault(),
+                            Price = p.Price,
+                            Description = p.Description,
+                            SoldCount = p.SoldCount
+                        })
+                        .ToList()
+                })
+                .ToList();
+
+            // Mapping kết quả vào DTO
+            var quizResultDto = new QuizResultDto
+            {
+                Id = quizResult.Id,
+                Score = quizResult.Score,
+                SkinTypeId = quizResult.SkinTypeId,
+                Name = quizResult.SkinType?.Name,
+                Description = quizResult.SkinType?.Description,
+                Routine = routineSteps
+            };
+
+            return quizResultDto;
         }
     }
 }

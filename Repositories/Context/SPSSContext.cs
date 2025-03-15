@@ -243,6 +243,25 @@ public partial class SPSSContext : DbContext
                 .HasConstraintName("FK_BlogSections_Blogs");
         });
 
+        modelBuilder.Entity<SkinTypeRoutineStep>(entity =>
+        {
+            // Map to table name
+            entity.ToTable("SkinTypeRoutineSteps");
+
+            // Primary key
+            entity.HasKey(e => e.Id);
+
+            // Properties
+            entity.Property(e => e.Id).IsRequired();
+            entity.Property(e => e.SkinTypeId).IsRequired();
+            entity.Property(e => e.CategoryId).IsRequired();
+            entity.Property(e => e.StepName)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.Instruction).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.Order).IsRequired();
+        });
+
         modelBuilder.Entity<Brand>(entity =>
         {
             entity.HasIndex(e => e.CountryId, "IX_Brands_CountryId");
@@ -626,9 +645,6 @@ public partial class SPSSContext : DbContext
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(200);
-            entity.Property(e => e.Routine)
-                .IsRequired()
-                .HasMaxLength(2000);
         });
 
         modelBuilder.Entity<StatusChange>(entity =>

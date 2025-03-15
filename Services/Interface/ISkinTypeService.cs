@@ -8,7 +8,7 @@ public interface ISkinTypeService
 {
     Task<SkinTypeDto> GetByIdAsync(Guid id);
     Task<PagedResponse<SkinTypeDto>> GetPagedAsync(int pageNumber, int pageSize);
-    Task<SkinTypeDto> CreateAsync(SkinTypeForCreationDto? skinTypeForCreationDto);
+    Task<bool> CreateAsync(SkinTypeForCreationDto? skinTypeForCreationDto, Guid userId);
     Task<SkinTypeDto> UpdateAsync(Guid addressId, SkinTypeForUpdateDto skinTypeForUpdateDto);
     Task DeleteAsync(Guid id);
 }

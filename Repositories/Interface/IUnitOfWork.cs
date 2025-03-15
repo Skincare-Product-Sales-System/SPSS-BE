@@ -12,6 +12,7 @@ public interface IUnitOfWork : IDisposable
     IVariationRepository Variations { get; }
     IBlogSectionRepository BlogSections { get; }
     IVariationOptionRepository VariationOptions { get; }
+    ISkinTypeRoutineStepRepository SkinTypeRoutineSteps { get; }
     IProductStatusRepository ProductStatuses { get; }
     IProductCategoryRepository  ProductCategories { get; }
     IUserRepository Users { get; }

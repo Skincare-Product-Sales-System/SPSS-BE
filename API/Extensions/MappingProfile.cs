@@ -406,8 +406,7 @@ public class MappingProfile : Profile
         #region QuizResult
         CreateMap<QuizResult, QuizResultDto>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.SkinType.Name))
-            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.SkinType.Description))
-            .ForMember(dest => dest.Routine, opt => opt.MapFrom(src => src.SkinType.Routine));
+            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.SkinType.Description));
         #endregion
 
         #region SkinType

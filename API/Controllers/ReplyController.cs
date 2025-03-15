@@ -32,7 +32,7 @@ public class ReplyController : ControllerBase
 
         try
         {
-            Guid? userId = HttpContext.Items["UserId"] as Guid?; //hard code for testing
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
             var createdReply = await _replyService.CreateAsync(userId.Value, replyDto);
             return Ok(ApiResponse<ReplyDto>.SuccessResponse(createdReply, "Reply created successfully"));
         }
@@ -56,7 +56,7 @@ public class ReplyController : ControllerBase
 
         try
         {
-            Guid? userId = HttpContext.Items["UserId"] as Guid?; //hard code for testing
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
             var updatedReply = await _replyService.UpdateAsync(userId.Value, replyDto, id);
             return Ok(ApiResponse<ReplyDto>.SuccessResponse(updatedReply, "Reply updated successfully"));
         }
@@ -77,7 +77,7 @@ public class ReplyController : ControllerBase
     {
         try
         {
-            Guid? userId = HttpContext.Items["UserId"] as Guid?; //hard code for testing
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
             await _replyService.DeleteAsync(userId.Value, id);
             return Ok(ApiResponse<object>.SuccessResponse(null, "Reply deleted successfully"));
         }

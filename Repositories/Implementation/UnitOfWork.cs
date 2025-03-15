@@ -44,9 +44,11 @@ public class UnitOfWork : IUnitOfWork
     private ICountryRepository _countryRepository;
     private IAccountRepository _accountRepository;
     private IBlogSectionRepository _blogSectionRepository;
+    private ISkinTypeRoutineStepRepository _skinTypeRoutineStepRepository;
     public UnitOfWork(SPSSContext context) =>  _context = context;
 
     public IAccountRepository Accounts => _accountRepository ??= new AccountRepository(_context);
+    public ISkinTypeRoutineStepRepository SkinTypeRoutineSteps => _skinTypeRoutineStepRepository ??= new SkinTypeRoutineStepRepository(_context);
     public IBlogSectionRepository BlogSections => _blogSectionRepository ??= new BlogSectionRepository(_context);
     public IProductImageRepository ProductImages => _productImageRepository ?? (_productImageRepository = new ProductImageRepository(_context));
     public IStatusChangeRepository StatusChanges => _statusChangeRepository ?? (_statusChangeRepository = new StatusChangeRepository(_context));

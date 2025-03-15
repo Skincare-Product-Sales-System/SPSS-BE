@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using API.Extensions;
+using BusinessObjects.Dto.Account;
+using BusinessObjects.Dto.Blog;
 using BusinessObjects.Dto.SkinType; // Adjusted namespace for SkinType DTOs
 using Microsoft.AspNetCore.Mvc;
 using Services.Dto.Api;
@@ -60,8 +62,13 @@ public class SkinTypeController : ControllerBase
 
         try
         {
-            var skinType = await _skinTypeService.CreateAsync(skinTypeDto);
-            return CreatedAtAction(nameof(GetById), new { id = skinType.Id }, ApiResponse<SkinTypeDto>.SuccessResponse(skinType));
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            }
+            var skinType = await _skinTypeService.CreateAsync(skinTypeDto, userId.Value);
+            return Ok(ApiResponse<bool>.SuccessResponse(skinType, "Blog created successfully"));
         }
         catch (Exception ex)
         {
