@@ -199,18 +199,51 @@ public partial class SPSSContext : DbContext
             entity.HasIndex(e => e.UserId, "IX_Blogs_UserId");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.BlogContent).IsRequired();
             entity.Property(e => e.CreatedBy).HasMaxLength(100);
             entity.Property(e => e.DeletedBy).HasMaxLength(100);
-            entity.Property(e => e.Image)
+            entity.Property(e => e.Thumbnail)
                 .IsRequired()
                 .HasMaxLength(500);
+            entity.Property(e => e.Description)
+                .IsRequired();
             entity.Property(e => e.LastUpdatedBy).HasMaxLength(100);
             entity.Property(e => e.Title)
                 .IsRequired()
                 .HasMaxLength(200);
 
             entity.HasOne(d => d.User).WithMany(p => p.Blogs).HasForeignKey(d => d.UserId);
+        });
+
+        modelBuilder.Entity<BlogSection>(entity =>
+        {
+            entity.ToTable("BlogSections");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+
+            entity.Property(e => e.ContentType)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(e => e.Subtitle)
+                .HasMaxLength(200);
+
+            entity.Property(e => e.Content)
+                .IsRequired();
+
+            entity.Property(e => e.Order)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedTime)
+                .IsRequired();
+
+            entity.Property(e => e.LastUpdatedTime)
+                .IsRequired();
+
+            entity.HasOne(d => d.Blog)
+                .WithMany(p => p.BlogSections)
+                .HasForeignKey(d => d.BlogId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_BlogSections_Blogs");
         });
 
         modelBuilder.Entity<BlogImage>(entity =>
