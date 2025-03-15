@@ -136,6 +136,12 @@ public partial class SPSSContext : DbContext
             entity.Property(e => e.AvatarUrl)
                 .IsRequired()
                 .HasMaxLength(500);
+            entity.Property(e => e.UserName)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(50);
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users).HasForeignKey(d => d.RoleId);
         });

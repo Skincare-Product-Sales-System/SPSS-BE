@@ -35,6 +35,9 @@ public interface IUnitOfWork : IDisposable
     IQuizOptionRepository QuizOptions { get; }
     IQuizResultRepository QuizResults { get; }
     ICountryRepository Countries { get; }
+    IPromotionTargetRepository PromotionTargets { get; }
+    
+
 
 
     Task<int> SaveChangesAsync();

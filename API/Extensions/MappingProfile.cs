@@ -153,7 +153,7 @@ public class MappingProfile : Profile
                 ExpiryDate = src.ExpiryDate,
                 SkinIssues = src.SkinIssues
             }))
-            .ForMember(dest => dest.skinTypes, opt => opt.MapFrom(src => src.ProductForSkinTypes
+            .ForMember(dest => dest.SkinTypes, opt => opt.MapFrom(src => src.ProductForSkinTypes
                 .Where(pst => pst.SkinType != null)
                 .Select(pst => new SkinTypeForProductQueryDto
                 {

@@ -111,7 +111,7 @@ public class UserService : IUserService
         var (users, totalCount) = await _unitOfWork.Users.GetPagedAsync(
             pageNumber,
             pageSize,
-            u => !u.IsDeleted // Only active users
+            u => u.IsDeleted == false // Only active users
         );
 
         var userDtos = _mapper.Map<IEnumerable<UserDto>>(users);
