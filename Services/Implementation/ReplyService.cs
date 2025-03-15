@@ -27,24 +27,37 @@ namespace Services.Implementation
             if (replyDto == null)
                 throw new ArgumentNullException(nameof(replyDto), "Reply data cannot be null.");
 
-            // Kiểm tra reviewId có tồn tại hay không
+            // Check if the reviewId exists
             var reviewExists = await _unitOfWork.Reviews.Entities.AnyAsync(r => r.Id == replyDto.ReviewId);
             if (!reviewExists)
                 throw new ArgumentException("The specified reviewId does not exist.", nameof(replyDto.ReviewId));
 
-            var reply = _mapper.Map<Reply>(replyDto);
-            reply.Id = Guid.NewGuid();
-            reply.CreatedTime = DateTimeOffset.UtcNow;
-            reply.UserId = userId;
-            reply.CreatedBy = userId.ToString();
-            reply.LastUpdatedTime = DateTimeOffset.UtcNow;
-            reply.LastUpdatedBy = userId.ToString();
-            reply.IsDeleted = false;
+            // Manual mapping of Reply entity
+            var reply = new Reply
+            {
+                Id = Guid.NewGuid(),
+                ReviewId = replyDto.ReviewId,
+                ReplyContent = replyDto.ReplyContent,
+                CreatedTime = DateTimeOffset.UtcNow,
+                UserId = userId,
+                CreatedBy = userId.ToString(),
+                LastUpdatedTime = DateTimeOffset.UtcNow,
+                LastUpdatedBy = userId.ToString(),
+                IsDeleted = false
+            };
 
+            // Add the reply to the database
             _unitOfWork.Replies.Add(reply);
             await _unitOfWork.SaveChangesAsync();
 
-            return _mapper.Map<ReplyDto>(reply);
+            // Manual mapping of ReplyDto for return
+            var replyDtoResult = new ReplyDto
+            {
+                Id = reply.Id,
+                ReplyContent = reply.ReplyContent,
+            };
+
+            return replyDtoResult;
         }
 
         public async Task<ReplyDto> UpdateAsync(Guid userId, ReplyForUpdateDto replyDto, Guid id)

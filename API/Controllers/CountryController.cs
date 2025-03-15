@@ -4,6 +4,7 @@ using Services.Interface;
 using Services.Response;
 using Services.Dto.Api;
 using System.ComponentModel.DataAnnotations;
+using API.Extensions;
 
 namespace API.Controllers;
 
@@ -36,6 +37,7 @@ public class CountryController : ControllerBase
         return Ok(ApiResponse<IEnumerable<CountryDto>>.SuccessResponse(countries));
     }
 
+    [CustomAuthorize("Manager")]
     // ✅ Tạo mới country
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -50,6 +52,7 @@ public class CountryController : ControllerBase
     }
 
     // ✅ Cập nhật country (partial update)
+    [CustomAuthorize("Manager")]
     [HttpPatch("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -66,6 +69,7 @@ public class CountryController : ControllerBase
     }
 
     // ✅ Xóa country theo ID
+    [CustomAuthorize("Manager")]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

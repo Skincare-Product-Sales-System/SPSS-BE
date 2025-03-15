@@ -4,6 +4,9 @@ using Services.Interface;
 using Services.Response;
 using System.ComponentModel.DataAnnotations;
 using Services.Dto.Api;
+using API.Extensions;
+using BusinessObjects.Models;
+using BusinessObjects.Dto.Account;
 
 namespace API.Controllers;
 
@@ -45,6 +48,7 @@ public class BlogController : ControllerBase
         return Ok(ApiResponse<PagedResponse<BlogDto>>.SuccessResponse(pagedBlogs));
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -58,8 +62,13 @@ public class BlogController : ControllerBase
 
         try
         {
-            var createdBlog = await _blogService.CreateAsync(blogDto);
-            return CreatedAtAction(nameof(GetById), new { id = createdBlog.Id }, ApiResponse<BlogDto>.SuccessResponse(createdBlog));
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            }
+            var createdBlog = await _blogService.CreateAsync(blogDto, userId.Value);
+            return Ok(ApiResponse<BlogDto>.SuccessResponse(createdBlog, "Blog created successfully"));
         }
         catch (Exception ex)
         {
@@ -67,6 +76,7 @@ public class BlogController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -81,8 +91,13 @@ public class BlogController : ControllerBase
 
         try
         {
-            await _blogService.UpdateAsync(id, blogDto);
-            return NoContent();
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            }
+            return Ok(ApiResponse<BlogDto>.SuccessResponse(
+            await _blogService.UpdateAsync(id, blogDto, userId.Value), "Blog updated successfully"));
         }
         catch (KeyNotFoundException ex)
         {
@@ -94,6 +109,7 @@ public class BlogController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -101,8 +117,13 @@ public class BlogController : ControllerBase
     {
         try
         {
-            await _blogService.DeleteAsync(id);
-            return NoContent();
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            }
+            return Ok(ApiResponse<bool>.SuccessResponse(
+            await _blogService.DeleteAsync(id, userId.Value), "Blog deleted successfully"));
         }
         catch (KeyNotFoundException ex)
         {

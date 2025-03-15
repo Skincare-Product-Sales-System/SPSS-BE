@@ -8,6 +8,8 @@ using BusinessObjects.Dto.CartItem;
 using Services.Dto.Api;
 using Services.Response;
 using Microsoft.AspNetCore.Authorization;
+using API.Extensions;
+using BusinessObjects.Dto.Account;
 
 namespace API.Controllers;
 
@@ -20,6 +22,7 @@ public class CartItemController : ControllerBase
     public CartItemController(ICartItemService cartItemService) =>
         _cartItemService = cartItemService ?? throw new ArgumentNullException(nameof(cartItemService));
 
+    [CustomAuthorize("Customer")]
     [HttpGet("user/cart")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -27,10 +30,14 @@ public class CartItemController : ControllerBase
     [Range(1, int.MaxValue)] int pageNumber = 1,
     [Range(1, 100)] int pageSize = 10)
     {
-        var userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); // Hardcoded for now
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
+        if (userId == null)
+        {
+            return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+        }
 
         // Gọi service để lấy cart items.
-        var cartItems = await _cartItemService.GetByUserIdAsync(userId, pageNumber, pageSize);
+        var cartItems = await _cartItemService.GetByUserIdAsync(userId.Value, pageNumber, pageSize);
 
         // Xử lý nếu không có cart items.
         if (cartItems == null || !cartItems.Items.Any())
@@ -40,6 +47,7 @@ public class CartItemController : ControllerBase
         return Ok(ApiResponse<PagedResponse<CartItemDto>>.SuccessResponse(cartItems, "Cart items retrieved successfully"));
     }
 
+    [CustomAuthorize("Customer")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -53,8 +61,12 @@ public class CartItemController : ControllerBase
 
         try
         {
-            Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); // Hardcoded for now
-            var createdCartItem = await _cartItemService.CreateAsync(cartItemDto, userId);
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            }
+            var createdCartItem = await _cartItemService.CreateAsync(cartItemDto, userId.Value);
             return  Ok(ApiResponse<bool>.SuccessResponse(createdCartItem, "Cart item created successfully"));
         }
         catch (ArgumentNullException ex)
@@ -63,6 +75,7 @@ public class CartItemController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Customer")]
     [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -90,6 +103,7 @@ public class CartItemController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Customer")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

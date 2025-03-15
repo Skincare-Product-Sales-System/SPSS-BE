@@ -1,25 +1,33 @@
-﻿using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
+using System;
 
-namespace API.Extensions
+public class CustomAuthorizeAttribute : Attribute, IAuthorizationFilter
 {
-    public class CustomAuthorizeAttribute : Attribute, IAuthorizationFilter
+    private readonly string[] _roles;
+
+    public CustomAuthorizeAttribute(string roles)
     {
-        private readonly string _requiredRole;
+        if (string.IsNullOrWhiteSpace(roles))
+            throw new ArgumentException("Roles cannot be null or empty.", nameof(roles));
 
-        public CustomAuthorizeAttribute(string requiredRole)
-        {
-            _requiredRole = requiredRole;
-        }
-
-        public void OnAuthorization(AuthorizationFilterContext context)
-        {
-            var role = context.HttpContext.Items["Role"]?.ToString();
-            if (role != _requiredRole)
-            {
-                context.Result = new ForbidResult();
-            }
-        }
+        _roles = roles.Split(",").Select(role => role.Trim()).ToArray();
     }
 
+    public void OnAuthorization(AuthorizationFilterContext context)
+    {
+        // Check if the user is authenticated
+        var user = context.HttpContext.User;
+        if (user == null || !user.Identity.IsAuthenticated)
+        {
+            context.Result = new UnauthorizedResult();
+            return;
+        }
+
+        // Check if the user has any of the specified roles
+        if (!_roles.Any(role => user.IsInRole(role)))
+        {
+            context.Result = new ForbidResult(); // Forbidden if user doesn't have the required role
+        }
+    }
 }
