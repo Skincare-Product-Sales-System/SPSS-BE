@@ -7,5 +7,4 @@ public class BrandForCreationDto
     public string Title { get; set; }
     public string Description { get; set; }
     public string ImageUrl { get; set; }
-    public bool? IsLiked { get; set; }
 }

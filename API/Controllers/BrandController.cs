@@ -4,6 +4,8 @@ using Services.Interface;
 using Services.Response;
 using System.ComponentModel.DataAnnotations;
 using Services.Dto.Api;
+using API.Extensions;
+using BusinessObjects.Dto.Account;
 
 namespace API.Controllers;
 
@@ -45,6 +47,7 @@ public class BrandController : ControllerBase
         return Ok(ApiResponse<PagedResponse<BrandDto>>.SuccessResponse(pagedBrands));
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -58,7 +61,12 @@ public class BrandController : ControllerBase
 
         try
         {
-            var createdBrand = await _brandService.CreateAsync(brandDto);
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            }
+            var createdBrand = await _brandService.CreateAsync(brandDto, userId.Value);
             return CreatedAtAction(nameof(GetById), new { id = createdBrand.Id }, ApiResponse<BrandDto>.SuccessResponse(createdBrand));
         }
         catch (Exception ex)
@@ -67,6 +75,7 @@ public class BrandController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -81,7 +90,12 @@ public class BrandController : ControllerBase
 
         try
         {
-            await _brandService.UpdateAsync(id, brandDto);
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            }
+            await _brandService.UpdateAsync(id, brandDto, userId.Value);
             return NoContent();
         }
         catch (KeyNotFoundException ex)
@@ -94,6 +108,7 @@ public class BrandController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -101,7 +116,12 @@ public class BrandController : ControllerBase
     {
         try
         {
-            await _brandService.DeleteAsync(id);
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            }
+            await _brandService.DeleteAsync(id, userId.Value);
             return NoContent();
         }
         catch (KeyNotFoundException ex)
