@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using BusinessObjects.Dto.CancelReason;
 using Services.Dto.Api;
 using Services.Response;
+using API.Extensions;
+using BusinessObjects.Dto.Account;
 
 namespace API.Controllers;
 
@@ -45,6 +47,7 @@ public class CancelReasonController : ControllerBase
         return Ok(ApiResponse<PagedResponse<CancelReasonDto>>.SuccessResponse(pagedData));
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -55,10 +58,14 @@ public class CancelReasonController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<CancelReasonDto>.FailureResponse("Invalid cancel reason data", errors));
         }
-        Guid userId = Guid.Parse("12e6ef03-e72c-407d-894e-fd3d17f66756"); //Hardcoded for demo purposes
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
+        if (userId == null)
+        {
+            return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+        }
         try
         {
-            var createdCancelReason = await _cancelReasonService.CreateAsync(cancelReasonDto, userId);
+            var createdCancelReason = await _cancelReasonService.CreateAsync(cancelReasonDto, userId.Value);
             var response = ApiResponse<CancelReasonDto>.SuccessResponse(createdCancelReason, "Cancel reason created successfully");
             return CreatedAtAction(nameof(GetById), new { id = createdCancelReason.Id }, response);
         }
@@ -68,6 +75,7 @@ public class CancelReasonController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -79,10 +87,14 @@ public class CancelReasonController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<CancelReasonDto>.FailureResponse("Invalid cancel reason data", errors));
         }
-        Guid userId = Guid.Parse("12e6ef03-e72c-407d-894e-fd3d17f66756"); //Hardcoded for demo purposes
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
+        if (userId == null)
+        {
+            return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+        }
         try
         {
-            var updatedCancelReason = await _cancelReasonService.UpdateAsync(id, cancelReasonDto, userId);
+            var updatedCancelReason = await _cancelReasonService.UpdateAsync(id, cancelReasonDto, userId.Value);
             return Ok(ApiResponse<CancelReasonDto>.SuccessResponse(updatedCancelReason, "Cancel reason updated successfully"));
         }
         catch (KeyNotFoundException ex)
@@ -95,6 +107,7 @@ public class CancelReasonController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -102,8 +115,12 @@ public class CancelReasonController : ControllerBase
     {
         try
         {
-            Guid userId = Guid.Parse("12e6ef03-e72c-407d-894e-fd3d17f66756"); //Hardcoded for demo purposes
-            await _cancelReasonService.DeleteAsync(id, userId);
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            }
+            await _cancelReasonService.DeleteAsync(id, userId.Value);
             return Ok(ApiResponse<object>.SuccessResponse(null, "Cancel reason deleted successfully"));
         }
         catch (KeyNotFoundException ex)

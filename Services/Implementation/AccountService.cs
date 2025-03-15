@@ -22,6 +22,7 @@ namespace Services.Implementation
             // Lấy thông tin người dùng từ database
             var user = await _unitOfWork.Users
                 .GetQueryable()
+                .Include(u => u.SkinType)
                 .FirstOrDefaultAsync(u => u.UserId == userId && !u.IsDeleted);
 
             if (user == null)
@@ -31,7 +32,7 @@ namespace Services.Implementation
             return new AccountDto
             {
                 UserId = user.UserId,
-                SkinTypeId = user.SkinTypeId,
+                SkinType = user.SkinType?.Name,
                 UserName = user.UserName,
                 SurName = user.SurName,
                 LastName = user.LastName,
@@ -70,7 +71,6 @@ namespace Services.Implementation
             return new AccountDto
             {
                 UserId = user.UserId,
-                SkinTypeId = user.SkinTypeId,
                 UserName = user.UserName,
                 SurName = user.SurName,
                 LastName = user.LastName,

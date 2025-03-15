@@ -31,6 +31,79 @@ public class ProductService : IProductService
         _productStatusService = productStatusService;
     }
 
+    public async Task<PagedResponse<ProductDto>> GetPagedByBrandAsync(Guid brandId, int pageNumber, int pageSize)
+    {
+        var (products, totalCount) = await _unitOfWork.Products.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            cr => cr.IsDeleted == false && cr.BrandId == brandId
+        );
+
+        var orderedProducts = products.OrderByDescending(p => p.CreatedTime).ToList();
+
+        var productIds = orderedProducts.Select(p => p.Id).ToList();
+        var productImages = await _unitOfWork.ProductImages.Entities
+            .Where(pi => productIds.Contains(pi.ProductId))
+            .ToListAsync();
+
+        foreach (var product in orderedProducts)
+        {
+            product.ProductImages = productImages
+                .Where(pi => pi.ProductId == product.Id)
+                .ToList();
+        }
+
+        var productDtos = _mapper.Map<IEnumerable<ProductDto>>(orderedProducts);
+
+        return new PagedResponse<ProductDto>
+        {
+            Items = productDtos,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<PagedResponse<ProductDto>> GetPagedBySkinTypeAsync(Guid skinTypeId, int pageNumber, int pageSize)
+    {
+        // Fetch products related to the given SkinTypeId via the join table
+        var productIds = await _unitOfWork.ProductForSkinTypes.Entities
+            .Where(pst => pst.SkinTypeId == skinTypeId)
+            .Select(pst => pst.ProductId)
+            .Distinct()
+            .ToListAsync();
+
+        var (products, totalCount) = await _unitOfWork.Products.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            cr => cr.IsDeleted == false && productIds.Contains(cr.Id)
+        );
+
+        var orderedProducts = products.OrderByDescending(p => p.CreatedTime).ToList();
+
+        var productImageIds = orderedProducts.Select(p => p.Id).ToList();
+        var productImages = await _unitOfWork.ProductImages.Entities
+            .Where(pi => productImageIds.Contains(pi.ProductId))
+            .ToListAsync();
+
+        foreach (var product in orderedProducts)
+        {
+            product.ProductImages = productImages
+                .Where(pi => pi.ProductId == product.Id)
+                .ToList();
+        }
+
+        var productDtos = _mapper.Map<IEnumerable<ProductDto>>(orderedProducts);
+
+        return new PagedResponse<ProductDto>
+        {
+            Items = productDtos,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
     public async Task<ProductWithDetailsDto> GetByIdAsync(Guid id)
     {
         // Lấy sản phẩm từ database
@@ -135,6 +208,40 @@ public class ProductService : IProductService
         );
 
         var orderedProducts = products.OrderByDescending(p => p.CreatedTime).ToList();
+
+        var productIds = orderedProducts.Select(p => p.Id).ToList();
+        var productImages = await _unitOfWork.ProductImages.Entities
+            .Where(pi => productIds.Contains(pi.ProductId))
+            .ToListAsync();
+
+        foreach (var product in orderedProducts)
+        {
+            product.ProductImages = productImages
+                .Where(pi => pi.ProductId == product.Id)
+                .ToList();
+        }
+
+        var productDtos = _mapper.Map<IEnumerable<ProductDto>>(orderedProducts);
+
+        return new PagedResponse<ProductDto>
+        {
+            Items = productDtos,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<PagedResponse<ProductDto>> GetBestSellerAsync(int pageNumber, int pageSize)
+    {
+        var (products, totalCount) = await _unitOfWork.Products.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            cr => cr.IsDeleted == false
+        );
+
+        // Sort by SoldCount in descending order
+        var orderedProducts = products.OrderByDescending(p => p.SoldCount).ToList();
 
         var productIds = orderedProducts.Select(p => p.Id).ToList();
         var productImages = await _unitOfWork.ProductImages.Entities

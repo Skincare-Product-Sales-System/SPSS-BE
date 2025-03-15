@@ -7,10 +7,9 @@ namespace Services.Interface;
 
 public interface IAddressService
 {
-    Task<AddressDto> GetByIdAsync(Guid id);
     Task<PagedResponse<AddressDto>> GetByUserIdPagedAsync(Guid userId, int pageNumber, int pageSize);
-    Task<PagedResponse<AddressDto>> GetPagedAsync(int pageNumber, int pageSize);
-    Task<AddressDto> CreateAsync(AddressForCreationDto? addressForCreationDto);
-    Task<AddressDto> UpdateAsync(Guid addressId, AddressForUpdateDto addressForUpdateDto);
-    Task DeleteAsync(Guid id);
+    Task<bool> CreateAsync(AddressForCreationDto? addressForCreationDto, Guid userId);
+    Task<bool> UpdateAsync(Guid addressId, AddressForUpdateDto addressForUpdateDto, Guid userId);
+    Task<bool> DeleteAsync(Guid id, Guid userId);
+    Task<bool> SetAsDefaultAsync(Guid addressId, Guid userId);
 }
