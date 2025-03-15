@@ -24,11 +24,11 @@ public class BlogController : ControllerBase
         try
         {
             var blog = await _blogService.GetByIdAsync(id);
-            return Ok(ApiResponse<BlogDto>.SuccessResponse(blog));
+            return Ok(ApiResponse<BlogWithDetailDto>.SuccessResponse(blog));
         }
         catch (KeyNotFoundException ex)
         {
-            return NotFound(ApiResponse<BlogDto>.FailureResponse(ex.Message));
+            return NotFound(ApiResponse<BlogWithDetailDto>.FailureResponse(ex.Message));
         }
     }
 
@@ -67,7 +67,7 @@ public class BlogController : ControllerBase
         }
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

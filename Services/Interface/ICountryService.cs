@@ -1,9 +1,15 @@
 ﻿using BusinessObjects.Dto.Country;
-using BusinessObjects.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace Services.Interface;
-
-public interface ICountryService
+namespace Services.Interface
 {
-    Task<IEnumerable<CountryDto>> GetAllAsync();
+    public interface ICountryService
+    {
+        Task<CountryDto> GetByIdAsync(int id);
+        Task<IEnumerable<CountryDto>> GetAllAsync();
+        Task<CountryDto> CreateAsync(CountryForCreationDto countryForCreationDto);
+        Task<CountryDto> UpdateAsync(int countryId, CountryForUpdateDto countryForUpdateDto);
+        Task DeleteAsync(int id);
+    }
 }

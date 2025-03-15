@@ -4,6 +4,9 @@ using Services.Response;
 using AutoMapper;
 using BusinessObjects.Models;
 using Repositories.Interface;
+using Microsoft.EntityFrameworkCore;
+using BusinessObjects.Dto.ProductCategory;
+using BusinessObjects.Dto.VariationOption;
 
 namespace Services.Implementation
 {
@@ -29,13 +32,44 @@ namespace Services.Implementation
 
         public async Task<PagedResponse<VariationDto>> GetPagedAsync(int pageNumber, int pageSize)
         {
-            var variations = await _unitOfWork.Variations.GetPagedAsync(pageNumber, pageSize, v => v.IsDeleted == false);
-            var mappedVariations = _mapper.Map<IEnumerable<VariationDto>>(variations.Items);
+            // Truy vấn danh sách Variations bao gồm ProductCategory
+            var variationsQuery = _unitOfWork.Variations.Entities
+                .Include(v => v.ProductCategory) // Include ProductCategory liên quan
+                .Include(v => v.VariationOptions) // Include VariationOptions
+                .Where(v => !v.IsDeleted);
 
+            // Lấy tổng số bản ghi phù hợp
+            var totalCount = await variationsQuery.CountAsync();
+
+            // Lấy dữ liệu cho trang hiện tại
+            var variations = await variationsQuery
+                .OrderBy(v => v.Id) // Sắp xếp để đảm bảo thứ tự cố định
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // Ánh xạ thủ công từng Variation sang VariationDto
+            var mappedVariations = variations.Select(v => new VariationDto
+            {
+                Id = v.Id,
+                Name = v.Name,
+                ProductCategory = v.ProductCategory == null ? null : new CategoryForVariationQuery
+                {
+                    Id = v.ProductCategory.Id,
+                    CategoryName = v.ProductCategory.CategoryName
+                },
+                VariationOptions = v.VariationOptions.Select(vo => new VariationOptionForVariationQuery
+                {
+                    Id = vo.Id,
+                    Value = vo.Value
+                }).ToList()
+            });
+
+            // Trả về kết quả dưới dạng PagedResponse
             return new PagedResponse<VariationDto>
             {
                 Items = mappedVariations,
-                TotalCount = variations.TotalCount,
+                TotalCount = totalCount,
                 PageNumber = pageNumber,
                 PageSize = pageSize
             };

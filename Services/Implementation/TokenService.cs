@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using BusinessObjects.Dto.Authentication;
 using BusinessObjects.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -21,11 +22,11 @@ public class TokenService : ITokenService
     {
         _configuration = configuration;
         _unitOfWork = unitOfWork;
-        _accessTokenExpiration = TimeSpan.FromMinutes(double.Parse(_configuration["Jwt:AccessTokenExpirationMinutes"] ?? "15"));
+        _accessTokenExpiration = TimeSpan.FromMinutes(double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] ?? "7"));
         _refreshTokenExpiration = TimeSpan.FromDays(double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] ?? "7"));
     }
 
-    public async Task<string> GenerateAccessTokenAsync(User user)
+    public async Task<string> GenerateAccessTokenAsync(AuthUserDto user)
     {
         var claims = new List<Claim>
         {
@@ -33,18 +34,8 @@ public class TokenService : ITokenService
             new Claim("UserName", user.UserName),
             new Claim("Email", user.EmailAddress),
             new Claim("AvatarUrl", user.AvatarUrl ?? string.Empty),
-            new Claim("RoleId", user.RoleId?.ToString() ?? string.Empty),
+            new Claim("Role", user.Role ?? string.Empty)
         };
-
-        // Add role claim if user has a role
-        if (user.RoleId.HasValue)
-        {
-            var role = await _unitOfWork.Roles.GetByIdAsync(user.RoleId.Value);
-            if (role != null && !role.IsDeleted)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role.RoleName));
-            }
-        }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -60,8 +51,6 @@ public class TokenService : ITokenService
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
-
-   
 
     public string GenerateRefreshToken()
     {
@@ -131,8 +120,18 @@ public class TokenService : ITokenService
         if (user == null || user.IsDeleted)
             throw new SecurityTokenException("User not found");
 
+        // Map the user to AuthUserDto
+        var authUserDto = new AuthUserDto
+        {
+            UserId = user.UserId,
+            UserName = user.UserName,
+            EmailAddress = user.EmailAddress,
+            AvatarUrl = user.AvatarUrl,
+            Role = user.Role!.RoleName // Assuming Role is included in User and accessible
+        };
+
         // Generate new tokens - add await here
-        var newAccessToken = await GenerateAccessTokenAsync(user);
+        var newAccessToken = await GenerateAccessTokenAsync(authUserDto);
         var newRefreshToken = GenerateRefreshToken();
     
         // Save the new refresh token

@@ -89,24 +89,24 @@ namespace API.Controllers
                 return BadRequest(ApiResponse<OrderDto>.FailureResponse(ex.Message));
             }
         }
-
-        [HttpPut("{id:guid}")]
+        [HttpPatch("{id:guid}/status")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Update(Guid id, [FromBody] OrderForUpdateDto orderDto)
+        public async Task<IActionResult> UpdateOrderStatus(Guid id, string newStatus = "Cancelled")
         {
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<OrderDto>.FailureResponse("Invalid order data", errors));
+                return BadRequest(ApiResponse<OrderDto>.FailureResponse("Invalid status data", errors));
             }
 
             Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); // Hardcoded for demo purposes
+
             try
             {
-                var updatedOrder = await _orderService.UpdateAsync(id, orderDto, userId);
-                return Ok(ApiResponse<OrderDto>.SuccessResponse(updatedOrder, "Order updated successfully"));
+                var updatedOrder = await _orderService.UpdateOrderStatusAsync(id, newStatus, userId);
+                return Ok(ApiResponse<bool>.SuccessResponse(updatedOrder, "Order status updated successfully"));
             }
             catch (KeyNotFoundException ex)
             {
@@ -115,6 +115,34 @@ namespace API.Controllers
             catch (ArgumentNullException ex)
             {
                 return BadRequest(ApiResponse<OrderDto>.FailureResponse(ex.Message));
+            }
+        }
+
+        /// <summary>
+        /// Updates the address of an order.
+        /// </summary>
+        [HttpPatch("{id:guid}/address")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateOrderAddress(Guid id, Guid newAddressId)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<OrderDto>.FailureResponse("Invalid address data", errors));
+            }
+
+            Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); // Hardcoded for demo purposes
+
+            try
+            {
+                var updatedOrder = await _orderService.UpdateOrderAddressAsync(id, newAddressId, userId);
+                return Ok(ApiResponse<bool>.SuccessResponse(updatedOrder, "Order address updated successfully"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<OrderDto>.FailureResponse(ex.Message));
             }
         }
 
