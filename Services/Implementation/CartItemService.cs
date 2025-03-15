@@ -69,23 +69,37 @@ namespace Services.Implementation
             if (cartItemDto == null)
                 throw new ArgumentNullException(nameof(cartItemDto), "CartItem data cannot be null.");
 
-            // Kiểm tra xem người dùng đã có CartItem với cùng ProductId chưa
+            // Fetch the ProductItem to check its stock
+            var productItem = await _unitOfWork.ProductItems
+                .SingleOrDefaultAsync(p => p.Id == cartItemDto.ProductItemId && !p.IsDeleted);
+
+            if (productItem == null)
+                throw new KeyNotFoundException($"ProductItem with ID {cartItemDto.ProductItemId} not found.");
+
+            if (cartItemDto.Quantity > productItem.QuantityInStock)
+                throw new InvalidOperationException("Requested quantity exceeds available stock.");
+
+            // Check if the user already has a CartItem with the same ProductItemId
             var existingCartItem = await _unitOfWork.CartItems
                 .SingleOrDefaultAsync(c => c.UserId == userId && c.ProductItemId == cartItemDto.ProductItemId && !c.IsDeleted);
 
             if (existingCartItem != null)
             {
-                // Nếu đã tồn tại, tăng số lượng
+                // Check if the updated quantity exceeds stock
+                if (existingCartItem.Quantity + cartItemDto.Quantity > productItem.QuantityInStock)
+                    throw new InvalidOperationException("Updated quantity exceeds available stock.");
+
+                // Update the existing CartItem's quantity
                 existingCartItem.Quantity += cartItemDto.Quantity;
+                existingCartItem.LastUpdatedTime = DateTimeOffset.UtcNow;
 
                 _unitOfWork.CartItems.Update(existingCartItem);
                 await _unitOfWork.SaveChangesAsync();
 
-                _mapper.Map<CartItemDto>(existingCartItem);
                 return true;
             }
 
-            // Nếu chưa tồn tại, tạo mới CartItem
+            // Create a new CartItem if it doesn't exist
             var cartItem = _mapper.Map<CartItem>(cartItemDto);
             cartItem.Id = Guid.NewGuid();
             cartItem.CreatedTime = DateTimeOffset.UtcNow;
@@ -95,7 +109,6 @@ namespace Services.Implementation
             _unitOfWork.CartItems.Add(cartItem);
             await _unitOfWork.SaveChangesAsync();
 
-            _mapper.Map<CartItemDto>(cartItem);
             return true;
         }
 

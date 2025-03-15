@@ -45,6 +45,7 @@ public class RoleController : ControllerBase
         return Ok(ApiResponse<PagedResponse<RoleDto>>.SuccessResponse(pagedData));
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -67,6 +68,7 @@ public class RoleController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPatch("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -90,6 +92,7 @@ public class RoleController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

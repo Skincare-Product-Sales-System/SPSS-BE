@@ -45,6 +45,7 @@ public class SkinTypeController : ControllerBase
         return Ok(ApiResponse<PagedResponse<SkinTypeDto>>.SuccessResponse(pagedData));
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -67,6 +68,7 @@ public class SkinTypeController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

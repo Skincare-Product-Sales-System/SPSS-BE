@@ -56,10 +56,10 @@ public class VariationController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<VariationDto>.FailureResponse("Invalid variation data", errors));
         }
-        string userId = "System";
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
         try
         {
-            var createdVariation = await _variationService.CreateAsync(variationDto, userId);
+            var createdVariation = await _variationService.CreateAsync(variationDto, userId.ToString());
             var response = ApiResponse<VariationDto>.SuccessResponse(createdVariation, "Variation created successfully");
             return CreatedAtAction(nameof(GetById), new { id = createdVariation.Id }, response);
         }
@@ -80,10 +80,10 @@ public class VariationController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<VariationDto>.FailureResponse("Invalid variation data", errors));
         }
-        string userId = "System";
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
         try
         {
-            var updatedVariation = await _variationService.UpdateAsync(id, variationDto, userId);
+            var updatedVariation = await _variationService.UpdateAsync(id, variationDto, userId.ToString());
             return Ok(ApiResponse<VariationDto>.SuccessResponse(updatedVariation, "Variation updated successfully"));
         }
         catch (KeyNotFoundException ex)
@@ -103,8 +103,8 @@ public class VariationController : ControllerBase
     {
         try
         {
-            string userId = "System";
-            await _variationService.DeleteAsync(id, userId);
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            await _variationService.DeleteAsync(id, userId.ToString());
             return Ok(ApiResponse<object>.SuccessResponse(null, "Variation deleted successfully"));
         }
         catch (KeyNotFoundException ex)

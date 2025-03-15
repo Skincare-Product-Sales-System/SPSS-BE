@@ -43,6 +43,7 @@ public class ProductCategoryController : ControllerBase
         return Ok(ApiResponse<PagedResponse<ProductCategoryDto>>.SuccessResponse(pagedData));
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -66,6 +67,7 @@ public class ProductCategoryController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -96,6 +98,7 @@ public class ProductCategoryController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

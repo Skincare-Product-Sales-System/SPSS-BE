@@ -64,7 +64,7 @@ public class ReviewController : ControllerBase
         var pagedData = await _reviewService.GetPagedAsync(pageNumber, pageSize);
         return Ok(ApiResponse<PagedResponse<ReviewDto>>.SuccessResponse(pagedData));
     }
-
+    [CustomAuthorize("Customer")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -88,6 +88,7 @@ public class ReviewController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Customer")]
     [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -116,6 +117,7 @@ public class ReviewController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

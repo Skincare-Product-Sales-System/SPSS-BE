@@ -1,4 +1,7 @@
-﻿using AutoMapper;
+using System.Text.Json;
+using AutoMapper;
+using AutoMapper;
+
 using BusinessObjects.Dto.User;
 using BusinessObjects.Models;
 using Microsoft.EntityFrameworkCore;
@@ -127,15 +130,37 @@ public class UserService : IUserService
 
     public async Task<UserDto> CreateAsync(UserForCreationDto? userForCreationDto)
     {
+        
+        // Log giá trị của UserForCreationDto
+        Console.WriteLine($"UserName: {userForCreationDto.UserName}");
+        Console.WriteLine($"SurName: {userForCreationDto.SurName}");
+        Console.WriteLine($"LastName: {userForCreationDto.LastName}");
+        Console.WriteLine($"EmailAddress: {userForCreationDto.EmailAddress}");
+        Console.WriteLine($"PhoneNumber: {userForCreationDto.PhoneNumber}");
+        Console.WriteLine($"Password: {userForCreationDto.Password}");
+        
+        
         if (userForCreationDto == null)
             throw new ArgumentNullException(nameof(userForCreationDto), "User data cannot be null.");
 
-        var user = _mapper.Map<User>(userForCreationDto);
-
-        user.CreatedTime = DateTimeOffset.UtcNow;
-        user.CreatedBy = "System"; // Optionally replace with the current user if available
-        user.IsDeleted = false;
-
+        var user = new User
+        {
+            UserId = Guid.NewGuid(), 
+            SkinTypeId = userForCreationDto.SkinTypeId,
+            RoleId = userForCreationDto.RoleId,
+            UserName = userForCreationDto.UserName,
+            SurName = userForCreationDto.SurName,
+            LastName = userForCreationDto.LastName,
+            EmailAddress = userForCreationDto.EmailAddress,
+            PhoneNumber = userForCreationDto.PhoneNumber,
+            Status = userForCreationDto.Status,
+            Password = userForCreationDto.Password,
+            AvatarUrl = userForCreationDto.AvatarUrl,
+            CreatedBy = "System", 
+            CreatedTime = DateTimeOffset.UtcNow,
+            IsDeleted = false 
+        };
+        Console.WriteLine($"User before save: {JsonSerializer.Serialize(user)}");
         _unitOfWork.Users.Add(user);
         await _unitOfWork.SaveChangesAsync();
 
@@ -178,5 +203,29 @@ public class UserService : IUserService
         await _unitOfWork.SaveChangesAsync();
     }
 
-   
+    public async Task<bool> CheckUserNameExistsAsync(string userName)
+    {
+        try
+        {
+            await GetByUserNameAsync(userName);
+            return true;
+        }
+        catch (KeyNotFoundException)
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> CheckEmailExistsAsync(string email)
+    {
+        try
+        {
+            await GetByEmailAsync(email);
+            return true;
+        }
+        catch (KeyNotFoundException)
+        {
+            return false;
+        }
+    }
 }

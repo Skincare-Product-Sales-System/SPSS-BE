@@ -27,8 +27,8 @@ namespace API.Controllers
 
             try
             {
-                Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); // Hardcoded for demo purposes
-                var pagedData = await _orderService.GetOrdersByUserIdAsync(userId, pageNumber, pageSize);
+                Guid? userId = HttpContext.Items["UserId"] as Guid?;
+                var pagedData = await _orderService.GetOrdersByUserIdAsync(userId.Value, pageNumber, pageSize);
                 return Ok(ApiResponse<PagedResponse<OrderDto>>.SuccessResponse(pagedData));
             }
             catch (Exception ex)
@@ -79,10 +79,10 @@ namespace API.Controllers
                 return BadRequest(ApiResponse<OrderDto>.FailureResponse("Invalid order data", errors));
             }
 
-            Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); // Hardcoded for demo purposes
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
             try
             {
-                var createdOrder = await _orderService.CreateAsync(orderDto, userId);
+                var createdOrder = await _orderService.CreateAsync(orderDto, userId.Value);
                 var response = ApiResponse<OrderDto>.SuccessResponse(createdOrder, "Order created successfully");
                 return CreatedAtAction(nameof(GetById), new { id = createdOrder.Id }, response);
             }
@@ -105,11 +105,11 @@ namespace API.Controllers
                 return BadRequest(ApiResponse<OrderDto>.FailureResponse("Invalid status data", errors));
             }
 
-            Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); // Hardcoded for demo purposes
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
 
             try
             {
-                var updatedOrder = await _orderService.UpdateOrderStatusAsync(id, newStatus, userId);
+                var updatedOrder = await _orderService.UpdateOrderStatusAsync(id, newStatus, userId.Value);
                 return Ok(ApiResponse<bool>.SuccessResponse(updatedOrder, "Order status updated successfully"));
             }
             catch (KeyNotFoundException ex)
@@ -135,11 +135,11 @@ namespace API.Controllers
                 return BadRequest(ApiResponse<OrderDto>.FailureResponse("Invalid address data", errors));
             }
 
-            Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); // Hardcoded for demo purposes
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
 
             try
             {
-                var updatedOrder = await _orderService.UpdateOrderAddressAsync(id, newAddressId, userId);
+                var updatedOrder = await _orderService.UpdateOrderAddressAsync(id, newAddressId, userId.Value);
                 return Ok(ApiResponse<bool>.SuccessResponse(updatedOrder, "Order address updated successfully"));
             }
             catch (KeyNotFoundException ex)
@@ -155,7 +155,7 @@ namespace API.Controllers
         //{
         //    try
         //    {
-        //        Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); // Hardcoded for demo purposes
+        //        Guid? userId = HttpContext.Items["UserId"] as Guid?;
         //        await _orderService.DeleteAsync(id, userId);
         //        return Ok(ApiResponse<object>.SuccessResponse(null, "Order deleted successfully"));
         //    }

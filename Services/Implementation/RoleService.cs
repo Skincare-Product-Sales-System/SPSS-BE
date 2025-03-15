@@ -85,4 +85,13 @@ public class RoleService : IRoleService
         _unitOfWork.Roles.Update(role);
         await _unitOfWork.SaveChangesAsync();
     }
+    
+    public async Task<RoleDto> GetByNameAsync(string roleName)
+    {
+        var role = await _unitOfWork.Roles.GetRoleByNameAsync(roleName);
+        if (role == null || role.IsDeleted)
+            throw new KeyNotFoundException($"Role {roleName} không tồn tại");
+    
+        return _mapper.Map<RoleDto>(role);
+    }
 }

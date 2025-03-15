@@ -40,9 +40,9 @@ public class AuthenticationController : ControllerBase
         try
         {
             var response = await _authService.RefreshTokenAsync(
-                refreshRequest.AccessToken, 
+                refreshRequest.AccessToken,
                 refreshRequest.RefreshToken);
-                
+
             return Ok(response);
         }
         catch (Exception ex)
@@ -59,6 +59,19 @@ public class AuthenticationController : ControllerBase
         {
             await _authService.LogoutAsync(logoutRequest.RefreshToken);
             return Ok(new { message = "Logged out successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+    [HttpPost("register")]
+    public async Task<ActionResult<string>> Register(RegisterRequest registerRequest)
+    {
+        try
+        {
+            var result = await _authService.RegisterAsync(registerRequest);
+            return Ok(new { message = "Registered successfully" });
         }
         catch (Exception ex)
         {

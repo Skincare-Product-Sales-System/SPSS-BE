@@ -46,6 +46,7 @@ public class VariationOptionController : ControllerBase
         return Ok(ApiResponse<PagedResponse<VariationOptionDto>>.SuccessResponse(pagedData));
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -56,10 +57,10 @@ public class VariationOptionController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<VariationOptionDto>.FailureResponse("Invalid variation option data", errors));
         }
-        string userId = "System";
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
         try
         {
-            var createdVariationOption = await _variationOptionService.CreateAsync(variationOptionDto, userId);
+            var createdVariationOption = await _variationOptionService.CreateAsync(variationOptionDto, userId.ToString());
             var response = ApiResponse<VariationOptionDto>.SuccessResponse(createdVariationOption, "Variation option created successfully");
             return CreatedAtAction(nameof(GetById), new { id = createdVariationOption.Id }, response);
         }
@@ -69,6 +70,7 @@ public class VariationOptionController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -80,10 +82,10 @@ public class VariationOptionController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<VariationOptionDto>.FailureResponse("Invalid variation option data", errors));
         }
-        string userId = "System";
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
         try
         {
-            var updatedVariationOption = await _variationOptionService.UpdateAsync(id, variationOptionDto, userId);
+            var updatedVariationOption = await _variationOptionService.UpdateAsync(id, variationOptionDto, userId.ToString());
             return Ok(ApiResponse<VariationOptionDto>.SuccessResponse(updatedVariationOption, "Variation option updated successfully"));
         }
         catch (KeyNotFoundException ex)
@@ -96,6 +98,7 @@ public class VariationOptionController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -103,8 +106,8 @@ public class VariationOptionController : ControllerBase
     {
         try
         {
-            string userId = "System";
-            await _variationOptionService.DeleteAsync(id, userId);
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            await _variationOptionService.DeleteAsync(id, userId.ToString());
             return Ok(ApiResponse<object>.SuccessResponse(null, "Variation option deleted successfully"));
         }
         catch (KeyNotFoundException ex)
