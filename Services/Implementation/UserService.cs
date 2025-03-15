@@ -1,6 +1,7 @@
-using AutoMapper;
+﻿using AutoMapper;
 using BusinessObjects.Dto.User;
 using BusinessObjects.Models;
+using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
 using Services.Interface;
 using Services.Response;
@@ -27,27 +28,84 @@ public class UserService : IUserService
 
         return _mapper.Map<UserDto>(user);
     }
-    
+
     public async Task<UserDto> GetByEmailAsync(string email)
     {
-        var user = await _unitOfWork.Users.GetByEmailAsync(email);
+        // Lấy thông tin user cùng với role
+        var user = await _unitOfWork.Users
+            .GetQueryable()
+            .Include(u => u.Role) // Bao gồm thông tin Role
+            .FirstOrDefaultAsync(u => u.EmailAddress == email);
 
+        // Kiểm tra null
         if (user == null || user.IsDeleted)
             throw new KeyNotFoundException($"User with email {email} not found.");
 
-        return _mapper.Map<UserDto>(user);
+        // Map thủ công từ User sang UserDto
+        var userDto = new UserDto
+        {
+            UserId = user.UserId,
+            UserName = user.UserName,
+            SurName = user.SurName,
+            LastName = user.LastName,
+            EmailAddress = user.EmailAddress,
+            PhoneNumber = user.PhoneNumber,
+            AvatarUrl = user.AvatarUrl,
+            Status = user.Status,
+            Password = user.Password,
+            SkinTypeId = user.SkinTypeId,
+            RoleId = user.Role?.RoleId,
+            Role = user.Role!.RoleName,
+            CreatedBy = user.CreatedBy,
+            LastUpdatedBy = user.LastUpdatedBy,
+            DeletedBy = user.DeletedBy,
+            CreatedTime = user.CreatedTime,
+            LastUpdatedTime = user.LastUpdatedTime,
+            DeletedTime = user.DeletedTime,
+            IsDeleted = user.IsDeleted
+        };
+
+        return userDto;
     }
 
     public async Task<UserDto> GetByUserNameAsync(string userName)
     {
-        var user = await _unitOfWork.Users.GetByUserNameAsync(userName);
+        // Lấy thông tin user cùng với role
+        var user = await _unitOfWork.Users
+            .GetQueryable()
+            .Include(u => u.Role) // Bao gồm thông tin Role
+            .FirstOrDefaultAsync(u => u.UserName == userName);
 
+        // Kiểm tra null
         if (user == null || user.IsDeleted)
             throw new KeyNotFoundException($"User with user name {userName} not found.");
 
-        return _mapper.Map<UserDto>(user);
-    }
+        // Map thủ công từ User sang UserDto
+        var userDto = new UserDto
+        {
+            UserId = user.UserId,
+            UserName = user.UserName,
+            SurName = user.SurName,
+            LastName = user.LastName,
+            EmailAddress = user.EmailAddress,
+            PhoneNumber = user.PhoneNumber,
+            AvatarUrl = user.AvatarUrl,
+            Status = user.Status,
+            Password = user.Password, // Nếu trả về mật khẩu, hãy đảm bảo đã mã hóa
+            SkinTypeId = user.SkinTypeId,
+            RoleId = user.Role?.RoleId,
+            Role = user.Role?.RoleName, // Gán tên vai trò từ bảng Role
+            CreatedBy = user.CreatedBy,
+            LastUpdatedBy = user.LastUpdatedBy,
+            DeletedBy = user.DeletedBy,
+            CreatedTime = user.CreatedTime,
+            LastUpdatedTime = user.LastUpdatedTime,
+            DeletedTime = user.DeletedTime,
+            IsDeleted = user.IsDeleted
+        };
 
+        return userDto;
+    }
     public async Task<PagedResponse<UserDto>> GetPagedAsync(int pageNumber, int pageSize)
     {
         var (users, totalCount) = await _unitOfWork.Users.GetPagedAsync(

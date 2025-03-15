@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using BusinessObjects.Dto.Account;
 using Services.Dto.Api;
 using Services.Response;
+using Microsoft.AspNetCore.Authorization;
+using API.Extensions;
 
 namespace API.Controllers;
 
@@ -18,20 +20,19 @@ public class AccountController : ControllerBase
     public AccountController(IAccountService accountService) =>
         _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService));
 
+    [CustomAuthorize("Customer")]
     // Lấy thông tin tài khoản theo UserId
     [HttpGet]
     public async Task<IActionResult> GetAccountInfo()
     {
         try
         {
-            //Guid? userId = HttpContext.Items["UserId"] as Guid?;
-            //if (userId == null)
-            //{
-            //    return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
-            //}
-            //var account = await _accountService.GetAccountInfoAsync(userId.Value);
-            Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); //hard code for testing
-            var account = await _accountService.GetAccountInfoAsync(userId);
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            }
+            var account = await _accountService.GetAccountInfoAsync(userId.Value);
             return Ok(ApiResponse<AccountDto>.SuccessResponse(account));
         }
         catch (KeyNotFoundException ex)
@@ -40,6 +41,7 @@ public class AccountController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Customer")]
     // Cập nhật thông tin tài khoản
     [HttpPatch]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -55,8 +57,12 @@ public class AccountController : ControllerBase
 
         try
         {
-            Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); //hard code for testing
-            var updatedAccount = await _accountService.UpdateAccountInfoAsync(userId, accountForUpdateDto);
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            }
+            var updatedAccount = await _accountService.UpdateAccountInfoAsync(userId.Value, accountForUpdateDto);
             return Ok(ApiResponse<AccountDto>.SuccessResponse(updatedAccount, "Account updated successfully"));
         }
         catch (KeyNotFoundException ex)

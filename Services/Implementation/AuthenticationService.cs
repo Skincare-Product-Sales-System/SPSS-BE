@@ -2,6 +2,7 @@
 using BusinessObjects.Dto.Authentication;
 using BusinessObjects.Dto.User;
 using BusinessObjects.Models;
+using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
 using Services.Interface;
 
@@ -23,18 +24,35 @@ public class AuthenticationService : IAuthenticationService
     public async Task<AuthenticationResponse> LoginAsync(LoginRequest loginRequest)
     {
         User user = null;
-        if (loginRequest.UsernameOrEmail.Contains('@')) 
-            user = await _unitOfWork.Users.GetByEmailAsync(loginRequest.UsernameOrEmail);
+
+        // Lấy thông tin user dựa vào email hoặc username
+        if (loginRequest.UsernameOrEmail.Contains('@'))
+            user = await _unitOfWork.Users.GetQueryable()
+                .Include(u => u.Role) // Bao gồm Role
+                .FirstOrDefaultAsync(u => u.EmailAddress == loginRequest.UsernameOrEmail);
         if (user == null)
-            user = await _unitOfWork.Users.GetByUserNameAsync(loginRequest.UsernameOrEmail);
+            user = await _unitOfWork.Users.GetQueryable()
+                .Include(u => u.Role) // Bao gồm Role
+                .FirstOrDefaultAsync(u => u.UserName == loginRequest.UsernameOrEmail);
+
+        // Kiểm tra tính hợp lệ
         if (user == null || user.IsDeleted)
             throw new UnauthorizedAccessException("Invalid username/email or password");
         if (user.Password != loginRequest.Password)
             throw new UnauthorizedAccessException("Invalid username/email or password");
-        
-        var accessToken = await _tokenService.GenerateAccessTokenAsync(user);
+        // Map the user to AuthUserDto
+        var authUserDto = new AuthUserDto
+        {
+            UserId = user.UserId,
+            UserName = user.UserName,
+            EmailAddress = user.EmailAddress,
+            AvatarUrl = user.AvatarUrl,
+            Role = user.Role!.RoleName // Assuming Role is included in User and accessible
+        };
+        // Tạo AccessToken và RefreshToken
+        var accessToken = await _tokenService.GenerateAccessTokenAsync(authUserDto);
         var refreshToken = _tokenService.GenerateRefreshToken();
-    
+
         var refreshTokenEntity = new RefreshToken
         {
             Token = refreshToken,
@@ -44,18 +62,10 @@ public class AuthenticationService : IAuthenticationService
             IsRevoked = false,
             IsUsed = false
         };
-    
+
         _unitOfWork.RefreshTokens.Add(refreshTokenEntity);
         await _unitOfWork.SaveChangesAsync();
-    
-        var authUserDto = new AuthUserDto
-        {
-            UserId = user.UserId,
-            UserName = user.UserName,
-            EmailAddress = user.EmailAddress,
-            AvatarUrl = user.AvatarUrl
-        };
-    
+
         return new AuthenticationResponse
         {
             AccessToken = accessToken,
@@ -63,6 +73,7 @@ public class AuthenticationService : IAuthenticationService
             AuthUserDto = authUserDto
         };
     }
+
     public async Task<TokenResponse> RefreshTokenAsync(string accessToken, string refreshToken)
     {
         var (newAccessToken, newRefreshToken) = await _tokenService.RefreshTokenAsync(accessToken, refreshToken);
