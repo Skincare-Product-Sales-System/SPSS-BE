@@ -62,24 +62,55 @@ public class BlogService : IBlogService
         };
     }
 
-    public async Task<BlogDto> CreateAsync(BlogForCreationDto? blogForCreationDto)
+    public async Task<BlogDto> CreateAsync(BlogForCreationDto? blogForCreationDto, Guid userId)
     {
         if (blogForCreationDto == null)
             throw new ArgumentNullException(nameof(blogForCreationDto), "Blog data cannot be null.");
 
-        var blog = _mapper.Map<Blog>(blogForCreationDto);
+        // Manually map properties from DTO to the Blog entity
+        var blog = new Blog
+        {
+            Id = Guid.NewGuid(),
+            Title = blogForCreationDto.Title,
+            Image = blogForCreationDto.Image,
+            BlogContent = blogForCreationDto.BlogContent,
+            UserId = userId,
+            CreatedTime = DateTimeOffset.UtcNow,
+            CreatedBy = "System", // Replace with the current user if needed
+            IsDeleted = false
+        };
 
-        blog.CreatedTime = DateTimeOffset.UtcNow;
-        blog.CreatedBy = "System"; // Optionally replace with current user
-        blog.IsDeleted = false;
-
+        // Add the Blog entity
         _unitOfWork.Blogs.Add(blog);
         await _unitOfWork.SaveChangesAsync();
 
-        return _mapper.Map<BlogDto>(blog);
+        // Logic to create BlogImages and associate them with the blog
+        if (blogForCreationDto.BlogImages != null && blogForCreationDto.BlogImages.Any())
+        {
+            var blogImages = blogForCreationDto.BlogImages.Select(imageUrl => new BlogImage
+            {
+                Id = Guid.NewGuid(),
+                BlogId = blog.Id,
+                ImageUrl = imageUrl,
+                CreatedTime = DateTimeOffset.UtcNow
+            }).ToList();
+
+            _unitOfWork.BlogImages.AddRange(blogImages);
+            await _unitOfWork.SaveChangesAsync();
+        }
+
+        // Manually map Blog entity and BlogImages to BlogDto
+        var blogDto = new BlogDto
+        {
+            Id = blog.Id,
+            Title = blog.Title,
+            Image = blog.Image
+        };
+
+        return blogDto;
     }
 
-    public async Task<BlogDto> UpdateAsync(Guid blogId, BlogForUpdateDto blogForUpdateDto)
+    public async Task<BlogDto> UpdateAsync(Guid blogId, BlogForUpdateDto blogForUpdateDto, Guid userId)
     {
         if (blogForUpdateDto == null)
             throw new ArgumentNullException(nameof(blogForUpdateDto), "Blog data cannot be null.");
@@ -100,7 +131,7 @@ public class BlogService : IBlogService
         return _mapper.Map<BlogDto>(blog);
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task<bool> DeleteAsync(Guid id, Guid userId)
     {
         var blog = await _unitOfWork.Blogs.GetByIdAsync(id);
 
@@ -109,9 +140,10 @@ public class BlogService : IBlogService
 
         blog.IsDeleted = true;
         blog.DeletedTime = DateTimeOffset.UtcNow;
-        blog.DeletedBy = "System"; // Optionally replace with current user
+        blog.DeletedBy = userId.ToString();
 
         _unitOfWork.Blogs.Update(blog);
         await _unitOfWork.SaveChangesAsync();
+        return true;
     }
 }
