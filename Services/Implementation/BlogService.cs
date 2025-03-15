@@ -25,7 +25,8 @@ public class BlogService : IBlogService
     {
         var blogQuery = await _unitOfWork.Blogs.GetQueryableAsync();
         var blog = await blogQuery
-            .Include(bi => bi.BlogImages)
+            .Include(b => b.User) // Include User để lấy thông tin tác giả
+            .Include(bi => bi.BlogSections)
             .FirstOrDefaultAsync(b => b.Id == id);
 
         if (blog == null || blog.IsDeleted)
@@ -37,22 +38,44 @@ public class BlogService : IBlogService
             Id = blog.Id,
             Title = blog.Title,
             Thumbnail = blog.Thumbnail,
-            UserId = blog.UserId,
-            BlogImages = blog.BlogImages?.Select(bi => bi.ImageUrl).ToList() ?? new List<string>()
+            BlogContent = blog.Description, // Nếu blog có nội dung mô tả chung
+            Author = blog.User?.UserName, // Nếu có quan hệ với User để lấy tên tác giả
+            LastUpdatedAt = blog.LastUpdatedTime,
+            Sections = blog.BlogSections
+                .OrderBy(bs => bs.Order) // Đảm bảo sắp xếp các section theo thứ tự
+                .Select(bs => new BlogSectionDto
+                {
+                    ContentType = bs.ContentType,
+                    Subtitle = bs.Subtitle,
+                    Content = bs.Content,
+                    Order = bs.Order
+                })
+                .ToList()
         };
 
         return blogDto;
     }
+
     public async Task<PagedResponse<BlogDto>> GetPagedAsync(int pageNumber, int pageSize)
     {
+        // Lấy dữ liệu từ database
         var (blogs, totalCount) = await _unitOfWork.Blogs.GetPagedAsync(
             pageNumber,
             pageSize,
-            b => !b.IsDeleted // Only active blogs
+            b => !b.IsDeleted // Chỉ lấy các blog chưa bị xóa
         );
 
-        var blogDtos = _mapper.Map<IEnumerable<BlogDto>>(blogs);
+        // Map thủ công từng đối tượng Blog sang BlogDto
+        var blogDtos = blogs.Select(b => new BlogDto
+        {
+            Id = b.Id,
+            Title = b.Title,
+            Description = b.Description,
+            Thumbnail = b.Thumbnail,
+            LastUpdatedTime = b.LastUpdatedTime
+        }).ToList();
 
+        // Trả về kết quả phân trang
         return new PagedResponse<BlogDto>
         {
             Items = blogDtos,
@@ -90,13 +113,21 @@ public class BlogService : IBlogService
                 Subtitle = sectionDto.Subtitle,
                 Content = sectionDto.Content,
                 Order = sectionDto.Order,
-                CreatedTime = DateTimeOffset.UtcNow,
-                LastUpdatedTime = DateTimeOffset.UtcNow
+                BlogId = blog.Id
             });
         }
 
         _unitOfWork.Blogs.Add(blog);
-        await _unitOfWork.SaveChangesAsync();
+        try
+        {
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log lỗi chi tiết
+            Console.WriteLine($"Error: {ex.Message}");
+            throw;
+        }
 
         return new BlogDto
         {
@@ -104,13 +135,7 @@ public class BlogService : IBlogService
             Title = blog.Title,
             Description = blog.Description,
             Thumbnail = blog.Thumbnail,
-            Sections = blog.BlogSections.Select(s => new BlogSectionDto
-            {
-                Subtitle = s.Subtitle,
-                ContentType = s.ContentType,
-                Content = s.Content,
-                Order = s.Order
-            }).ToList()
+            LastUpdatedTime = blog.LastUpdatedTime
         };
     }
 

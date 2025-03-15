@@ -12,7 +12,6 @@ public partial class Blog : BaseEntity
     public string Description { get; set; }
     public string Thumbnail { get; set; }
     public Guid UserId { get; set; }
-    public virtual ICollection<BlogImage> BlogImages { get; set; } = new List<BlogImage>();
     public virtual ICollection<BlogSection> BlogSections { get; set; } = new List<BlogSection>();
     public virtual User User { get; set; }
 }

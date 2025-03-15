@@ -11,7 +11,6 @@ public interface IUnitOfWork : IDisposable
     IBrandRepository Brands { get; }
     IVariationRepository Variations { get; }
     IBlogSectionRepository BlogSections { get; }
-    IBlogImageRepository BlogImages { get; }
     IVariationOptionRepository VariationOptions { get; }
     IProductStatusRepository ProductStatuses { get; }
     IProductCategoryRepository  ProductCategories { get; }

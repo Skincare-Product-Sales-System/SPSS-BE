@@ -26,8 +26,6 @@ public partial class SPSSContext : DbContext
 
     public virtual DbSet<Blog> Blogs { get; set; }
 
-    public virtual DbSet<BlogImage> BlogImages { get; set; }
-
     public virtual DbSet<Brand> Brands { get; set; }
 
     public virtual DbSet<CancelReason> CancelReasons { get; set; }
@@ -212,6 +210,11 @@ public partial class SPSSContext : DbContext
                 .HasMaxLength(200);
 
             entity.HasOne(d => d.User).WithMany(p => p.Blogs).HasForeignKey(d => d.UserId);
+
+            entity.HasMany(b => b.BlogSections)
+                    .WithOne()
+                    .HasForeignKey(bs => bs.BlogId)
+                    .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<BlogSection>(entity =>
@@ -233,32 +236,11 @@ public partial class SPSSContext : DbContext
             entity.Property(e => e.Order)
                 .IsRequired();
 
-            entity.Property(e => e.CreatedTime)
-                .IsRequired();
-
-            entity.Property(e => e.LastUpdatedTime)
-                .IsRequired();
-
             entity.HasOne(d => d.Blog)
                 .WithMany(p => p.BlogSections)
                 .HasForeignKey(d => d.BlogId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK_BlogSections_Blogs");
-        });
-
-        modelBuilder.Entity<BlogImage>(entity =>
-        {
-            entity.HasIndex(e => e.BlogId, "IX_BlogImages_BlogId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.CreatedBy).HasMaxLength(100);
-            entity.Property(e => e.DeletedBy).HasMaxLength(100);
-            entity.Property(e => e.ImageUrl)
-                .IsRequired()
-                .HasMaxLength(500);
-            entity.Property(e => e.LastUpdatedBy).HasMaxLength(100);
-
-            entity.HasOne(d => d.Blog).WithMany(p => p.BlogImages).HasForeignKey(d => d.BlogId);
         });
 
         modelBuilder.Entity<Brand>(entity =>

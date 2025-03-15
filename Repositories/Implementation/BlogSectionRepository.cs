@@ -1,8 +1,7 @@
 ﻿using BusinessObjects.Models;
-using Repositories.Implementation;
 using Repositories.Interface;
 
-namespace Repositories
+namespace Repositories.Implementation
 {
     public class BlogSectionRepository : RepositoryBase<BlogSection, Guid>, IBlogSectionRepository
     {

@@ -1,6 +1,6 @@
 ﻿namespace BusinessObjects.Models
 {
-    public partial class BlogSection : BaseEntity
+    public partial class BlogSection
     {
         public Guid Id { get; set; }
         public Guid BlogId { get; set; }
