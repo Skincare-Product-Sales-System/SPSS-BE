@@ -46,20 +46,22 @@ public class PaymentMethodController : ControllerBase
         return Ok(ApiResponse<PagedResponse<PaymentMethodDto>>.SuccessResponse(pagedData));
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] PaymentMethodForCreationDto paymentMethodDto)
     {
-        if (!ModelState.IsValid)
-        {
-            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-            return BadRequest(ApiResponse<PaymentMethodDto>.FailureResponse("Invalid payment method data", errors));
-        }
-        string userId = "System";
+       
         try
         {
-            var createdPaymentMethod = await _paymentMethodService.CreateAsync(paymentMethodDto, userId);
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<PaymentMethodDto>.FailureResponse("Invalid payment method data", errors));
+            }
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            var createdPaymentMethod = await _paymentMethodService.CreateAsync(paymentMethodDto, userId.ToString());
             var response = ApiResponse<PaymentMethodDto>.SuccessResponse(createdPaymentMethod, "Payment method created successfully");
             return CreatedAtAction(nameof(GetById), new { id = createdPaymentMethod.Id }, response);
         }
@@ -69,6 +71,7 @@ public class PaymentMethodController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -80,10 +83,10 @@ public class PaymentMethodController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<PaymentMethodDto>.FailureResponse("Invalid payment method data", errors));
         }
-        string userId = "System";
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
         try
         {
-            var updatedPaymentMethod = await _paymentMethodService.UpdateAsync(id, paymentMethodDto, userId);
+            var updatedPaymentMethod = await _paymentMethodService.UpdateAsync(id, paymentMethodDto, userId.ToString());
             return Ok(ApiResponse<PaymentMethodDto>.SuccessResponse(updatedPaymentMethod, "Payment method updated successfully"));
         }
         catch (KeyNotFoundException ex)
@@ -96,6 +99,7 @@ public class PaymentMethodController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -103,8 +107,8 @@ public class PaymentMethodController : ControllerBase
     {
         try
         {
-            string userId = "System";
-            await _paymentMethodService.DeleteAsync(id, userId);
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            await _paymentMethodService.DeleteAsync(id, userId.ToString());
             return Ok(ApiResponse<object>.SuccessResponse(null, "Payment method deleted successfully"));
         }
         catch (KeyNotFoundException ex)

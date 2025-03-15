@@ -32,7 +32,7 @@ public class ReplyController : ControllerBase
 
         try
         {
-            Guid userId = Guid.Parse("12e6ef03-e72c-407d-894e-fd3d17f66756"); //hard code for testing
+            Guid? userId = HttpContext.Items["UserId"] as Guid?; //hard code for testing
             var createdReply = await _replyService.CreateAsync(userId, replyDto);
             return Ok(ApiResponse<ReplyDto>.SuccessResponse(createdReply, "Reply created successfully"));
         }
@@ -56,7 +56,7 @@ public class ReplyController : ControllerBase
 
         try
         {
-            Guid userId = Guid.Parse("12e6ef03-e72c-407d-894e-fd3d17f66756"); //hard code for testing
+            Guid? userId = HttpContext.Items["UserId"] as Guid?; //hard code for testing
             var updatedReply = await _replyService.UpdateAsync(userId, replyDto, id);
             return Ok(ApiResponse<ReplyDto>.SuccessResponse(updatedReply, "Reply updated successfully"));
         }
@@ -77,7 +77,7 @@ public class ReplyController : ControllerBase
     {
         try
         {
-            Guid userId = Guid.Parse("12e6ef03-e72c-407d-894e-fd3d17f66756"); //hard code for testing
+            Guid? userId = HttpContext.Items["UserId"] as Guid?; //hard code for testing
             await _replyService.DeleteAsync(userId, id);
             return Ok(ApiResponse<object>.SuccessResponse(null, "Reply deleted successfully"));
         }

@@ -97,6 +97,7 @@ public class ProductController : ControllerBase
     }
 
     // POST: api/products
+    [CustomAuthorize("Manager")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -107,10 +108,10 @@ public class ProductController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<ProductDto>.FailureResponse("Invalid product data", errors));
         }
-        string userId = "123"; // Get the user ID from the request context
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
         try
         {
-            var createdProduct = await _productService.CreateAsync(productDto, userId);
+            var createdProduct = await _productService.CreateAsync(productDto, userId.ToString());
             return Ok(ApiResponse<bool>.SuccessResponse(createdProduct, "Product created successfully"));
         }
         catch (ArgumentNullException ex)
@@ -120,6 +121,7 @@ public class ProductController : ControllerBase
     }
 
     // PATCH: api/products/{id}
+    [CustomAuthorize("Manager")]
     [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -131,11 +133,11 @@ public class ProductController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<ProductDto>.FailureResponse("Invalid product data", errors));
         }
-        Guid userId = Guid.Parse("12e6ef03-e72c-407d-894e-fd3d17f66756");
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
 
         try
         {
-            var updatedProduct = await _productService.UpdateAsync(productDto, userId, id);
+            var updatedProduct = await _productService.UpdateAsync(productDto, userId.Value, id);
             return Ok(ApiResponse<bool>.SuccessResponse(updatedProduct, "Product updated successfully"));
         }
         catch (KeyNotFoundException ex)
@@ -156,8 +158,8 @@ public class ProductController : ControllerBase
     {
         try
         {
-            string userId = "123"; // Get the user ID from the request context
-            await _productService.DeleteAsync(id, userId);
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            await _productService.DeleteAsync(id, userId.ToString());
             return Ok(ApiResponse<object>.SuccessResponse(null, "Product deleted successfully"));
         }
         catch (KeyNotFoundException ex)

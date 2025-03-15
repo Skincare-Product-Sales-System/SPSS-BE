@@ -57,7 +57,7 @@ public class PromotionTypeController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<PromotionTypeDto>.FailureResponse("Invalid promotion type data", errors));
         }
-        string userId = "System";
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
         try
         {
             var createdPromotionType = await _promotionTypeService.CreateAsync(promotionTypeDto, userId);
@@ -81,7 +81,7 @@ public class PromotionTypeController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<PromotionTypeDto>.FailureResponse("Invalid promotion type data", errors));
         }
-        string userId = "System";
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
         try
         {
             var updatedPromotionType = await _promotionTypeService.UpdateAsync(id, promotionTypeDto, userId);
@@ -104,7 +104,7 @@ public class PromotionTypeController : ControllerBase
     {
         try
         {
-            string userId = "System";
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
             await _promotionTypeService.DeleteAsync(id, userId);
             return Ok(ApiResponse<object>.SuccessResponse(null, "Promotion type deleted successfully"));
         }

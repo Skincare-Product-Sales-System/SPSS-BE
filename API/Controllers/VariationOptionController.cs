@@ -56,7 +56,7 @@ public class VariationOptionController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<VariationOptionDto>.FailureResponse("Invalid variation option data", errors));
         }
-        string userId = "System";
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
         try
         {
             var createdVariationOption = await _variationOptionService.CreateAsync(variationOptionDto, userId);
@@ -80,7 +80,7 @@ public class VariationOptionController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<VariationOptionDto>.FailureResponse("Invalid variation option data", errors));
         }
-        string userId = "System";
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
         try
         {
             var updatedVariationOption = await _variationOptionService.UpdateAsync(id, variationOptionDto, userId);
@@ -103,7 +103,7 @@ public class VariationOptionController : ControllerBase
     {
         try
         {
-            string userId = "System";
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
             await _variationOptionService.DeleteAsync(id, userId);
             return Ok(ApiResponse<object>.SuccessResponse(null, "Variation option deleted successfully"));
         }
