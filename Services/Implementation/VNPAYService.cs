@@ -21,7 +21,7 @@ public class VNPAYService : IVNPayService
         }
 
         public string vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-        public string vnp_ReturnUrl = "http://localhost:3000/profile/orders";
+        public string vnp_ReturnUrl = "/api/VNPAY/vnpay-payment";
         public string vnp_TmnCode = "99EBBM2U";
         public string vnp_HashSecret = "HMYDH7PAL07DLX77WG37DY5I0VIJEJIB";
         public string vnp_apiUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
@@ -153,15 +153,6 @@ public class VNPAYService : IVNPayService
               .Where(o => o.Id.ToString() == orderInfo).FirstOrDefaultAsync();
             
             if (order == null)
-            {
-                throw new KeyNotFoundException($"Order with ID {orderInfo} is processing.");
-
-            }
-            
-            order.Status = "Payment Failed";
-
-
-            // _unitOfWork.Orders.Update(order);
             // await _unitOfWork.SaveChangesAsync();
             //
             // var updateDto = new UpdateStatusOrderDto
@@ -306,7 +297,7 @@ public class VNPAYService : IVNPayService
             }
             else
             {
-                order.Status = "Payment Failed";
+                order.Status = "Awaiting Payment";
                 order.PaymentMethodId = Guid.Parse("2bbc0050-bfae-4764-8bd7-8c73579ee3e1");
 
                 _unitOfWork.Orders.Update(order);
