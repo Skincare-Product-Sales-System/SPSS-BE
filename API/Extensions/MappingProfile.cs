@@ -41,6 +41,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
             .ForMember(dest => dest.OrderTotal, opt => opt.MapFrom(src => src.OrderTotal))
             .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => src.CreatedTime))
+            .ForMember(dest => dest.PaymentMethodId, opt => opt.MapFrom(src => src.PaymentMethodId))
             .ForMember(dest => dest.OrderDetails, opt => opt.MapFrom(src =>
                 src.OrderDetails
                     .Select(od => new OrderDetailDto
@@ -59,6 +60,7 @@ public class MappingProfile : Profile
                     }).ToList()));  // Mapping to the first OrderDetail (if applicable)
 
         CreateMap<Order, OrderWithDetailDto>()
+            .ForMember(dest => dest.PaymentMethodId, opt => opt.MapFrom(src => src.PaymentMethodId))
             .ForMember(dest => dest.OrderDetails, opt => opt.MapFrom(src =>
                 src.OrderDetails.Select(od => new OrderDetailDto
                 {
