@@ -13,6 +13,7 @@ using BusinessObjects.Dto.Review;
 using BusinessObjects.Dto.Reply;
 using BusinessObjects.Models;
 using BusinessObjects.Dto.CartItem;
+using BusinessObjects.Dto.Country;
 using BusinessObjects.Dto.Variation;
 using BusinessObjects.Dto.PromotionType;
 using BusinessObjects.Dto.PaymentMethod;
@@ -22,11 +23,9 @@ using BusinessObjects.Dto.VariationOption;
 using BusinessObjects.Dto.SkinType;
 using BusinessObjects.Dto.Order;
 using BusinessObjects.Dto.OrderDetail;
+using BusinessObjects.Dto.PromotionTarget;
 using BusinessObjects.Dto.StatusChange;
-using BusinessObjects.Dto.ProductForSkinType;
-using BusinessObjects.Dto.QuizSet;
-using BusinessObjects.Dto.QuizResult;
-using BusinessObjects.Dto.Country;
+using BusinessObjects.Dto.Voucher;
 
 namespace API.Extensions;
 
@@ -45,7 +44,7 @@ public class MappingProfile : Profile
                 src.OrderDetails
                     .Select(od => new OrderDetailDto
                     {
-                        ProductId = od.ProductItem.Product.Id,
+                        ProductId = od.ProductItemId,
                         ProductImage = od.ProductItem.Product.ProductImages
                             .Where(pi => pi.IsThumbnail)  // Filter for thumbnails
                             .Select(pi => pi.ImageUrl)    // Select image URL
@@ -58,30 +57,24 @@ public class MappingProfile : Profile
                         Price = od.Price
                     }).ToList()));  // Mapping to the first OrderDetail (if applicable)
 
+        // Map Order to OrderWithDetailDto
         CreateMap<Order, OrderWithDetailDto>()
             .ForMember(dest => dest.OrderDetails, opt => opt.MapFrom(src =>
-                src.OrderDetails.Select(od => new OrderDetailDto
-                {
-                    ProductId = od.ProductItem.Product.Id,
-                    ProductImage = od.ProductItem.Product.ProductImages
-                        .Where(pi => pi.IsThumbnail)
-                        .Select(pi => pi.ImageUrl)
-                        .FirstOrDefault(),
-                    ProductName = od.ProductItem.Product.Name,
-                    VariationOptionValues = od.ProductItem.ProductConfigurations
-                        .Select(pc => pc.VariationOption.Value)
-                        .ToList(),
-                    Quantity = od.Quantity,
-                    Price = od.Price,
-                }).ToList()))
-            .ForMember(dest => dest.StatusChanges, opt => opt.MapFrom(src =>
-                src.StatusChanges.OrderBy(sc => sc.Date)
-                    .Select(sc => new StatusChangeDto
+                src.OrderDetails
+                    .Select(od => new OrderDetailDto
                     {
-                        Status = sc.Status,
-                        Date = sc.Date,
-                    }).ToList()));
-
+                        ProductId = od.ProductItemId,
+                        ProductImage = od.ProductItem.Product.ProductImages
+                            .Where(pi => pi.IsThumbnail)  // Filter for thumbnails
+                            .Select(pi => pi.ImageUrl)    // Select image URL
+                            .FirstOrDefault(),            // Get the first thumbnail or null
+                        ProductName = od.ProductItem.Product.Name,
+                        VariationOptionValues = od.ProductItem.ProductConfigurations
+                            .Select(pc => pc.VariationOption.Value)
+                            .ToList(),
+                        Quantity = od.Quantity,
+                        Price = od.Price
+                    }).ToList()));  // Mapping to the first OrderDetail (if applicable)
 
         CreateMap<OrderForCreationDto, Order>()
             .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => DateTime.UtcNow))
@@ -160,7 +153,7 @@ public class MappingProfile : Profile
                 ExpiryDate = src.ExpiryDate,
                 SkinIssues = src.SkinIssues
             }))
-            .ForMember(dest => dest.SkinTypes, opt => opt.MapFrom(src => src.ProductForSkinTypes
+            .ForMember(dest => dest.skinTypes, opt => opt.MapFrom(src => src.ProductForSkinTypes
                 .Where(pst => pst.SkinType != null)
                 .Select(pst => new SkinTypeForProductQueryDto
                 {
@@ -209,8 +202,6 @@ public class MappingProfile : Profile
 
         #region Brand
         CreateMap<Brand, BrandDto>();
-        CreateMap<BrandForCreationDto, Brand>();
-        CreateMap<BrandForUpdateDto, Brand>();
         #endregion
 
         #region ProductCategory
@@ -264,7 +255,6 @@ public class MappingProfile : Profile
                 ? new ReplyDto
                 {
                     Id = src.Reply.Id,
-                    AvatarUrl = src.Reply.User.AvatarUrl,
                     UserName = src.Reply.User.UserName,
                     ReplyContent = src.Reply.ReplyContent,
                     LastUpdatedTime = src.Reply.LastUpdatedTime
@@ -373,7 +363,6 @@ public class MappingProfile : Profile
         #region Blog
 
         CreateMap<Blog, BlogDto>();
-        CreateMap<Blog, BlogWithDetailDto>();
         CreateMap<BlogForCreationDto, BlogDto>();
         CreateMap<BlogForUpdateDto, Blog>();
 
@@ -389,39 +378,47 @@ public class MappingProfile : Profile
         CreateMap<RoleForUpdateDto, RoleDto>();
         #endregion
 
-        #region ProductForSkinType
-        CreateMap<Product, ProductDto>()
-            .ForMember(dest => dest.Thumbnail,
-                opt => opt.MapFrom(src => src.ProductImages.FirstOrDefault(img => img.IsThumbnail).ImageUrl));
-        // Map ProductForSkinType -> ProductForSkinTypeDto (chỉ lấy SkinTypeId, Product sẽ xử lý riêng)
-        CreateMap<ProductForSkinType, ProductForSkinTypeDto>()
-            .ForMember(dest => dest.SkinTypeId, opt => opt.MapFrom(src => src.SkinTypeId))
-            .ForMember(dest => dest.Products, opt => opt.Ignore());
+        #region Voucher
+        CreateMap<Voucher, VoucherDto>();
+        CreateMap<VoucherForCreationDto, Voucher>();
+        CreateMap<VoucherForUpdateDto, Voucher>();
         #endregion
 
-        #region QuizSet
-        CreateMap<QuizSet, QuizSetDto>();
-        #endregion
-
-        #region QuizResult
-        CreateMap<QuizResult, QuizResultDto>()
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.SkinType.Name))
-            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.SkinType.Description))
-            .ForMember(dest => dest.Routine, opt => opt.MapFrom(src => src.SkinType.Routine));
-        #endregion
-
-        #region SkinType
+        #region SkinTypes
         CreateMap<SkinType, SkinTypeDto>();
-        CreateMap<SkinTypeForCreationDto, SkinTypeDto>();
-        CreateMap<SkinTypeForUpdateDto, SkinTypeDto>();
+        CreateMap<SkinTypeForCreationDto, SkinType>();
+        CreateMap<SkinTypeForUpdateDto, SkinType>();
         #endregion
 
-        #region Country
+        #region Brands
+
+        CreateMap<Brand, BrandDto>();
+        CreateMap<BrandForCreationDto, Brand>();
+        CreateMap<BrandForUpdateDto, Brand>();
+
+        #endregion
+
+        #region Countries
         CreateMap<Country, CountryDto>();
-        CreateMap<CountryForCreationDto, CountryDto>();
-        CreateMap<CountryForUpdateDto, CountryDto>();
+        CreateMap<CountryForCreationDto, Country>();
+        CreateMap<CountryForUpdateDto, Country>();
         #endregion
 
+        #region Promotion
+        CreateMap<Promotion, PromotionDto>();
+        CreateMap<PromotionForCreationDto, Promotion>();
+        CreateMap<PromotionForUpdateDto, Promotion>();
+        #endregion
 
+        #region PromotionTarget
+        CreateMap<PromotionTarget, PromotionTypeDto>();
+        CreateMap<PromotionTargetForCreationDto, PromotionTarget>();
+        CreateMap<PromotionTargetForUpdateDto, PromotionTarget>();
+        #endregion
+
+        #region Variation
+        CreateMap<Variation, VariationDto>()
+            .ForMember(dest => dest.ProductCategory, opt => opt.MapFrom(src => src.ProductCategory));
+        #endregion
     }
 }
