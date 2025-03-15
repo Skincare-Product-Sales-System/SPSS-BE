@@ -11,4 +11,6 @@ public interface IProductImageService
     Task<bool> DeleteProductImage(Guid ImageId);
 
     Task<IList<ProductImageByIdResponse>> GetProductImageById(Guid id);
+
+    Task<bool> DeleteFirebaseLink(string imageUrl);
 }
