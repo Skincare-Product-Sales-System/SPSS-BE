@@ -12,4 +12,6 @@ public interface IUserService
     Task<UserDto> CreateAsync(UserForCreationDto? userForCreationDto);
     Task<UserDto> UpdateAsync(Guid userId, UserForUpdateDto userForUpdateDto);
     Task DeleteAsync(Guid id);
+    Task<bool> CheckUserNameExistsAsync(string userName);
+    Task<bool> CheckEmailExistsAsync(string email);
 }
