@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using BusinessObjects.Dto.Order;
 using Services.Dto.Api;
 using Services.Response;
+using API.Extensions;
 
 namespace API.Controllers
 {
@@ -66,6 +67,7 @@ namespace API.Controllers
             return Ok(ApiResponse<PagedResponse<OrderDto>>.SuccessResponse(pagedData));
         }
 
+        [CustomAuthorize("Customer")]
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -89,6 +91,8 @@ namespace API.Controllers
                 return BadRequest(ApiResponse<OrderDto>.FailureResponse(ex.Message));
             }
         }
+
+        [CustomAuthorize("Manager, Customer")]
         [HttpPatch("{id:guid}/status")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -118,9 +122,7 @@ namespace API.Controllers
             }
         }
 
-        /// <summary>
-        /// Updates the address of an order.
-        /// </summary>
+        [CustomAuthorize("Customer")]
         [HttpPatch("{id:guid}/address")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -146,21 +148,21 @@ namespace API.Controllers
             }
         }
 
-        [HttpDelete("{id:guid}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            try
-            {
-                Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); // Hardcoded for demo purposes
-                await _orderService.DeleteAsync(id, userId);
-                return Ok(ApiResponse<object>.SuccessResponse(null, "Order deleted successfully"));
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ApiResponse<object>.FailureResponse(ex.Message));
-            }
-        }
+        //[HttpDelete("{id:guid}")]
+        //[ProducesResponseType(StatusCodes.Status200OK)]
+        //[ProducesResponseType(StatusCodes.Status404NotFound)]
+        //public async Task<IActionResult> Delete(Guid id)
+        //{
+        //    try
+        //    {
+        //        Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); // Hardcoded for demo purposes
+        //        await _orderService.DeleteAsync(id, userId);
+        //        return Ok(ApiResponse<object>.SuccessResponse(null, "Order deleted successfully"));
+        //    }
+        //    catch (KeyNotFoundException ex)
+        //    {
+        //        return NotFound(ApiResponse<object>.FailureResponse(ex.Message));
+        //    }
+        //}
     }
 }
