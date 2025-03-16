@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using BusinessObjects.Dto.Account;
+using Microsoft.AspNetCore.Mvc;
+using Services.Dto.Api;
 using Services.Interface;
 using System;
 using System.Threading.Tasks;
@@ -24,7 +26,12 @@ namespace API.Controllers
                 return BadRequest(new { message = "Score hoặc QuizSetId không hợp lệ" });
             }
 
-            var result = await _quizResultService.GetByPointAndSetIdAsync(score, quizSetId);
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            }
+            var result = await _quizResultService.GetByPointAndSetIdAsync(score, quizSetId, userId.Value);
             if (result == null)
             {
                 return NotFound(new { message = "Không tìm thấy kết quả quiz" });

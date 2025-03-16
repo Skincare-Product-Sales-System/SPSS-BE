@@ -27,7 +27,7 @@ namespace Services.Implementation
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
-        public async Task<QuizResultDto> GetByPointAndSetIdAsync(string score, Guid quizSetId)
+        public async Task<QuizResultDto> GetByPointAndSetIdAsync(string score, Guid quizSetId, Guid userId)
         {
             // Lấy QuizResult và SkinType
             var quizResult = await _unitOfWork.QuizResults.Entities
@@ -36,6 +36,14 @@ namespace Services.Implementation
 
             if (quizResult == null)
                 throw new KeyNotFoundException($"QuizResult with Score {score} and QuizSetId {quizSetId} not found.");
+
+            // Gán SkinTypeId cho User
+            var user = await _unitOfWork.Users.Entities.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null)
+                throw new KeyNotFoundException($"User with Id {userId} not found.");
+            user.SkinTypeId = quizResult.SkinTypeId;
+            _unitOfWork.Users.Update(user);
+            await _unitOfWork.SaveChangesAsync();
 
             // Lấy RoutineSteps từ SkinTypeRoutineStep
             var routineSteps = _unitOfWork.SkinTypeRoutineSteps.Entities
