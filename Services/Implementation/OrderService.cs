@@ -259,6 +259,7 @@ namespace Services.Implementation
                     Status = orderEntity.Status,
                     OrderTotal = orderEntity.OrderTotal,
                     CreatedTime = orderEntity.CreatedTime,
+                    PaymentMethodId = orderEntity.PaymentMethodId,
                 };
 
                 return orderDtoResult;
