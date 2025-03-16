@@ -4,7 +4,6 @@ using BusinessObjects.Dto.Product;
 using BusinessObjects.Dto.ProductCategory;
 using BusinessObjects.Dto.ProductConfiguration;
 using BusinessObjects.Dto.ProductItem;
-using BusinessObjects.Dto.Promotion;
 using BusinessObjects.Dto.SkinType;
 using BusinessObjects.Dto.Variation;
 using BusinessObjects.Models;

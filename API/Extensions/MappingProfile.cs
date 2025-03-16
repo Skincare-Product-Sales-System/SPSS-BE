@@ -8,13 +8,11 @@ using BusinessObjects.Dto.ProductCategory;
 using BusinessObjects.Dto.ProductConfiguration;
 using BusinessObjects.Dto.ProductItem;
 using BusinessObjects.Dto.ProductStatus;
-using BusinessObjects.Dto.Promotion;
 using BusinessObjects.Dto.Review;
 using BusinessObjects.Dto.Reply;
 using BusinessObjects.Models;
 using BusinessObjects.Dto.CartItem;
 using BusinessObjects.Dto.Variation;
-using BusinessObjects.Dto.PromotionType;
 using BusinessObjects.Dto.PaymentMethod;
 using BusinessObjects.Dto.Role;
 using BusinessObjects.Dto.User;
@@ -101,9 +99,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Quantity))
             .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price));
         // Map OrderDetail to OrderDetail (for adding OrderDetails to the Order)
-        CreateMap<OrderDetailForCreationDto, OrderDetail>()
-            .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => DateTime.UtcNow))
-            .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => DateTime.UtcNow));
+        CreateMap<OrderDetailForCreationDto, OrderDetail>();
         #endregion
 
         #region Product
@@ -135,19 +131,6 @@ public class MappingProfile : Profile
         CreateMap<Product, ProductWithDetailsDto>()
             .ForMember(dest => dest.ProductImageUrls, opt => opt.MapFrom(src => src.ProductImages.Select(i => i.ImageUrl).ToList()))
             .ForMember(dest => dest.ProductItems, opt => opt.MapFrom(src => src.ProductItems))
-            .ForMember(dest => dest.Promotion, opt => opt.MapFrom(src => src.PromotionTargets
-                .Where(pt => pt.Promotion != null)
-                .Select(pt => new PromotionForProductQueryDto
-                {
-                    Id = pt.Promotion.Id,
-                    Name = pt.Promotion.Name,
-                    Type = pt.Promotion.Type,
-                    Description = pt.Promotion.Description,
-                    DiscountRate = pt.Promotion.DiscountRate,
-                    StartDate = pt.Promotion.StartDate,
-                    EndDate = pt.Promotion.EndDate
-                })
-                .FirstOrDefault())) // Chỉ lấy promotion đầu tiên (nếu cần nhiều hơn, chỉnh lại kiểu trả về)
             .ForMember(dest => dest.Brand, opt => opt.MapFrom(src => src.Brand))
             .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.ProductCategory))
             .ForMember(dest => dest.Specifications, opt => opt.MapFrom(src => new ProductSpecifications
@@ -203,10 +186,6 @@ public class MappingProfile : Profile
         // Map StatusChangeForCreationDto to StatusChange (for tracking status change)
         CreateMap<StatusChangeForCreationDto, StatusChange>()
             .ForMember(dest => dest.Date, opt => opt.MapFrom(src => DateTimeOffset.UtcNow));
-        #endregion
-
-        #region Promotion
-        CreateMap<Promotion, PromotionForProductQueryDto>();
         #endregion
 
         #region Brand
@@ -314,6 +293,7 @@ public class MappingProfile : Profile
         #endregion
 
         #region CartItem
+
         CreateMap<CartItem, CartItemDto>()
             .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.ProductItem.Price))
             .ForMember(dest => dest.StockQuantity, opt => opt.MapFrom(src => src.ProductItem.QuantityInStock))
@@ -331,16 +311,9 @@ public class MappingProfile : Profile
                     .Select(pc => pc.VariationOption.Value)
                     .ToList()))
             .ForMember(dest => dest.InStock, opt => opt.MapFrom(src =>
-                !(src.Quantity > src.ProductItem.QuantityInStock)))
-            .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => src.LastUpdatedTime));
+                !(src.Quantity > src.ProductItem.QuantityInStock)));
         CreateMap<CartItemForCreationDto, CartItem>();
         CreateMap<CartItemForUpdateDto, CartItem>();
-        #endregion
-
-        #region PromotionType
-        CreateMap<PromotionType, PromotionTypeDto>();
-        CreateMap<PromotionTypeForCreationDto, PromotionType>();
-        CreateMap<PromotionTypeForUpdateDto, PromotionType>();
         #endregion
 
         #region PaymentMethod
