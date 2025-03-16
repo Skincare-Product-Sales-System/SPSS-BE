@@ -116,8 +116,6 @@ public class ProductService : IProductService
                         .ThenInclude(vo => vo.Variation)
             .Include(p => p.Brand)
             .Include(p => p.ProductImages)
-            .Include(p => p.PromotionTargets)
-                .ThenInclude(pt => pt.Promotion)
             .Include(p => p.ProductForSkinTypes)
                 .ThenInclude(pst => pst.SkinType)
             .Include(ps => ps.ProductStatus)
@@ -165,19 +163,6 @@ public class ProductService : IProductService
                     OptionId = pc.VariationOption.Id
                 }).ToList()
             }).ToList(),
-            Promotion = product.PromotionTargets?
-                .Where(pt => pt.Promotion != null)
-                .Select(pt => new PromotionForProductQueryDto
-                {
-                    Id = pt.Promotion.Id,
-                    Name = pt.Promotion.Name,
-                    Type = pt.Promotion.Type,
-                    Description = pt.Promotion.Description,
-                    DiscountRate = pt.Promotion.DiscountRate,
-                    StartDate = pt.Promotion.StartDate,
-                    EndDate = pt.Promotion.EndDate
-                })
-                .FirstOrDefault(),
             SkinTypes = product.ProductForSkinTypes.Select(pst => new SkinTypeForProductQueryDto
             {
                 Id = pst.SkinType.Id,
@@ -313,10 +298,6 @@ public class ProductService : IProductService
                     Id = Guid.NewGuid(),
                     ProductId = productEntity.Id,
                     SkinTypeId = skinTypeId,
-                    CreatedBy = userId,
-                    LastUpdatedBy = userId,
-                    CreatedTime = DateTime.UtcNow,
-                    LastUpdatedTime = DateTime.UtcNow
                 });
             }
 
@@ -335,10 +316,6 @@ public class ProductService : IProductService
                     ProductId = productEntity.Id,
                     ImageUrl = imageUrl,
                     IsThumbnail = (i == 0),
-                    CreatedBy = userId,
-                    LastUpdatedBy = userId,
-                    CreatedTime = DateTime.UtcNow,
-                    LastUpdatedTime = DateTime.UtcNow
                 });
             }
 
@@ -447,7 +424,6 @@ public class ProductService : IProductService
                 Price = combination.Price,
                 QuantityInStock = combination.QuantityInStock,
                 ImageUrl = combination.ImageUrl,
-                CreatedBy = userId,
             };
 
             // Add ProductItem to the DbContext
@@ -461,7 +437,6 @@ public class ProductService : IProductService
                     Id = Guid.NewGuid(),
                     ProductItemId = productItem.Id,
                     VariationOptionId = variationOptionId,
-                    CreatedBy = userId,
                 };
 
                 // Add ProductConfiguration to the DbContext
@@ -555,10 +530,6 @@ public class ProductService : IProductService
                     Id = Guid.NewGuid(),
                     ProductId = productId,
                     SkinTypeId = skinTypeId,
-                    CreatedBy = userId.ToString(),
-                    LastUpdatedBy = userId.ToString(),
-                    CreatedTime = DateTime.UtcNow,
-                    LastUpdatedTime = DateTime.UtcNow
                 });
             }
 
@@ -580,10 +551,6 @@ public class ProductService : IProductService
                     ProductId = productId,
                     ImageUrl = imagesToAdd[i],
                     IsThumbnail = (i == 0 && !existingProduct.ProductImages.Any(pi => pi.IsThumbnail)),
-                    CreatedBy = userId.ToString(),
-                    LastUpdatedBy = userId.ToString(),
-                    CreatedTime = DateTime.UtcNow,
-                    LastUpdatedTime = DateTime.UtcNow
                 });
             }
 
@@ -650,9 +617,7 @@ public class ProductService : IProductService
                 ImageUrl = combination.ImageUrl,
                 ProductId = product.Id,
                 Price = combination.Price ?? 0,  // Defaulting to 0 if Price is not provided
-                QuantityInStock = combination.QuantityInStock ?? 0,  // Defaulting to 0 if QuantityInStock is not provided
-                CreatedBy = userId.ToString(),
-                LastUpdatedBy = userId.ToString()
+                QuantityInStock = combination.QuantityInStock ?? 0,
             };
 
             _unitOfWork.ProductItems.Add(productItem);

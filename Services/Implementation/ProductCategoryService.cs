@@ -36,7 +36,7 @@ namespace Services.Implementation
             var (categories, totalCount) = await _unitOfWork.ProductCategories.GetPagedAsync(
                 pageNumber,
                 pageSize,
-                cr => cr.IsDeleted == false // Filter out deleted cancel reasons
+                null// Filter out deleted cancel reasons
             );
             var categoryDtos = _mapper.Map<IEnumerable<ProductCategoryDto>>(categories);
             return new PagedResponse<ProductCategoryDto>
@@ -54,11 +54,6 @@ namespace Services.Implementation
                 throw new ArgumentNullException(nameof(categoryDto), "Product Category data cannot be null.");
             var category = _mapper.Map<ProductCategory>(categoryDto);
             category.Id = Guid.NewGuid();
-            category.CreatedBy = "System";
-            category.CreatedTime = DateTime.UtcNow;
-            category.IsDeleted = false;
-            category.LastUpdatedBy = "System";
-            category.LastUpdatedTime = DateTime.UtcNow;
             _unitOfWork.ProductCategories.Add(category);
             await _unitOfWork.SaveChangesAsync();
             return _mapper.Map<ProductCategoryDto>(category);

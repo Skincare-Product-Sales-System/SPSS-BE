@@ -23,7 +23,7 @@ namespace Services.Implementation
         public async Task<CancelReasonDto> GetByIdAsync(Guid id)
         {
             var cancelReason = await _unitOfWork.CancelReasons.GetByIdAsync(id);
-            if (cancelReason == null || cancelReason.IsDeleted)
+            if (cancelReason == null)
                 throw new KeyNotFoundException($"Cancel Reason with ID {id} not found or has been deleted.");
 
             return _mapper.Map<CancelReasonDto>(cancelReason);
@@ -34,7 +34,7 @@ namespace Services.Implementation
             var (cancelReasons, totalCount) = await _unitOfWork.CancelReasons.GetPagedAsync(
                 pageNumber,
                 pageSize,
-                cr => cr.IsDeleted == false // Filter out deleted cancel reasons
+                null
             );
             var cancelReasonDtos = _mapper.Map<IEnumerable<CancelReasonDto>>(cancelReasons);
             return new PagedResponse<CancelReasonDto>
@@ -52,11 +52,6 @@ namespace Services.Implementation
                 throw new ArgumentNullException(nameof(cancelReasonDto), "Cancel reason data cannot be null.");
 
             var cancelReason = _mapper.Map<CancelReason>(cancelReasonDto);
-            cancelReason.CreatedTime = DateTimeOffset.UtcNow;
-            cancelReason.CreatedBy = userId.ToString();
-            cancelReason.LastUpdatedTime = DateTimeOffset.UtcNow;
-            cancelReason.LastUpdatedBy = userId.ToString();
-            cancelReason.IsDeleted = false;
 
             _unitOfWork.CancelReasons.Add(cancelReason);
             await _unitOfWork.SaveChangesAsync();
@@ -69,11 +64,8 @@ namespace Services.Implementation
                 throw new ArgumentNullException(nameof(cancelReasonDto), "Cancel reason data cannot be null.");
 
             var cancelReason = await _unitOfWork.CancelReasons.GetByIdAsync(id);
-            if (cancelReason == null || cancelReason.IsDeleted)
+            if (cancelReason == null)
                 throw new KeyNotFoundException($"Cancel reason with ID {id} not found or has been deleted.");
-
-            cancelReason.LastUpdatedTime = DateTimeOffset.UtcNow;
-            cancelReason.LastUpdatedBy = userId.ToString();
 
             _mapper.Map(cancelReasonDto, cancelReason);
             _unitOfWork.CancelReasons.Update(cancelReason);
@@ -84,12 +76,8 @@ namespace Services.Implementation
         public async Task DeleteAsync(Guid id, Guid userId)
         {
             var cancelReason = await _unitOfWork.CancelReasons.GetByIdAsync(id);
-            if (cancelReason == null || cancelReason.IsDeleted)
+            if (cancelReason == null)
                 throw new KeyNotFoundException($"Cancel reason with ID {id} not found or has been deleted.");
-
-            cancelReason.IsDeleted = true;
-            cancelReason.DeletedTime = DateTimeOffset.UtcNow;
-            cancelReason.DeletedBy = userId.ToString();
 
             _unitOfWork.CancelReasons.Update(cancelReason); // Soft delete via update
             await _unitOfWork.SaveChangesAsync();

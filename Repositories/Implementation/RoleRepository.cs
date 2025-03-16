@@ -13,6 +13,6 @@ public class RoleRepository : RepositoryBase<Role, Guid>, IRoleRepository
     public async Task<Role?> GetRoleByNameAsync(string roleName)
     {
         return await _context.Roles
-            .FirstOrDefaultAsync(r => r.RoleName == roleName && !r.IsDeleted);
+            .FirstOrDefaultAsync(r => r.RoleName == roleName);
     }
 }

@@ -24,7 +24,7 @@ public class SkinTypeService : ISkinTypeService
     public async Task<SkinTypeDto> GetByIdAsync(Guid id)
     {
         var skinType = await _unitOfWork.SkinTypes.GetByIdAsync(id);
-        if (skinType == null || skinType.IsDeleted)
+        if (skinType == null)
             throw new KeyNotFoundException($"SkinType with ID {id} not found.");
         return _mapper.Map<SkinTypeDto>(skinType);
     }
@@ -32,7 +32,7 @@ public class SkinTypeService : ISkinTypeService
     public async Task<PagedResponse<SkinTypeDto>> GetPagedAsync(int pageNumber, int pageSize)
     {
         var (skinTypes, totalCount) = await _unitOfWork.SkinTypes.GetPagedAsync(
-            pageNumber, pageSize, s => s.IsDeleted == false);
+            pageNumber, pageSize, null);
 
         var skinTypeDtos = _mapper.Map<IEnumerable<SkinTypeDto>>(skinTypes);
         return new PagedResponse<SkinTypeDto>
@@ -55,11 +55,6 @@ public class SkinTypeService : ISkinTypeService
             Id = Guid.NewGuid(),
             Name = skinTypeForCreationDto.Name,
             Description = skinTypeForCreationDto.Description,
-            CreatedTime = DateTimeOffset.UtcNow,
-            CreatedBy = userId.ToString(),
-            IsDeleted = false,
-            LastUpdatedTime = DateTimeOffset.UtcNow,
-            LastUpdatedBy = userId.ToString()
         };
 
         // Handle Routine Steps
@@ -102,11 +97,8 @@ public class SkinTypeService : ISkinTypeService
             throw new ArgumentNullException(nameof(skinTypeForUpdateDto), "SkinType data cannot be null.");
 
         var skinType = await _unitOfWork.SkinTypes.GetByIdAsync(skinTypeId);
-        if (skinType == null || skinType.IsDeleted)
+        if (skinType == null)
             throw new KeyNotFoundException($"SkinType with ID {skinTypeId} not found.");
-
-        skinType.LastUpdatedTime = DateTimeOffset.UtcNow;
-        skinType.LastUpdatedBy = "System"; // You can replace "System" with actual user context
 
         _mapper.Map(skinTypeForUpdateDto, skinType);
         await _unitOfWork.SaveChangesAsync();
@@ -116,12 +108,8 @@ public class SkinTypeService : ISkinTypeService
     public async Task DeleteAsync(Guid id)
     {
         var skinType = await _unitOfWork.SkinTypes.GetByIdAsync(id);
-        if (skinType == null || skinType.IsDeleted)
+        if (skinType == null)
             throw new KeyNotFoundException($"SkinType with ID {id} not found.");
-
-        skinType.IsDeleted = true;
-        skinType.DeletedTime = DateTimeOffset.UtcNow;
-        skinType.DeletedBy = "System"; // You can replace "System" with actual user context
 
         _unitOfWork.SkinTypes.Update(skinType);
         await _unitOfWork.SaveChangesAsync();
