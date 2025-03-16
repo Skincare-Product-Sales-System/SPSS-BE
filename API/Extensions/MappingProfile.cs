@@ -385,9 +385,9 @@ public class MappingProfile : Profile
         #endregion
 
         #region SkinType
-        CreateMap<SkinType, SkinTypeDto>();
-        CreateMap<SkinTypeForCreationDto, SkinTypeDto>();
-        CreateMap<SkinTypeForUpdateDto, SkinTypeDto>();
+        CreateMap<SkinType, SkinTypeWithDetailDto>();
+        CreateMap<SkinTypeForCreationDto, SkinTypeWithDetailDto>();
+        CreateMap<SkinTypeForUpdateDto, SkinTypeWithDetailDto>();
         #endregion
 
         #region Country

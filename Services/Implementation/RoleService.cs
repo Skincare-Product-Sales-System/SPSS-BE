@@ -44,11 +44,26 @@ public class RoleService : IRoleService
         if (roleForCreationDto is null)
             throw new ArgumentNullException(nameof(roleForCreationDto), "Role data cannot be null.");
 
-        var role = _mapper.Map<Role>(roleForCreationDto);
+        // Manual mapping from RoleForCreationDto to Role
+        var role = new Role
+        {
+            RoleId = Guid.NewGuid(), // Assuming RoleId is generated during creation
+            RoleName = roleForCreationDto.RoleName,
+            Description = roleForCreationDto.Description,
+        };
 
         _unitOfWork.Roles.Add(role);
         await _unitOfWork.SaveChangesAsync();
-        return _mapper.Map<RoleDto>(role);
+
+        // Manual mapping from Role to RoleDto
+        var roleDto = new RoleDto
+        {
+            RoleId = role.RoleId,
+            RoleName = role.RoleName,
+            Description = role.Description,
+        };
+
+        return roleDto;
     }
 
     public async Task<RoleDto> UpdateAsync(Guid roleId, RoleForUpdateDto roleForUpdateDto)

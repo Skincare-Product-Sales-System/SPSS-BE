@@ -1080,11 +1080,10 @@ namespace BusinessObjects.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("DeletedBy")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<DateTimeOffset?>("DeletedTime")
+                    b.Property<DateTimeOffset>("DeletedTime")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("EmailAddress")
@@ -1105,7 +1104,7 @@ namespace BusinessObjects.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<DateTimeOffset?>("LastUpdatedTime")
+                    b.Property<DateTimeOffset>("LastUpdatedTime")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Password")

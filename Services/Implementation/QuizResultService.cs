@@ -21,12 +21,18 @@ namespace Services.Implementation
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
+        public QuizResultService(IUnitOfWork unitOfWork, IMapper mapper)
+        {
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        }
+
         public async Task<QuizResultDto> GetByPointAndSetIdAsync(string score, Guid quizSetId)
         {
             // Lấy QuizResult và SkinType
             var quizResult = await _unitOfWork.QuizResults.Entities
                 .Include(q => q.SkinType)
-                .FirstOrDefaultAsync(q => q.Score == score && q.SetId == quizSetId);
+                .FirstOrDefaultAsync(q => q.Score == score && q.QuizSetId == quizSetId);
 
             if (quizResult == null)
                 throw new KeyNotFoundException($"QuizResult with Score {score} and QuizSetId {quizSetId} not found.");
@@ -43,7 +49,8 @@ namespace Services.Implementation
                         Id = rs.Category.Id,
                         CategoryName = rs.Category.CategoryName
                     }, // Lấy tên danh mục
-                    Instruction = rs.Instruction, // Hướng dẫn cho bước routine
+                    Instruction = rs.Instruction,
+                    Order = rs.Order,
                     Products = _unitOfWork.Products.Entities
                         .Where(p => p.ProductCategoryId == rs.CategoryId)
                         .OrderByDescending(p => p.SoldCount) // Ưu tiên sản phẩm bán chạy

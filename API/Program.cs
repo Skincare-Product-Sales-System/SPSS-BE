@@ -43,10 +43,7 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = string.Empty;
     });
 }
-// Thiết lập DbContext với chuỗi kết nối từ appsettings.json
-builder.Services.AddDbContext<SPSSContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("SPSS"))
-        .EnableSensitiveDataLogging()); // EnableSensitiveDataLogging nếu cần thiết
+
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 app.UseRouting();

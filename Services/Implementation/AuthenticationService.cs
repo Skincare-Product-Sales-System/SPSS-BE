@@ -132,7 +132,7 @@ public class AuthenticationService : IAuthenticationService
         {
             
             createdUser = await _userService.CreateAsync(userForCreationDto);
-            await AssignRoleToUser(createdUser.UserId.ToString(), "customer");
+            await AssignRoleToUser(createdUser.UserId.ToString(), "Customer");
             return createdUser.UserId.ToString();
         }
         catch (Exception ex)
