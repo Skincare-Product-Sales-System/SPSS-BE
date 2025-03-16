@@ -45,6 +45,7 @@ public class UnitOfWork : IUnitOfWork
     private IAccountRepository _accountRepository;
     private IBlogSectionRepository _blogSectionRepository;
     private ISkinTypeRoutineStepRepository _skinTypeRoutineStepRepository;
+    private IPromotionTargetRepository _promotionTargetRepository;
     public UnitOfWork(SPSSContext context) =>  _context = context;
 
     public IAccountRepository Accounts => _accountRepository ??= new AccountRepository(_context);
@@ -83,6 +84,9 @@ public class UnitOfWork : IUnitOfWork
     public IQuizOptionRepository QuizOptions => _quizOptionRepository ??= new QuizOptionRepository(_context);
     public IQuizResultRepository QuizResults => _quizResultRepository ??= new QuizResultRepository(_context);
     public ICountryRepository Countries => _countryRepository ??= new CountryRepository(_context);
+
+    public IPromotionTargetRepository PromotionTargets =>
+        _promotionTargetRepository ??= new PromotionTargetRepository(_context);
 
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 
