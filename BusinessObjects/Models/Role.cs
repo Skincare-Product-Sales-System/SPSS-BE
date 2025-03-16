@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BusinessObjects.Models
 {
-    public class Role : BaseEntity
+    public class Role
     {
         public Guid RoleId { get; set; }
         public string RoleName { get; set; }

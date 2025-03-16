@@ -1,7 +1,6 @@
 ﻿using BusinessObjects.Dto.Brand;
 using BusinessObjects.Dto.ProductCategory;
 using BusinessObjects.Dto.ProductItem;
-using BusinessObjects.Dto.Promotion;
 using BusinessObjects.Dto.SkinType;
 using BusinessObjects.Models;
 
@@ -25,7 +24,6 @@ namespace BusinessObjects.Dto.Product
         public List<SkinTypeForProductQueryDto> SkinTypes { get; set; } = new();
         public List<string> ProductImageUrls { get; set; } = new();
         public List<ProductItemDto> ProductItems { get; set; } = new();
-        public PromotionForProductQueryDto? Promotion { get; set; }
         public BrandDto Brand { get; set; } = null!;
         public ProductCategoryDto Category { get; set; } = null!;
         public ProductSpecifications Specifications { get; set; } = new();
