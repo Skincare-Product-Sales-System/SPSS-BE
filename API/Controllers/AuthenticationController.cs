@@ -78,4 +78,32 @@ public class AuthenticationController : ControllerBase
             return StatusCode(500, new { message = ex.Message });
         }
     }
+    
+    [HttpPost("registerForManager")]
+    public async Task<ActionResult<string>> RegisterForManager(RegisterRequest registerRequest)
+    {
+        try
+        {
+            var result = await _authService.RegisterForManagerAsync(registerRequest);
+            return Ok(new { message = "Registered successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+    
+    [HttpPost("registerForStaff")]
+    public async Task<ActionResult<string>> RegisterForStaff(RegisterRequest registerRequest)
+    {
+        try
+        {
+            var result = await _authService.RegisterForStaffAsync(registerRequest);
+            return Ok(new { message = "Registered successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
 }
