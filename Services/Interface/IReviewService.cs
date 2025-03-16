@@ -13,7 +13,7 @@ namespace Services.Interface
     public interface IReviewService
     {
         Task<PagedResponse<ReviewDto>> GetPagedByUserIdAsync(Guid userId, int pageNumber, int pageSize);
-        Task<PagedResponse<ReviewForProductQueryDto>> GetReviewsByProductIdAsync(Guid productId, int pageNumber, int pageSize);
+        Task<PagedResponse<ReviewForProductQueryDto>> GetReviewsByProductIdAsync(Guid productId, int pageNumber, int pageSize, int? ratingFilter = null);
         Task<PagedResponse<ReviewDto>> GetPagedAsync(int pageNumber, int pageSize);
         Task<ReviewForCreationDto> CreateAsync(Guid userId, ReviewForCreationDto reviewDto);
         Task<ReviewDto> UpdateAsync(Guid userId, ReviewForUpdateDto reviewDto, Guid id);

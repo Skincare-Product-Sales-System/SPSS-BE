@@ -1,4 +1,5 @@
 ﻿using BusinessObjects.Dto.BlogImage;
+using BusinessObjects.Dto.BlogSection;
 
 namespace BusinessObjects.Dto.Blog
 {
@@ -8,7 +9,8 @@ namespace BusinessObjects.Dto.Blog
         public string Title { get; set; }
         public string Thumbnail { get; set; }
         public string BlogContent { get; set; }
-        public Guid UserId { get; set; }
-        public List<string> BlogImages { get; set; }
+        public string Author { get; set; }
+        public DateTimeOffset? LastUpdatedAt { get; set; }
+        public List<BlogSectionDto> Sections { get; set; }
     }
 }

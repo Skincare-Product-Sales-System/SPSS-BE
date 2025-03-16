@@ -1,4 +1,6 @@
-﻿namespace BusinessObjects.Dto.SkinType;
+﻿using BusinessObjects.Dto.SkincareRoutinStep;
+
+namespace BusinessObjects.Dto.SkinType;
 
 public class SkinTypeDto
 {
@@ -7,6 +9,5 @@ public class SkinTypeDto
     public string Name { get; set; }
 
     public string Description { get; set; }
-
-    public string Routine { get; set; }
+    public List<SkinTypeRoutineStepDto> SkinTypeRoutineSteps { get; set; } = new List<SkinTypeRoutineStepDto>();
 }

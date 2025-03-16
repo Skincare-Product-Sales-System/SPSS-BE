@@ -8,7 +8,7 @@ public interface IBlogService
 {
     Task<BlogWithDetailDto> GetByIdAsync(Guid id);
     Task<PagedResponse<BlogDto>> GetPagedAsync(int pageNumber, int pageSize);
-    Task<BlogDto> CreateAsync(BlogForCreationDto? addressForCreationDto, Guid userId);
-    Task<BlogDto> UpdateAsync(Guid addressId, BlogForUpdateDto addressForUpdateDto, Guid userId);
+    Task<BlogDto> CreateBlogAsync(BlogForCreationDto blogDto, Guid userId);
+    Task<BlogDto> UpdateBlogAsync(Guid blogId, BlogForUpdateDto blogDto, Guid userId);
     Task<bool> DeleteAsync(Guid id, Guid userId);
 }

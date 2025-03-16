@@ -2,7 +2,7 @@
 
 namespace Repositories.Interface
 {
-    public interface IBlogImageRepository : IRepositoryBase<BlogImage, Guid>
+    public interface IBlogSectionRepository : IRepositoryBase<BlogSection, Guid>
     {
 
     }

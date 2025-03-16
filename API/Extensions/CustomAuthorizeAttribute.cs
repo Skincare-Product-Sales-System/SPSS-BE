@@ -1,33 +1,32 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using System;
+﻿using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Mvc;
 
-public class CustomAuthorizeAttribute : Attribute, IAuthorizationFilter
+namespace API.Extensions
 {
-    private readonly string[] _roles;
-
-    public CustomAuthorizeAttribute(string roles)
+    public class CustomAuthorizeAttribute : Attribute, IAuthorizationFilter
     {
-        if (string.IsNullOrWhiteSpace(roles))
-            throw new ArgumentException("Roles cannot be null or empty.", nameof(roles));
+        private readonly string[] _requiredRoles;
 
-        _roles = roles.Split(",").Select(role => role.Trim()).ToArray();
-    }
-
-    public void OnAuthorization(AuthorizationFilterContext context)
-    {
-        // Check if the user is authenticated
-        var user = context.HttpContext.User;
-        if (user == null || !user.Identity.IsAuthenticated)
+        public CustomAuthorizeAttribute(params string[] requiredRoles)
         {
-            context.Result = new UnauthorizedResult();
-            return;
+            _requiredRoles = requiredRoles;
         }
 
-        // Check if the user has any of the specified roles
-        if (!_roles.Any(role => user.IsInRole(role)))
+        public void OnAuthorization(AuthorizationFilterContext context)
         {
-            context.Result = new ForbidResult(); // Forbidden if user doesn't have the required role
+            var role = context.HttpContext.Items["Role"]?.ToString();
+
+            // Handle multiple roles in "Role"
+            if (role != null)
+            {
+                var userRoles = role.Split(',').Select(r => r.Trim()).ToList(); // Split and trim roles
+                if (_requiredRoles.Any(requiredRole => userRoles.Contains(requiredRole, StringComparer.OrdinalIgnoreCase)))
+                {
+                    return; // Authorized if any required role matches
+                }
+            }
+
+            context.Result = new ForbidResult(); // Forbid if no roles match
         }
     }
 }

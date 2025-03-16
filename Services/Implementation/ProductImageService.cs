@@ -99,5 +99,12 @@ namespace Services.Implementation;
             return downloadUrl;
 
         }
-        
+        public async Task<bool> DeleteFirebaseLink(string imageUrl)
+        {
+
+            var deleteImageService = new ManageFirebaseImage.ManageFirebaseImageService();
+            await deleteImageService.DeleteFileAsync(imageUrl);
+
+            return true;
+        }
     }

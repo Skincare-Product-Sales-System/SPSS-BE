@@ -1,6 +1,7 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Security.Claims;
+using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
 namespace API.Middleware;
@@ -29,9 +30,9 @@ public class AuthMiddleware
             }
         }
 
-        if (context.Request.Headers.ContainsKey("Authorization"))
+        if (context.Request.Headers.TryGetValue("Authorization", out var authorizationHeader) && !string.IsNullOrEmpty(authorizationHeader))
         {
-            var token = context.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var token = authorizationHeader.ToString().Replace("Bearer ", "");
             if (!string.IsNullOrEmpty(token))
             {
                 var tokenHandler = new JwtSecurityTokenHandler();

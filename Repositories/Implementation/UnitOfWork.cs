@@ -43,12 +43,13 @@ public class UnitOfWork : IUnitOfWork
     private IQuizResultRepository _quizResultRepository;
     private ICountryRepository _countryRepository;
     private IAccountRepository _accountRepository;
-    private IBlogImageRepository _blogImageRepository;
-    private IPromotionTargetRepository _promotionTargetRepository;
+    private IBlogSectionRepository _blogSectionRepository;
+    private ISkinTypeRoutineStepRepository _skinTypeRoutineStepRepository;
     public UnitOfWork(SPSSContext context) =>  _context = context;
 
     public IAccountRepository Accounts => _accountRepository ??= new AccountRepository(_context);
-    public IBlogImageRepository BlogImages => _blogImageRepository ??= new BlogImageRepository(_context);
+    public ISkinTypeRoutineStepRepository SkinTypeRoutineSteps => _skinTypeRoutineStepRepository ??= new SkinTypeRoutineStepRepository(_context);
+    public IBlogSectionRepository BlogSections => _blogSectionRepository ??= new BlogSectionRepository(_context);
     public IProductImageRepository ProductImages => _productImageRepository ?? (_productImageRepository = new ProductImageRepository(_context));
     public IStatusChangeRepository StatusChanges => _statusChangeRepository ?? (_statusChangeRepository = new StatusChangeRepository(_context));
     public IOrderDetailRepository OrderDetails => _orderDetailRepository ?? (_orderDetailRepository = new OrderDetailRepository(_context));
@@ -82,9 +83,6 @@ public class UnitOfWork : IUnitOfWork
     public IQuizOptionRepository QuizOptions => _quizOptionRepository ??= new QuizOptionRepository(_context);
     public IQuizResultRepository QuizResults => _quizResultRepository ??= new QuizResultRepository(_context);
     public ICountryRepository Countries => _countryRepository ??= new CountryRepository(_context);
-
-    public IPromotionTargetRepository PromotionTargets =>
-        _promotionTargetRepository ??= new PromotionTargetRepository(_context);
 
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 

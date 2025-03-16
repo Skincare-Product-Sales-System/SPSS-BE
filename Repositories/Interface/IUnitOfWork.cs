@@ -10,8 +10,9 @@ public interface IUnitOfWork : IDisposable
     IProductConfigurationRepository ProductConfigurations { get; }
     IBrandRepository Brands { get; }
     IVariationRepository Variations { get; }
-    IBlogImageRepository BlogImages { get; }
+    IBlogSectionRepository BlogSections { get; }
     IVariationOptionRepository VariationOptions { get; }
+    ISkinTypeRoutineStepRepository SkinTypeRoutineSteps { get; }
     IProductStatusRepository ProductStatuses { get; }
     IProductCategoryRepository  ProductCategories { get; }
     IUserRepository Users { get; }

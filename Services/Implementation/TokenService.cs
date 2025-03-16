@@ -22,7 +22,7 @@ public class TokenService : ITokenService
     {
         _configuration = configuration;
         _unitOfWork = unitOfWork;
-        _accessTokenExpiration = TimeSpan.FromDays(double.Parse(_configuration["Jwt:AccessTokenExpirationDays"] ?? "7"));
+        _accessTokenExpiration = TimeSpan.FromDays(double.Parse(_configuration["Jwt:AccessTokenExpirationDays"] ?? "30"));
         _refreshTokenExpiration = TimeSpan.FromDays(double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] ?? "7"));
     }
 

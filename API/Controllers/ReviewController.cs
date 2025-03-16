@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using BusinessObjects.Dto.Review;
 using Services.Dto.Api;
 using Services.Response;
+using API.Extensions;
+using BusinessObjects.Dto.Account;
 
 namespace API.Controllers;
 
@@ -28,9 +30,13 @@ public class ReviewController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<PagedResponse<ReviewDto>>.FailureResponse("Invalid pagination parameters", errors));
         }
-        Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); //hard code for testing
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
+        if (userId == null)
+        {
+            return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+        }
         // Gọi service để lấy dữ liệu
-        var pagedReviews = await _reviewService.GetPagedByUserIdAsync(userId, pageNumber, pageSize);
+        var pagedReviews = await _reviewService.GetPagedByUserIdAsync(userId.Value, pageNumber, pageSize);
         return Ok(ApiResponse<PagedResponse<ReviewDto>>.SuccessResponse(pagedReviews));
     }
 
@@ -39,15 +45,25 @@ public class ReviewController : ControllerBase
     public async Task<IActionResult> GetByProductId(
         Guid productId,
         [Range(1, int.MaxValue)] int pageNumber = 1,
-        [Range(1, 100)] int pageSize = 10)
+        [Range(1, 100)] int pageSize = 10,
+        [FromQuery] int? ratingFilter = null) // Thêm tham số lọc rating
     {
         if (!ModelState.IsValid)
         {
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-            return BadRequest(ApiResponse<PagedResponse<ReviewForProductQueryDto>>.FailureResponse("Invalid pagination parameters", errors));
+            return BadRequest(ApiResponse<PagedResponse<ReviewForProductQueryDto>>.FailureResponse("Invalid parameters", errors));
         }
 
-        var pagedData = await _reviewService.GetReviewsByProductIdAsync(productId, pageNumber, pageSize);
+        // Kiểm tra ratingFilter hợp lệ (1–5 hoặc null)
+        if (ratingFilter.HasValue && (ratingFilter < 1 || ratingFilter > 5))
+        {
+            return BadRequest(ApiResponse<PagedResponse<ReviewForProductQueryDto>>.FailureResponse("Invalid rating filter. Rating must be between 1 and 5."));
+        }
+
+        // Lấy dữ liệu từ service
+        var pagedData = await _reviewService.GetReviewsByProductIdAsync(productId, pageNumber, pageSize, ratingFilter);
+
+        // Trả về kết quả
         return Ok(ApiResponse<PagedResponse<ReviewForProductQueryDto>>.SuccessResponse(pagedData));
     }
 
@@ -78,8 +94,12 @@ public class ReviewController : ControllerBase
 
         try
         {
-            Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); //hard code for testing
-            var createdReview = await _reviewService.CreateAsync(userId, reviewDto);
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            }
+            var createdReview = await _reviewService.CreateAsync(userId.Value, reviewDto);
             return Ok(ApiResponse<ReviewForCreationDto>.SuccessResponse(createdReview, "Review created successfully"));
         }
         catch (ArgumentNullException ex)
@@ -103,8 +123,12 @@ public class ReviewController : ControllerBase
 
         try
         {
-            Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); //hard code for testing
-            var updatedReview = await _reviewService.UpdateAsync(userId, reviewDto, id);
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            }
+            var updatedReview = await _reviewService.UpdateAsync(userId.Value, reviewDto, id);
             return Ok(ApiResponse<ReviewDto>.SuccessResponse(updatedReview, "Review updated successfully"));
         }
         catch (KeyNotFoundException ex)
@@ -125,8 +149,12 @@ public class ReviewController : ControllerBase
     {
         try
         {
-            Guid userId = Guid.Parse("032b11dc-c5bb-42ec-a319-9b691339ecc0"); //hard code for testing
-            await _reviewService.DeleteAsync(userId, id);
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            }
+            await _reviewService.DeleteAsync(userId.Value, id);
             return Ok(ApiResponse<object>.SuccessResponse(null, "Review deleted successfully"));
         }
         catch (KeyNotFoundException ex)

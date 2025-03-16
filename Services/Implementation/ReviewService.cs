@@ -105,18 +105,13 @@ namespace Services.Implementation
             };
         }
 
-        public async Task<PagedResponse<ReviewForProductQueryDto>> GetReviewsByProductIdAsync(Guid productId, int pageNumber, int pageSize)
+        public async Task<PagedResponse<ReviewForProductQueryDto>> GetReviewsByProductIdAsync(Guid productId, int pageNumber, int pageSize, int? ratingFilter = null)
         {
             // Tính toán số bản ghi cần bỏ qua
             var skip = (pageNumber - 1) * pageSize;
 
-            // Truy vấn tổng số đánh giá của sản phẩm
-            var totalCount = await _unitOfWork.Reviews.Entities
-                .Where(r => r.ProductItem.ProductId == productId && !r.IsDeleted)
-                .CountAsync();
-
-            // Truy vấn danh sách đánh giá theo ProductId với phân trang
-            var reviews = await _unitOfWork.Reviews.Entities
+            // Truy vấn danh sách đánh giá của sản phẩm (áp dụng bộ lọc rating nếu có)
+            var query = _unitOfWork.Reviews.Entities
                 .Include(ri => ri.ReviewImages)
                 .Include(u => u.User)
                 .Include(pi => pi.ProductItem)
@@ -124,7 +119,19 @@ namespace Services.Implementation
                         .ThenInclude(c => c.VariationOption)
                 .Include(r => r.Reply)
                     .ThenInclude(u => u.User)
-                .Where(r => r.ProductItem.ProductId == productId && !r.IsDeleted)
+                .Where(r => r.ProductItem.ProductId == productId && !r.IsDeleted);
+
+            // Thêm điều kiện lọc rating nếu được chỉ định
+            if (ratingFilter.HasValue)
+            {
+                query = query.Where(r => r.RatingValue == ratingFilter.Value);
+            }
+
+            // Truy vấn tổng số đánh giá sau khi áp dụng bộ lọc
+            var totalCount = await query.CountAsync();
+
+            // Truy vấn danh sách đánh giá theo ProductId với phân trang
+            var reviews = await query
                 .OrderByDescending(r => r.LastUpdatedTime)
                 .Skip(skip)
                 .Take(pageSize)
@@ -142,6 +149,7 @@ namespace Services.Implementation
                 PageSize = pageSize
             };
         }
+
         public async Task<ReviewForCreationDto> CreateAsync(Guid userId, ReviewForCreationDto reviewDto)
         {
             if (reviewDto == null)
