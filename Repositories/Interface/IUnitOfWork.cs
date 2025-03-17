@@ -10,7 +10,9 @@ public interface IUnitOfWork : IDisposable
     IProductConfigurationRepository ProductConfigurations { get; }
     IBrandRepository Brands { get; }
     IVariationRepository Variations { get; }
+    IBlogSectionRepository BlogSections { get; }
     IVariationOptionRepository VariationOptions { get; }
+    ISkinTypeRoutineStepRepository SkinTypeRoutineSteps { get; }
     IProductStatusRepository ProductStatuses { get; }
     IProductCategoryRepository  ProductCategories { get; }
     IUserRepository Users { get; }
@@ -19,18 +21,21 @@ public interface IUnitOfWork : IDisposable
     IBlogRepository Blogs { get; }
     IReviewRepository Reviews { get; }
     IReplyRepository Replies { get; }
-    IPromotionTypeRepository PromotionTypes { get; }
     ICartItemRepository CartItems { get; }
     IPaymentMethodRepository PaymentMethods { get; }
     IVoucherRepository Vouchers { get; }
     ISkinTypeRepository SkinTypes { get; }
-    IPromotionRepository Promotions { get; }
     IOrderRepository Orders { get; }
     IReviewImageRepository ReviewImages { get; }
     IOrderDetailRepository OrderDetails { get; }
     IStatusChangeRepository StatusChanges { get; }
-
     IProductForSkinTypeRepository ProductForSkinTypes { get; }
+    IQuizSetRepository QuizSets { get; }
+    IQuizQuestionRepository QuizQuestions { get; }
+    IQuizOptionRepository QuizOptions { get; }
+    IQuizResultRepository QuizResults { get; }
+    ICountryRepository Countries { get; }
+
 
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();

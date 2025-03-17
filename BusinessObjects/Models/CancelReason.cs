@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class CancelReason : BaseEntity
+public partial class CancelReason
 {
     public Guid Id { get; set; }
     public string Description { get; set; }

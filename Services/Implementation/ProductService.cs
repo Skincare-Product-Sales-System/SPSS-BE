@@ -1,9 +1,15 @@
 ﻿using AutoMapper;
+using BusinessObjects.Dto.Brand;
 using BusinessObjects.Dto.Product;
+using BusinessObjects.Dto.ProductCategory;
+using BusinessObjects.Dto.ProductConfiguration;
+using BusinessObjects.Dto.ProductItem;
+using BusinessObjects.Dto.SkinType;
 using BusinessObjects.Dto.Variation;
 using BusinessObjects.Models;
 using Firebase.Auth;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic;
 using Repositories.Implementation;
 using Repositories.Interface;
 using Services.Interface;
@@ -24,8 +30,130 @@ public class ProductService : IProductService
         _productStatusService = productStatusService;
     }
 
+    public async Task<PagedResponse<ProductDto>> GetPagedByBrandAsync(Guid brandId, int pageNumber, int pageSize)
+    {
+        var (products, totalCount) = await _unitOfWork.Products.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            cr => cr.IsDeleted == false && cr.BrandId == brandId
+        );
+
+        var orderedProducts = products.OrderByDescending(p => p.CreatedTime).ToList();
+
+        var productIds = orderedProducts.Select(p => p.Id).ToList();
+        var productImages = await _unitOfWork.ProductImages.Entities
+            .Where(pi => productIds.Contains(pi.ProductId))
+            .ToListAsync();
+
+        foreach (var product in orderedProducts)
+        {
+            product.ProductImages = productImages
+                .Where(pi => pi.ProductId == product.Id)
+                .ToList();
+        }
+
+        var productDtos = _mapper.Map<IEnumerable<ProductDto>>(orderedProducts);
+
+        return new PagedResponse<ProductDto>
+        {
+            Items = productDtos,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<PagedResponse<ProductDto>> GetPagedBySkinTypeAsync(Guid skinTypeId, int pageNumber, int pageSize)
+    {
+        // Fetch products related to the given SkinTypeId via the join table
+        var productIds = await _unitOfWork.ProductForSkinTypes.Entities
+            .Where(pst => pst.SkinTypeId == skinTypeId)
+            .Select(pst => pst.ProductId)
+            .Distinct()
+            .ToListAsync();
+
+        var (products, totalCount) = await _unitOfWork.Products.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            cr => cr.IsDeleted == false && productIds.Contains(cr.Id)
+        );
+
+        var orderedProducts = products.OrderByDescending(p => p.CreatedTime).ToList();
+
+        var productImageIds = orderedProducts.Select(p => p.Id).ToList();
+        var productImages = await _unitOfWork.ProductImages.Entities
+            .Where(pi => productImageIds.Contains(pi.ProductId))
+            .ToListAsync();
+
+        foreach (var product in orderedProducts)
+        {
+            product.ProductImages = productImages
+                .Where(pi => pi.ProductId == product.Id)
+                .ToList();
+        }
+
+        var productDtos = _mapper.Map<IEnumerable<ProductDto>>(orderedProducts);
+
+        return new PagedResponse<ProductDto>
+        {
+            Items = productDtos,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<PagedResponse<ProductDto>> GetPagedBySkinTypeAndCategoryAsync(Guid skinTypeId, Guid categoryId, int pageNumber, int pageSize)
+    {
+        // Fetch product IDs related to the given SkinTypeId via the join table
+        var productIdsBySkinType = await _unitOfWork.ProductForSkinTypes.Entities
+            .Where(pst => pst.SkinTypeId == skinTypeId)
+            .Select(pst => pst.ProductId)
+            .Distinct()
+            .ToListAsync();
+
+        // Fetch products filtered by both SkinTypeId and CategoryId
+        var (products, totalCount) = await _unitOfWork.Products.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            cr => cr.IsDeleted == false &&
+                  productIdsBySkinType.Contains(cr.Id) &&
+                  cr.ProductCategoryId == categoryId
+        );
+
+        var orderedProducts = products.OrderByDescending(p => p.CreatedTime).ToList();
+
+        // Fetch related product images
+        var productImageIds = orderedProducts.Select(p => p.Id).ToList();
+        var productImages = await _unitOfWork.ProductImages.Entities
+            .Where(pi => productImageIds.Contains(pi.ProductId))
+            .ToListAsync();
+
+        // Assign images to each product
+        foreach (var product in orderedProducts)
+        {
+            product.ProductImages = productImages
+                .Where(pi => pi.ProductId == product.Id)
+                .ToList();
+        }
+
+        // Map products to DTOs
+        var productDtos = _mapper.Map<IEnumerable<ProductDto>>(orderedProducts);
+
+        // Return paged response
+        return new PagedResponse<ProductDto>
+        {
+            Items = productDtos,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
+
     public async Task<ProductWithDetailsDto> GetByIdAsync(Guid id)
     {
+        // Lấy sản phẩm từ database
         var product = await _unitOfWork.Products
             .GetQueryable()
             .Include(p => p.ProductCategory)
@@ -33,17 +161,74 @@ public class ProductService : IProductService
                 .ThenInclude(pi => pi.ProductConfigurations)
                     .ThenInclude(pc => pc.VariationOption)
                         .ThenInclude(vo => vo.Variation)
-            .Include(p => p.Brand)  
-            .Include(p => p.ProductImages) 
-            .Include(p => p.PromotionTargets)
-                .ThenInclude(pt => pt.Promotion) 
+            .Include(p => p.Brand)
+            .Include(p => p.ProductImages)
             .Include(p => p.ProductForSkinTypes)
                 .ThenInclude(pst => pst.SkinType)
+            .Include(ps => ps.ProductStatus)
             .FirstOrDefaultAsync(p => p.Id == id);
+
+        // Kiểm tra null
         if (product == null)
             throw new KeyNotFoundException($"Product with ID {id} not found.");
 
-        return _mapper.Map<ProductWithDetailsDto>(product);
+        // Thủ công map dữ liệu từ entity sang DTO
+        var productDto = new ProductWithDetailsDto
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Description = product.Description,
+            Price = product.Price,
+            MarketPrice = product.MarketPrice,
+            Rating = product.Rating,
+            SoldCount = product.SoldCount,
+            Status = product.ProductStatus.StatusName,
+            Category = new ProductCategoryDto
+            {
+                Id = product.ProductCategory.Id,
+                CategoryName = product.ProductCategory.CategoryName
+            },
+            Brand = new BrandDto
+            {
+                Id = product.Brand.Id,
+                Name = product.Brand.Name,
+                Title = product.Brand.Title,
+                Description = product.Brand.Description,
+                ImageUrl = product.Brand.ImageUrl
+            },
+            ProductImageUrls = product.ProductImages.Select(pi => pi.ImageUrl).ToList(),
+            ProductItems = product.ProductItems.Select(pi => new ProductItemDto
+            {
+                Id = pi.Id,
+                Price = pi.Price,
+                QuantityInStock = pi.QuantityInStock,
+                ImageUrl = pi.ImageUrl,
+                Configurations = pi.ProductConfigurations.Select(pc => new ProductConfigurationForProductQueryDto
+                {
+                    VariationName = pc.VariationOption.Variation.Name,
+                    OptionName = pc.VariationOption.Value,
+                    OptionId = pc.VariationOption.Id
+                }).ToList()
+            }).ToList(),
+            SkinTypes = product.ProductForSkinTypes.Select(pst => new SkinTypeForProductQueryDto
+            {
+                Id = pst.SkinType.Id,
+                Name = pst.SkinType.Name
+            }).ToList(),
+            Specifications = new ProductSpecifications
+            {
+                StorageInstruction = product.StorageInstruction,
+                UsageInstruction = product.UsageInstruction,
+                DetailedIngredients = product.DetailedIngredients,
+                MainFunction = product.MainFunction,
+                Texture = product.Texture,
+                KeyActiveIngredients = product.KeyActiveIngredients,
+                ExpiryDate = product.ExpiryDate,
+                SkinIssues = product.SkinIssues
+            }
+        };
+
+        return productDto;
     }
 
     public async Task<PagedResponse<ProductDto>> GetPagedAsync(int pageNumber, int pageSize)
@@ -55,6 +240,40 @@ public class ProductService : IProductService
         );
 
         var orderedProducts = products.OrderByDescending(p => p.CreatedTime).ToList();
+
+        var productIds = orderedProducts.Select(p => p.Id).ToList();
+        var productImages = await _unitOfWork.ProductImages.Entities
+            .Where(pi => productIds.Contains(pi.ProductId))
+            .ToListAsync();
+
+        foreach (var product in orderedProducts)
+        {
+            product.ProductImages = productImages
+                .Where(pi => pi.ProductId == product.Id)
+                .ToList();
+        }
+
+        var productDtos = _mapper.Map<IEnumerable<ProductDto>>(orderedProducts);
+
+        return new PagedResponse<ProductDto>
+        {
+            Items = productDtos,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<PagedResponse<ProductDto>> GetBestSellerAsync(int pageNumber, int pageSize)
+    {
+        var (products, totalCount) = await _unitOfWork.Products.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            cr => cr.IsDeleted == false
+        );
+
+        // Sort by SoldCount in descending order
+        var orderedProducts = products.OrderByDescending(p => p.SoldCount).ToList();
 
         var productIds = orderedProducts.Select(p => p.Id).ToList();
         var productImages = await _unitOfWork.ProductImages.Entities
@@ -126,16 +345,14 @@ public class ProductService : IProductService
                     Id = Guid.NewGuid(),
                     ProductId = productEntity.Id,
                     SkinTypeId = skinTypeId,
-                    CreatedBy = userId,
-                    LastUpdatedBy = userId,
-                    CreatedTime = DateTime.UtcNow,
-                    LastUpdatedTime = DateTime.UtcNow
                 });
             }
 
             productEntity.Id = Guid.NewGuid();
             productEntity.CreatedTime = DateTime.UtcNow;
             productEntity.LastUpdatedTime = DateTime.UtcNow;
+            productEntity.SoldCount = 0;
+            productEntity.Rating = 0;
             // Map hình ảnh từ ProductImageUrls
             for (int i = 0; i < productDto.ProductImageUrls.Count; i++)
             {
@@ -146,10 +363,6 @@ public class ProductService : IProductService
                     ProductId = productEntity.Id,
                     ImageUrl = imageUrl,
                     IsThumbnail = (i == 0),
-                    CreatedBy = userId,
-                    LastUpdatedBy = userId,
-                    CreatedTime = DateTime.UtcNow,
-                    LastUpdatedTime = DateTime.UtcNow
                 });
             }
 
@@ -250,6 +463,10 @@ public class ProductService : IProductService
                 throw new ArgumentException("VariationOptionIds cannot be null or empty.");
             }
 
+            // Determine the default thumbnail URL if ImageUrl is empty
+            var defaultThumbnail = product.ProductImages
+                .FirstOrDefault(image => image.IsThumbnail)?.ImageUrl;
+
             // Create a new ProductItem
             var productItem = new ProductItem
             {
@@ -257,8 +474,9 @@ public class ProductService : IProductService
                 ProductId = product.Id,
                 Price = combination.Price,
                 QuantityInStock = combination.QuantityInStock,
-                ImageUrl = combination.ImageUrl,
-                CreatedBy = userId,
+                ImageUrl = string.IsNullOrWhiteSpace(combination.ImageUrl)
+                ? defaultThumbnail // Use Product.Thumbnail if ImageUrl is empty
+                : combination.ImageUrl,
             };
 
             // Add ProductItem to the DbContext
@@ -272,7 +490,6 @@ public class ProductService : IProductService
                     Id = Guid.NewGuid(),
                     ProductItemId = productItem.Id,
                     VariationOptionId = variationOptionId,
-                    CreatedBy = userId,
                 };
 
                 // Add ProductConfiguration to the DbContext
@@ -319,22 +536,160 @@ public class ProductService : IProductService
         return result.Select(c => c.ToList());
     }
 
-    public async Task<ProductDto> UpdateAsync(ProductForUpdateDto productDto, string userId)
+    public async Task<bool> UpdateAsync(ProductForUpdateDto productDto, Guid userId, Guid productId)
     {
-        if (productDto == null)
-            throw new ArgumentNullException(nameof(productDto), "Product data cannot be null.");
+        await _unitOfWork.BeginTransactionAsync();
 
-        var product = await _unitOfWork.Products.GetByIdAsync(productDto.Id);
-        if (product == null || product.IsDeleted)
-            throw new KeyNotFoundException($"Product with ID {productDto.Id} not found or has been deleted.");
+        try
+        {
+            // Step 1: Retrieve the existing product
+            var existingProduct = await _unitOfWork.Products.Entities
+                .Include(p => p.ProductItems)
+                .Include(p => p.ProductImages)
+                .Include(p => p.ProductForSkinTypes)
+                .FirstOrDefaultAsync(p => p.Id == productId);
 
-        product.LastUpdatedTime = DateTimeOffset.UtcNow;
-        product.LastUpdatedBy = userId;
+            if (existingProduct == null)
+            {
+                throw new ArgumentException("Product not found.");
+            }
 
-        _mapper.Map(productDto, product);
-        _unitOfWork.Products.Update(product);
-        await _unitOfWork.SaveChangesAsync();
-        return _mapper.Map<ProductDto>(product);
+            // Step 2: Update simple fields
+            if (!string.IsNullOrEmpty(productDto.Name)) existingProduct.Name = productDto.Name;
+            if (!string.IsNullOrEmpty(productDto.Description)) existingProduct.Description = productDto.Description;
+            if (productDto.BrandId.HasValue) existingProduct.BrandId = productDto.BrandId.Value;
+            if (productDto.ProductCategoryId.HasValue) existingProduct.ProductCategoryId = productDto.ProductCategoryId.Value;
+            existingProduct.Price = productDto.Price;
+            existingProduct.MarketPrice = productDto.MarketPrice;
+            existingProduct.LastUpdatedBy = userId.ToString();
+            existingProduct.LastUpdatedTime = DateTime.UtcNow;
+
+            // Step 3: Update SkinTypeIds
+            var existingSkinTypeIds = existingProduct.ProductForSkinTypes.Select(pfs => pfs.SkinTypeId).ToList();
+            var skinTypesToRemove = existingSkinTypeIds.Except(productDto.SkinTypeIds).ToList();
+            var skinTypesToAdd = productDto.SkinTypeIds.Except(existingSkinTypeIds).ToList();
+
+            foreach (var skinTypeId in skinTypesToRemove)
+            {
+                var toRemove = existingProduct.ProductForSkinTypes.FirstOrDefault(pfs => pfs.SkinTypeId == skinTypeId);
+                if (toRemove != null)
+                    _unitOfWork.ProductForSkinTypes.Delete(toRemove);
+            }
+
+            foreach (var skinTypeId in skinTypesToAdd)
+            {
+                _unitOfWork.ProductForSkinTypes.Add(new ProductForSkinType
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = productId,
+                    SkinTypeId = skinTypeId,
+                });
+            }
+
+            // Step 4: Update ProductImages
+            var existingImageUrls = existingProduct.ProductImages.Select(pi => pi.ImageUrl).ToList();
+            var imagesToRemove = existingProduct.ProductImages.Where(pi => !productDto.ProductImageUrls.Contains(pi.ImageUrl)).ToList();
+            var imagesToAdd = productDto.ProductImageUrls.Except(existingImageUrls).ToList();
+
+            foreach (var image in imagesToRemove)
+            {
+                _unitOfWork.ProductImages.Delete(image);
+            }
+
+            for (int i = 0; i < imagesToAdd.Count; i++)
+            {
+                _unitOfWork.ProductImages.Add(new ProductImage
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = productId,
+                    ImageUrl = imagesToAdd[i],
+                    IsThumbnail = (i == 0 && !existingProduct.ProductImages.Any(pi => pi.IsThumbnail)),
+                });
+            }
+
+            if (productDto.Variations != null)
+            {
+                foreach (var variationDto in productDto.Variations)
+                {
+
+                    var variationExists = await _unitOfWork.Variations.Entities
+                        .AnyAsync(v => v.Id == variationDto.Id);
+                    if (!variationExists)
+                    {
+                        throw new ArgumentException("Variation not found.");
+                    }
+
+                    if (variationDto.VariationOptionIds != null)
+                    {
+                        foreach (var variationOptionId in variationDto.VariationOptionIds)
+                        {
+                            var variationOptionExists = await _unitOfWork.VariationOptions.Entities
+                                .AnyAsync(vo => vo.Id == variationOptionId && vo.VariationId == variationDto.Id);
+                            if (!variationOptionExists)
+                            {
+                                throw new ArgumentException("Variation Option Not Belong To Variation.");
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (productDto.VariationCombinations != null)
+            {
+                await UpdateVariationOptionsForProduct(existingProduct, productDto.VariationCombinations, userId);
+            }
+
+            existingProduct.LastUpdatedBy = userId.ToString();
+            existingProduct.LastUpdatedTime = DateTime.UtcNow;
+
+            // Step 7: Save Changes
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitTransactionAsync();
+
+            return true;
+        }
+        catch (Exception)
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
+    }
+
+    public async Task UpdateVariationOptionsForProduct(Product product, List<VariationCombinationUpdateDto> variationCombinations, Guid userId)
+    {
+        // Delete all existing ProductItems and ProductConfigurations associated with this product
+        var productItems = product.ProductItems.ToList();
+        _unitOfWork.ProductItems.RemoveRange(productItems);
+
+        // Insert updated ProductItems and ProductConfigurations
+        foreach (var combination in variationCombinations)
+        {
+            var productItem = new ProductItem
+            {
+                Id = Guid.NewGuid(),
+                ImageUrl = combination.ImageUrl,
+                ProductId = product.Id,
+                Price = combination.Price ?? 0,  // Defaulting to 0 if Price is not provided
+                QuantityInStock = combination.QuantityInStock ?? 0,
+            };
+
+            _unitOfWork.ProductItems.Add(productItem);
+
+            if (combination.VariationOptionIds != null)
+            {
+                foreach (var variationOptionId in combination.VariationOptionIds)
+                {
+                    var productConfiguration = new ProductConfiguration
+                    {
+                        Id = Guid.NewGuid(),
+                        ProductItemId = productItem.Id,
+                        VariationOptionId = variationOptionId
+                    };
+
+                    _unitOfWork.ProductConfigurations.Add(productConfiguration);
+                }
+            }
+        }
     }
 
     public async Task DeleteAsync(Guid id , string userId)

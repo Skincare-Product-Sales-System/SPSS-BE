@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using BusinessObjects.Dto.Product;
 using Services.Dto.Api;
 using Services.Response;
+using API.Extensions;
 
 namespace API.Controllers;
 
@@ -31,6 +32,55 @@ public class ProductController : ControllerBase
         }
     }
 
+    [HttpGet("by-skin-type/{skinTypeId:guid}")]
+    public async Task<IActionResult> GetBySkinType(
+    Guid skinTypeId,
+    [FromQuery, Range(1, int.MaxValue)] int pageNumber = 1,
+    [FromQuery, Range(1, 100)] int pageSize = 10)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse<PagedResponse<ProductDto>>.FailureResponse("Invalid pagination parameters", errors));
+        }
+
+        var pagedData = await _productService.GetPagedBySkinTypeAsync(skinTypeId, pageNumber, pageSize);
+        return Ok(ApiResponse<PagedResponse<ProductDto>>.SuccessResponse(pagedData));
+    }
+
+    [HttpGet("by-brand/{brandId:guid}")]
+    public async Task<IActionResult> GetByBrand(
+    Guid brandId,
+    [FromQuery, Range(1, int.MaxValue)] int pageNumber = 1,
+    [FromQuery, Range(1, 100)] int pageSize = 10)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse<PagedResponse<ProductDto>>.FailureResponse("Invalid pagination parameters", errors));
+        }
+
+        var pagedData = await _productService.GetPagedByBrandAsync(brandId, pageNumber, pageSize);
+        return Ok(ApiResponse<PagedResponse<ProductDto>>.SuccessResponse(pagedData));
+    }
+
+
+    // Add this method to the ProductController
+    [HttpGet("best-sellers")]
+    public async Task<IActionResult> GetBestSellers(
+        [FromQuery, Range(1, int.MaxValue)] int pageNumber = 1,
+        [FromQuery, Range(1, 100)] int pageSize = 10)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse<PagedResponse<ProductDto>>.FailureResponse("Invalid pagination parameters", errors));
+        }
+
+        var pagedData = await _productService.GetBestSellerAsync(pageNumber, pageSize);
+        return Ok(ApiResponse<PagedResponse<ProductDto>>.SuccessResponse(pagedData));
+    }
+
     // GET: api/products?pageNumber=1&pageSize=10
     [HttpGet]
     public async Task<IActionResult> GetPaged(
@@ -48,6 +98,7 @@ public class ProductController : ControllerBase
     }
 
     // POST: api/products
+    [CustomAuthorize("Manager")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -58,10 +109,10 @@ public class ProductController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<ProductDto>.FailureResponse("Invalid product data", errors));
         }
-        string userId = "123"; // Get the user ID from the request context
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
         try
         {
-            var createdProduct = await _productService.CreateAsync(productDto, userId);
+            var createdProduct = await _productService.CreateAsync(productDto, userId.ToString());
             return Ok(ApiResponse<bool>.SuccessResponse(createdProduct, "Product created successfully"));
         }
         catch (ArgumentNullException ex)
@@ -70,8 +121,9 @@ public class ProductController : ControllerBase
         }
     }
 
-    // PUT: api/products/{id}
-    [HttpPut("{id:guid}")]
+    // PATCH: api/products/{id}
+    [CustomAuthorize("Manager")]
+    [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -82,14 +134,12 @@ public class ProductController : ControllerBase
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<ProductDto>.FailureResponse("Invalid product data", errors));
         }
-        string userId = "123"; // Get the user ID from the request context
-        if (id != productDto.Id)
-            return BadRequest(ApiResponse<ProductDto>.FailureResponse("Product ID in URL must match the ID in the body"));
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
 
         try
         {
-            var updatedProduct = await _productService.UpdateAsync(productDto, userId);
-            return Ok(ApiResponse<ProductDto>.SuccessResponse(updatedProduct, "Product updated successfully"));
+            var updatedProduct = await _productService.UpdateAsync(productDto, userId.Value, id);
+            return Ok(ApiResponse<bool>.SuccessResponse(updatedProduct, "Product updated successfully"));
         }
         catch (KeyNotFoundException ex)
         {
@@ -109,8 +159,8 @@ public class ProductController : ControllerBase
     {
         try
         {
-            string userId = "123"; // Get the user ID from the request context
-            await _productService.DeleteAsync(id, userId);
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            await _productService.DeleteAsync(id, userId.ToString());
             return Ok(ApiResponse<object>.SuccessResponse(null, "Product deleted successfully"));
         }
         catch (KeyNotFoundException ex)

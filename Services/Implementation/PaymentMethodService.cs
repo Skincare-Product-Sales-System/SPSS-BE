@@ -23,7 +23,7 @@ namespace Services.Implementation
         public async Task<PaymentMethodDto> GetByIdAsync(Guid id)
         {
             var paymentMethod = await _unitOfWork.PaymentMethods.GetByIdAsync(id);
-            if (paymentMethod == null || paymentMethod.IsDeleted)
+            if (paymentMethod == null)
                 throw new KeyNotFoundException($"Payment method with ID {id} not found or has been deleted.");
 
             return _mapper.Map<PaymentMethodDto>(paymentMethod);
@@ -34,7 +34,7 @@ namespace Services.Implementation
             var (paymentMethods, totalCount) = await _unitOfWork.PaymentMethods.GetPagedAsync(
                 pageNumber,
                 pageSize,
-                pm => pm.IsDeleted == false // Filter out deleted payment methods
+                null // Filter out deleted payment methods
             );
             var paymentMethodDtos = _mapper.Map<IEnumerable<PaymentMethodDto>>(paymentMethods);
             return new PagedResponse<PaymentMethodDto>
@@ -52,11 +52,6 @@ namespace Services.Implementation
                 throw new ArgumentNullException(nameof(paymentMethodDto), "Payment method data cannot be null.");
 
             var paymentMethod = _mapper.Map<PaymentMethod>(paymentMethodDto);
-            paymentMethod.CreatedTime = DateTimeOffset.UtcNow;
-            paymentMethod.CreatedBy = userId;
-            paymentMethod.LastUpdatedTime = DateTimeOffset.UtcNow;
-            paymentMethod.LastUpdatedBy = userId;
-            paymentMethod.IsDeleted = false;
 
             _unitOfWork.PaymentMethods.Add(paymentMethod);
             await _unitOfWork.SaveChangesAsync();
@@ -69,11 +64,8 @@ namespace Services.Implementation
                 throw new ArgumentNullException(nameof(paymentMethodDto), "Payment method data cannot be null.");
 
             var paymentMethod = await _unitOfWork.PaymentMethods.GetByIdAsync(id);
-            if (paymentMethod == null || paymentMethod.IsDeleted)
+            if (paymentMethod == null)
                 throw new KeyNotFoundException($"Payment method with ID {id} not found or has been deleted.");
-
-            paymentMethod.LastUpdatedTime = DateTimeOffset.UtcNow;
-            paymentMethod.LastUpdatedBy = userId;
 
             _mapper.Map(paymentMethodDto, paymentMethod);
             _unitOfWork.PaymentMethods.Update(paymentMethod);
@@ -84,12 +76,8 @@ namespace Services.Implementation
         public async Task DeleteAsync(Guid id, string userId)
         {
             var paymentMethod = await _unitOfWork.PaymentMethods.GetByIdAsync(id);
-            if (paymentMethod == null || paymentMethod.IsDeleted)
+            if (paymentMethod == null)
                 throw new KeyNotFoundException($"Payment method with ID {id} not found or has been deleted.");
-
-            paymentMethod.IsDeleted = true;
-            paymentMethod.DeletedTime = DateTimeOffset.UtcNow;
-            paymentMethod.DeletedBy = userId;
 
             _unitOfWork.PaymentMethods.Update(paymentMethod); // Soft delete via update
             await _unitOfWork.SaveChangesAsync();

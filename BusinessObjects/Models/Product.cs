@@ -55,6 +55,4 @@ public partial class Product : BaseEntity
     public virtual ICollection<ProductItem> ProductItems { get; set; } = new List<ProductItem>();
 
     public virtual ProductStatus ProductStatus { get; set; }
-
-    public virtual ICollection<PromotionTarget> PromotionTargets { get; set; } = new List<PromotionTarget>();
 }

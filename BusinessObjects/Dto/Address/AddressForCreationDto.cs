@@ -2,7 +2,7 @@ namespace BusinessObjects.Dto.Address;
 
 public class AddressForCreationDto
 {
-    public int UserId { get; set; }
+    public Guid UserId { get; set; }
 
     public int CountryId { get; set; }
 
@@ -21,18 +21,4 @@ public class AddressForCreationDto
     public string Province { get; set; }
 
     public bool IsDefault { get; set; }
-
-    public string CreatedBy { get; set; }
-
-    public string LastUpdatedBy { get; set; }
-
-    public string DeletedBy { get; set; }
-
-    public DateTimeOffset CreatedTime { get; set; }
-
-    public DateTimeOffset? LastUpdatedTime { get; set; }
-
-    public DateTimeOffset? DeletedTime { get; set; }
-
-    public bool IsDeleted { get; set; }
 }

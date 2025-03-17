@@ -15,26 +15,54 @@ public class RepositoryBase<T, TKey> : IRepositoryBase<T, TKey> where T : class
     {
         return _context.Set<T>().AsQueryable();
     }
+
+    public async Task<IQueryable<T>> GetQueryableAsync()
+    {
+        return await Task.FromResult(_context.Set<T>().AsQueryable());
+    }
+
     public async Task<T?> GetByIdAsync(TKey id) => await _context.Set<T>().FindAsync(id);
     public IQueryable<T> Entities => _context.Set<T>();
     public async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
-        int pageNumber,
-        int pageSize,
-        Expression<Func<T, bool>> predicate)
+    int pageNumber,
+    int pageSize,
+    Expression<Func<T, bool>> predicate)
     {
         if (pageNumber < 1) pageNumber = 1;
         if (pageSize < 1) pageSize = 10;
+
         var query = _context.Set<T>().AsQueryable();
+
         if (predicate != null)
         {
             query = query.Where(predicate);
         }
+
         int totalCount = await query.CountAsync();
+
+        // Kiểm tra nếu thuộc tính "CreatedTime" tồn tại
+        var entityType = _context.Model.FindEntityType(typeof(T));
+        bool hasCreatedTime = entityType?.FindProperty("CreatedTime") != null;
+
+        if (hasCreatedTime)
+        {
+            query = query.OrderBy(e => EF.Property<DateTimeOffset>(e, "CreatedTime"));
+        }
+        else
+        {
+            // Nếu không có "CreatedTime", sắp xếp theo khóa chính hoặc mặc định
+            var primaryKey = entityType?.FindPrimaryKey()?.Properties.FirstOrDefault();
+            if (primaryKey != null)
+            {
+                query = query.OrderBy(e => EF.Property<object>(e, primaryKey.Name));
+            }
+        }
+
         var items = await query
-            .OrderBy(e => EF.Property<DateTimeOffset>(e, "CreatedTime"))
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
+
         return (items, totalCount);
     }
     public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
@@ -79,6 +107,22 @@ public class RepositoryBase<T, TKey> : IRepositoryBase<T, TKey> where T : class
     }
 
     public void Add(T entity) => _context.Set<T>().Add(entity);
+    public void AddRange(IEnumerable<T> entities)
+    {
+        if (entities == null || !entities.Any())
+            throw new ArgumentNullException(nameof(entities), "Entities to add cannot be null or empty.");
+
+        _context.Set<T>().AddRange(entities);
+    }
+
     public void Update(T entity) => _context.Set<T>().Update(entity);
     public void Delete(T entity) => _context.Set<T>().Remove(entity);
+    public void RemoveRange(IEnumerable<T> entities)
+    {
+        if (entities == null || !entities.Any())
+            throw new ArgumentNullException(nameof(entities), "Entities to delete cannot be null or empty.");
+
+        _context.Set<T>().RemoveRange(entities);
+    }
+
 }

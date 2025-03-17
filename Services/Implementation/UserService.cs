@@ -1,6 +1,10 @@
+using System.Text.Json;
 using AutoMapper;
+using AutoMapper;
+
 using BusinessObjects.Dto.User;
 using BusinessObjects.Models;
+using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
 using Services.Interface;
 using Services.Response;
@@ -27,27 +31,84 @@ public class UserService : IUserService
 
         return _mapper.Map<UserDto>(user);
     }
-    
+
     public async Task<UserDto> GetByEmailAsync(string email)
     {
-        var user = await _unitOfWork.Users.GetByEmailAsync(email);
+        // Lấy thông tin user cùng với role
+        var user = await _unitOfWork.Users
+            .GetQueryable()
+            .Include(u => u.Role) // Bao gồm thông tin Role
+            .FirstOrDefaultAsync(u => u.EmailAddress == email);
 
+        // Kiểm tra null
         if (user == null || user.IsDeleted)
             throw new KeyNotFoundException($"User with email {email} not found.");
 
-        return _mapper.Map<UserDto>(user);
+        // Map thủ công từ User sang UserDto
+        var userDto = new UserDto
+        {
+            UserId = user.UserId,
+            UserName = user.UserName,
+            SurName = user.SurName,
+            LastName = user.LastName,
+            EmailAddress = user.EmailAddress,
+            PhoneNumber = user.PhoneNumber,
+            AvatarUrl = user.AvatarUrl,
+            Status = user.Status,
+            Password = user.Password,
+            SkinTypeId = user.SkinTypeId,
+            RoleId = user.Role?.RoleId,
+            Role = user.Role!.RoleName,
+            CreatedBy = user.CreatedBy,
+            LastUpdatedBy = user.LastUpdatedBy,
+            DeletedBy = user.DeletedBy,
+            CreatedTime = user.CreatedTime,
+            LastUpdatedTime = user.LastUpdatedTime,
+            DeletedTime = user.DeletedTime,
+            IsDeleted = user.IsDeleted
+        };
+
+        return userDto;
     }
 
     public async Task<UserDto> GetByUserNameAsync(string userName)
     {
-        var user = await _unitOfWork.Users.GetByUserNameAsync(userName);
+        // Lấy thông tin user cùng với role
+        var user = await _unitOfWork.Users
+            .GetQueryable()
+            .Include(u => u.Role) // Bao gồm thông tin Role
+            .FirstOrDefaultAsync(u => u.UserName == userName);
 
+        // Kiểm tra null
         if (user == null || user.IsDeleted)
             throw new KeyNotFoundException($"User with user name {userName} not found.");
 
-        return _mapper.Map<UserDto>(user);
-    }
+        // Map thủ công từ User sang UserDto
+        var userDto = new UserDto
+        {
+            UserId = user.UserId,
+            UserName = user.UserName,
+            SurName = user.SurName,
+            LastName = user.LastName,
+            EmailAddress = user.EmailAddress,
+            PhoneNumber = user.PhoneNumber,
+            AvatarUrl = user.AvatarUrl,
+            Status = user.Status,
+            Password = user.Password, // Nếu trả về mật khẩu, hãy đảm bảo đã mã hóa
+            SkinTypeId = user.SkinTypeId,
+            RoleId = user.Role?.RoleId,
+            Role = user.Role?.RoleName, // Gán tên vai trò từ bảng Role
+            CreatedBy = user.CreatedBy,
+            LastUpdatedBy = user.LastUpdatedBy,
+            DeletedBy = user.DeletedBy,
+            CreatedTime = user.CreatedTime,
+            LastUpdatedTime = user.LastUpdatedTime,
+            DeletedTime = user.DeletedTime,
+            IsDeleted = user.IsDeleted
+        };
 
+        return userDto;
+    }
     public async Task<PagedResponse<UserDto>> GetPagedAsync(int pageNumber, int pageSize)
     {
         var (users, totalCount) = await _unitOfWork.Users.GetPagedAsync(
@@ -69,19 +130,63 @@ public class UserService : IUserService
 
     public async Task<UserDto> CreateAsync(UserForCreationDto? userForCreationDto)
     {
+        
+        // Log giá trị của UserForCreationDto
+        Console.WriteLine($"UserName: {userForCreationDto.UserName}");
+        Console.WriteLine($"SurName: {userForCreationDto.SurName}");
+        Console.WriteLine($"LastName: {userForCreationDto.LastName}");
+        Console.WriteLine($"EmailAddress: {userForCreationDto.EmailAddress}");
+        Console.WriteLine($"PhoneNumber: {userForCreationDto.PhoneNumber}");
+        Console.WriteLine($"Password: {userForCreationDto.Password}");
+        
+        
         if (userForCreationDto == null)
             throw new ArgumentNullException(nameof(userForCreationDto), "User data cannot be null.");
 
-        var user = _mapper.Map<User>(userForCreationDto);
-
-        user.CreatedTime = DateTimeOffset.UtcNow;
-        user.CreatedBy = "System"; // Optionally replace with the current user if available
-        user.IsDeleted = false;
-
+        var user = new User
+        {
+            UserId = Guid.NewGuid(), 
+            SkinTypeId = userForCreationDto.SkinTypeId,
+            RoleId = userForCreationDto.RoleId,
+            UserName = userForCreationDto.UserName,
+            SurName = userForCreationDto.SurName,
+            LastName = userForCreationDto.LastName,
+            EmailAddress = userForCreationDto.EmailAddress,
+            PhoneNumber = userForCreationDto.PhoneNumber,
+            Status = userForCreationDto.Status,
+            Password = userForCreationDto.Password,
+            AvatarUrl = !string.IsNullOrWhiteSpace(userForCreationDto.AvatarUrl) ? userForCreationDto.AvatarUrl : "https://i.pinimg.com/736x/dc/9c/61/dc9c614e3007080a5aff36aebb949474.jpg",
+            CreatedBy = "System", 
+            CreatedTime = DateTimeOffset.UtcNow,
+            LastUpdatedBy = "System",
+            LastUpdatedTime = DateTimeOffset.UtcNow,
+            IsDeleted = false 
+        };
+        Console.WriteLine($"User before save: {JsonSerializer.Serialize(user)}");
         _unitOfWork.Users.Add(user);
         await _unitOfWork.SaveChangesAsync();
 
-        return _mapper.Map<UserDto>(user);
+        // Manual mapping from User to UserDto
+        var userDto = new UserDto
+        {
+            UserId = user.UserId,
+            SkinTypeId = user.SkinTypeId,
+            RoleId = user.RoleId,
+            UserName = user.UserName,
+            SurName = user.SurName,
+            LastName = user.LastName,
+            EmailAddress = user.EmailAddress,
+            PhoneNumber = user.PhoneNumber,
+            Status = user.Status,
+            AvatarUrl = user.AvatarUrl,
+            CreatedBy = user.CreatedBy,
+            CreatedTime = user.CreatedTime,
+            LastUpdatedBy = user.LastUpdatedBy,
+            LastUpdatedTime = user.LastUpdatedTime,
+            IsDeleted = user.IsDeleted
+        };
+
+        return userDto;
     }
 
     public async Task<UserDto> UpdateAsync(Guid userId, UserForUpdateDto userForUpdateDto)
@@ -120,5 +225,29 @@ public class UserService : IUserService
         await _unitOfWork.SaveChangesAsync();
     }
 
-   
+    public async Task<bool> CheckUserNameExistsAsync(string userName)
+    {
+        try
+        {
+            await GetByUserNameAsync(userName);
+            return true;
+        }
+        catch (KeyNotFoundException)
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> CheckEmailExistsAsync(string email)
+    {
+        try
+        {
+            await GetByEmailAsync(email);
+            return true;
+        }
+        catch (KeyNotFoundException)
+        {
+            return false;
+        }
+    }
 }

@@ -22,7 +22,7 @@ public class BrandService : IBrandService
     {
         var brand = await _unitOfWork.Brands.GetByIdAsync(id);
 
-        if (brand == null || brand.IsDeleted)
+        if (brand == null)
             throw new KeyNotFoundException($"Brand with ID {id} not found.");
 
         return _mapper.Map<BrandDto>(brand);
@@ -33,7 +33,7 @@ public class BrandService : IBrandService
         var (brands, totalCount) = await _unitOfWork.Brands.GetPagedAsync(
             pageNumber,
             pageSize,
-            b => !b.IsDeleted // Only active brands
+            null
         );
 
         var brandDtos = _mapper.Map<IEnumerable<BrandDto>>(brands);
@@ -47,47 +47,72 @@ public class BrandService : IBrandService
         };
     }
 
-    public async Task<BrandDto> CreateAsync(BrandForCreationDto? brandForCreationDto)
+    public async Task<BrandDto> CreateAsync(BrandForCreationDto? brandForCreationDto, Guid userId)
     {
         if (brandForCreationDto == null)
             throw new ArgumentNullException(nameof(brandForCreationDto), "Brand data cannot be null.");
 
-        var brand = _mapper.Map<Brand>(brandForCreationDto);
-
-        brand.Id = Guid.NewGuid(); 
-        brand.CreatedTime = DateTimeOffset.UtcNow;
-        brand.CreatedBy = "System"; 
-        brand.IsDeleted = false;
+        // Manually map properties from DTO to the entity
+        var brand = new Brand
+        {
+            Id = Guid.NewGuid(),
+            Name = brandForCreationDto.Name,
+            Description = brandForCreationDto.Description,
+            ImageUrl = brandForCreationDto.ImageUrl,
+        };
 
         _unitOfWork.Brands.Add(brand);
         await _unitOfWork.SaveChangesAsync();
 
-        return _mapper.Map<BrandDto>(brand);
+        var brandDto = new BrandDto
+        {
+            Id = brand.Id,
+            Name = brand.Name,
+            Description = brand.Description,
+            ImageUrl = brand.ImageUrl
+        };
+
+        return brandDto;
     }
 
-    public async Task<BrandDto> UpdateAsync(Guid brandId, BrandForUpdateDto brandForUpdateDto)
+    public async Task<BrandDto> UpdateAsync(Guid brandId, BrandForUpdateDto brandForUpdateDto, Guid userId)
     {
         if (brandForUpdateDto == null)
             throw new ArgumentNullException(nameof(brandForUpdateDto), "Brand data cannot be null.");
+
+        // Retrieve the existing brand entity
         var brand = await _unitOfWork.Brands.GetByIdAsync(brandId);
-        if (brand == null || brand.IsDeleted)
+        if (brand == null)
             throw new KeyNotFoundException($"Brand with ID {brandId} not found.");
-        brand.LastUpdatedTime = DateTimeOffset.UtcNow;
-        brand.LastUpdatedBy = "System"; 
-        _mapper.Map(brandForUpdateDto, brand);
+
+        // Update properties manually
+        brand.Name = brandForUpdateDto.Name;
+        brand.Description = brandForUpdateDto.Description;
+        brand.ImageUrl = brandForUpdateDto.ImageUrl;
+
         _unitOfWork.Brands.Update(brand);
         await _unitOfWork.SaveChangesAsync();
-        return _mapper.Map<BrandDto>(brand);
+
+        // Manually map the updated entity to the DTO
+        var brandDto = new BrandDto
+        {
+            Id = brand.Id,
+            Name = brand.Name,
+            Description = brand.Description,
+            ImageUrl = brand.ImageUrl
+        };
+
+        return brandDto;
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task DeleteAsync(Guid id, Guid userId)
     {
+        // Fetch the brand entity by ID
         var brand = await _unitOfWork.Brands.GetByIdAsync(id);
-        if (brand == null || brand.IsDeleted)
+        if (brand == null)
             throw new KeyNotFoundException($"Brand with ID {id} not found.");
-        brand.IsDeleted = true;
-        brand.DeletedTime = DateTimeOffset.UtcNow;
-        brand.DeletedBy = "System";
+
+        // Save the changes
         _unitOfWork.Brands.Update(brand);
         await _unitOfWork.SaveChangesAsync();
     }

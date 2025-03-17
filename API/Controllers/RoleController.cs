@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using API.Extensions;
 using BusinessObjects.Dto.Role;
 using Microsoft.AspNetCore.Mvc;
 using Services.Dto.Api;
@@ -45,6 +46,7 @@ public class RoleController : ControllerBase
         return Ok(ApiResponse<PagedResponse<RoleDto>>.SuccessResponse(pagedData));
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -67,7 +69,8 @@ public class RoleController : ControllerBase
         }
     }
 
-    [HttpPut("{id:int}")]
+    [CustomAuthorize("Manager")]
+    [HttpPatch("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -90,6 +93,7 @@ public class RoleController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

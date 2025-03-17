@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class ProductStatus : BaseEntity
+public partial class ProductStatus
 {
     public Guid Id { get; set; }
     public string StatusName { get; set; }

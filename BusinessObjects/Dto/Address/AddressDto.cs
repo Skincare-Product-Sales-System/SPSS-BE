@@ -3,6 +3,7 @@ namespace BusinessObjects.Dto.Address;
 public class AddressDto
 {
     public Guid Id { get; set; }
+    public bool IsDefault { get; set; }
 
     public string CustomerName { get; set; }
 

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class SkinType : BaseEntity
+public partial class SkinType
 {
     public Guid Id { get; set; }
 
@@ -13,7 +13,7 @@ public partial class SkinType : BaseEntity
 
     public string Description { get; set; }
 
-    public string Routine { get; set; }
+    public virtual ICollection<SkinTypeRoutineStep> SkinTypeRoutineSteps { get; set; } = new List<SkinTypeRoutineStep>();
 
     public virtual ICollection<User> AspNetUsers { get; set; } = new List<User>();
 

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class StatusChange : BaseEntity
+public partial class StatusChange
 {
     public Guid Id { get; set; }
 

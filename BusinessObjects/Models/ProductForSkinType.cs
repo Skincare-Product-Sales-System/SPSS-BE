@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class ProductForSkinType : BaseEntity
+public partial class ProductForSkinType
 {
     public Guid Id { get; set; }
     public Guid ProductId { get; set; }

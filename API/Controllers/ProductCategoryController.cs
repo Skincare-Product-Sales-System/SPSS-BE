@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using BusinessObjects.Dto.ProductCategory;
 using Services.Dto.Api;
 using Services.Response;
+using API.Extensions;
 
 namespace API.Controllers;
 [ApiController]
@@ -43,6 +44,7 @@ public class ProductCategoryController : ControllerBase
         return Ok(ApiResponse<PagedResponse<ProductCategoryDto>>.SuccessResponse(pagedData));
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -66,7 +68,8 @@ public class ProductCategoryController : ControllerBase
         }
     }
 
-    [HttpPut("{id:guid}")]
+    [CustomAuthorize("Manager")]
+    [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -96,6 +99,7 @@ public class ProductCategoryController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

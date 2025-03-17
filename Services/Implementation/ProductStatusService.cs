@@ -5,6 +5,7 @@ using BusinessObjects.Models;
 using Repositories.Interface;
 using Services.Interface;
 using Services.Response;
+using Shared.Constants;
 
 namespace Services.Implementation
 {
@@ -21,7 +22,7 @@ namespace Services.Implementation
 
         public async Task<Guid?> GetFirstAvailableProductStatusIdAsync()
         {
-            var productStatuses = await _unitOfWork.ProductStatuses.FindAsync(ps => !ps.IsDeleted && !string.IsNullOrEmpty(ps.StatusName));
+            var productStatuses = await _unitOfWork.ProductStatuses.FindAsync(ps => ps.StatusName == StatusForProduct.Available);
             return productStatuses.Select(ps => ps.Id).FirstOrDefault();
         }
 
@@ -39,7 +40,7 @@ namespace Services.Implementation
             var (productStatuses, totalCount) = await _unitOfWork.ProductStatuses.GetPagedAsync(
                 pageNumber,
                 pageSize,
-                cr => cr.IsDeleted == false // Filter out deleted cancel reasons
+                null
             );
             var productStatusDtos = _mapper.Map<IEnumerable<ProductStatusDto>>(productStatuses);
             return new PagedResponse<ProductStatusDto>
@@ -79,9 +80,6 @@ namespace Services.Implementation
             var productStatus = await _unitOfWork.ProductStatuses.GetByIdAsync(id);
             if (productStatus == null)
                 throw new KeyNotFoundException($"Product status with ID {id} not found.");
-
-            productStatus.IsDeleted = true;
-            productStatus.DeletedTime = DateTimeOffset.UtcNow;
 
             _unitOfWork.ProductStatuses.Update(productStatus);
             await _unitOfWork.SaveChangesAsync();

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using API.Extensions;
 using BusinessObjects.Dto.Voucher;
 using Microsoft.AspNetCore.Mvc;
 using Services.Dto.Api;
@@ -45,6 +46,7 @@ public class VoucherController : ControllerBase
         return Ok(ApiResponse<PagedResponse<VoucherDto>>.SuccessResponse(pagedData));
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -67,7 +69,8 @@ public class VoucherController : ControllerBase
         }
     }
 
-    [HttpPut("{id:guid}")]
+    [CustomAuthorize("Manager")]
+    [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Update(Guid id, [FromBody] VoucherForUpdateDto voucherDto)

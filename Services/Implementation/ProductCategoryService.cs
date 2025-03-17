@@ -2,6 +2,7 @@
 using BusinessObjects.Dto.Product;
 using BusinessObjects.Dto.ProductCategory;
 using BusinessObjects.Models;
+using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
 using Services.Interface;
 using Services.Response;
@@ -33,12 +34,23 @@ namespace Services.Implementation
 
         public async Task<PagedResponse<ProductCategoryDto>> GetPagedAsync(int pageNumber, int pageSize)
         {
-            var (categories, totalCount) = await _unitOfWork.ProductCategories.GetPagedAsync(
+            // Lấy các danh mục gốc (ParentCategoryId == null)
+            var (rootCategories, totalCount) = await _unitOfWork.ProductCategories.GetPagedAsync(
                 pageNumber,
                 pageSize,
-                cr => cr.IsDeleted == false // Filter out deleted cancel reasons
+                c => c.ParentCategoryId == null // Lọc danh mục gốc
             );
-            var categoryDtos = _mapper.Map<IEnumerable<ProductCategoryDto>>(categories);
+
+            // Bao gồm danh mục con thông qua `InverseParentCategory`
+            var rootCategoriesWithChildren = await _unitOfWork.ProductCategories.Entities
+                .Include(c => c.InverseParentCategory) // Bao gồm danh mục con
+                .Where(c => rootCategories.Select(rc => rc.Id).Contains(c.Id)) // Chỉ lấy dữ liệu trên trang hiện tại
+                .ToListAsync();
+
+            // Ánh xạ danh mục và các danh mục con thành DTO
+            var categoryDtos = rootCategoriesWithChildren.Select(category => MapCategoryToDto(category)).ToList();
+
+            // Trả về dữ liệu phân trang
             return new PagedResponse<ProductCategoryDto>
             {
                 Items = categoryDtos,
@@ -48,11 +60,23 @@ namespace Services.Implementation
             };
         }
 
+        private ProductCategoryDto MapCategoryToDto(ProductCategory category)
+        {
+            return new ProductCategoryDto
+            {
+                Id = category.Id,
+                CategoryName = category.CategoryName,
+                ParentId = category.ParentCategoryId,
+                Children = category.InverseParentCategory.Select(child => MapCategoryToDto(child)).ToList()
+            };
+        }
+
         public async Task<ProductCategoryDto> CreateAsync(ProductCategoryForCreationDto categoryDto)
         {
             if (categoryDto == null)
                 throw new ArgumentNullException(nameof(categoryDto), "Product Category data cannot be null.");
             var category = _mapper.Map<ProductCategory>(categoryDto);
+            category.Id = Guid.NewGuid();
             _unitOfWork.ProductCategories.Add(category);
             await _unitOfWork.SaveChangesAsync();
             return _mapper.Map<ProductCategoryDto>(category);

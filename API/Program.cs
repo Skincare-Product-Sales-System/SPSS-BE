@@ -1,6 +1,8 @@
-using API.Extensions;
+﻿using API.Extensions;
 using API.Middleware;
 using API.Middlewares;
+using BusinessObjects.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -41,6 +43,7 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = string.Empty;
     });
 }
+
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 app.UseRouting();

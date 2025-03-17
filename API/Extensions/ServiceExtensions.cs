@@ -33,7 +33,6 @@ public static class ServiceExtensions
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IReplyService, ReplyService>();
         services.AddScoped<ICartItemService, CartItemService>();
-        services.AddScoped<IPromotionTypeService, PromotionTypeService>();
         services.AddScoped<IPaymentMethodService, PaymentMethodService>();
         services.AddScoped<IVariationService, VariationService>();
         services.AddScoped<IVariationOptionService, VariationOptionService>();
@@ -42,6 +41,14 @@ public static class ServiceExtensions
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IVNPayService, VNPAYService>();
         services.AddScoped<IProductForSkinTypeService, ProductForSkinTypeService>();
+        services.AddScoped<IQuizSetService, QuizSetService>();
+        services.AddScoped<IQuizResultService, QuizResultService>();
+        services.AddScoped<ISkinTypeService, SkinTypeService>();
+        services.AddScoped<IBrandService, BrandService>();
+        services.AddScoped<ICountryService, CountryService>();
+        services.AddScoped<ICountryRepository, CountryRepository>();
+        services.AddScoped<IAccountService, AccountService>();
+        services.AddScoped<IRoleService, RoleService>();
         return services;
     }
 

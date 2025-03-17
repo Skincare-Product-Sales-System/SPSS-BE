@@ -20,7 +20,6 @@ public partial class Order : BaseEntity
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
     public virtual PaymentMethod PaymentMethod { get; set; }
     public virtual ICollection<StatusChange> StatusChanges { get; set; } = new List<StatusChange>();
-    public virtual ICollection<Order> Orders { get; set; }
     public virtual User User { get; set; }
     public virtual Voucher Voucher { get; set; }
 }

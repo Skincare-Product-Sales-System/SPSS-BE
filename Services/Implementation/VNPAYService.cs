@@ -153,15 +153,6 @@ public class VNPAYService : IVNPayService
               .Where(o => o.Id.ToString() == orderInfo).FirstOrDefaultAsync();
             
             if (order == null)
-            {
-                throw new KeyNotFoundException($"Order with ID {orderInfo} is processing.");
-
-            }
-            
-            order.Status = "Payment Failed";
-
-
-            // _unitOfWork.Orders.Update(order);
             // await _unitOfWork.SaveChangesAsync();
             //
             // var updateDto = new UpdateStatusOrderDto
@@ -306,7 +297,7 @@ public class VNPAYService : IVNPayService
             }
             else
             {
-                order.Status = "Payment Failed";
+                order.Status = "Awaiting Payment";
                 order.PaymentMethodId = Guid.Parse("2bbc0050-bfae-4764-8bd7-8c73579ee3e1");
 
                 _unitOfWork.Orders.Update(order);
