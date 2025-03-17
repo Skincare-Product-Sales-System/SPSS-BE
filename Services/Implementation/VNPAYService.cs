@@ -112,7 +112,7 @@ public class VNPAYService : IVNPayService
 
         
             order.Status = "Awaiting Payment";
-            order.PaymentMethodId = Guid.Parse("2bbc0050-bfae-4764-8bd7-8c73579ee3e1");
+            order.PaymentMethodId = Guid.Parse("354EDA95-5BE5-41BE-ACC3-CFD70188118A");
 
             _unitOfWork.Orders.Update(order);
             await _unitOfWork.SaveChangesAsync();
@@ -214,7 +214,7 @@ public class VNPAYService : IVNPayService
                 if ("00".Equals(request.VnpTransactionStatus))
                 {
                     order.Status = "Processing";
-                    order.PaymentMethodId = Guid.Parse("2bbc0050-bfae-4764-8bd7-8c73579ee3e1");
+                    order.PaymentMethodId = Guid.Parse("354EDA95-5BE5-41BE-ACC3-CFD70188118A");
 
                     _unitOfWork.Orders.Update(order);
                     await _unitOfWork.SaveChangesAsync();
@@ -238,7 +238,7 @@ public class VNPAYService : IVNPayService
                 else
                 {
                     order.Status = "Payment Failed";
-                    order.PaymentMethodId = Guid.Parse("2bbc0050-bfae-4764-8bd7-8c73579ee3e1");
+                    order.PaymentMethodId = Guid.Parse("354EDA95-5BE5-41BE-ACC3-CFD70188118A");
 
                     _unitOfWork.Orders.Update(order);
                     await _unitOfWork.SaveChangesAsync();
@@ -298,7 +298,7 @@ public class VNPAYService : IVNPayService
             else
             {
                 order.Status = "Awaiting Payment";
-                order.PaymentMethodId = Guid.Parse("2bbc0050-bfae-4764-8bd7-8c73579ee3e1");
+                order.PaymentMethodId = Guid.Parse("354EDA95-5BE5-41BE-ACC3-CFD70188118A");
 
                 _unitOfWork.Orders.Update(order);
                 await _unitOfWork.SaveChangesAsync();
