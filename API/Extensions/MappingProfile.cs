@@ -156,6 +156,7 @@ public class MappingProfile : Profile
         // Mapping from VariationCombinationDto to ProductItem
         CreateMap<VariationCombinationDto, ProductItem>()
             .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price))
+            .ForMember(dest => dest.MarketPrice, opt => opt.MapFrom(src => src.MarketPrice))
             .ForMember(dest => dest.QuantityInStock, opt => opt.MapFrom(src => src.QuantityInStock))
             .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ImageUrl));
         #endregion

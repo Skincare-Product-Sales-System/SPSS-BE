@@ -12,6 +12,8 @@ namespace BusinessObjects.Dto.ProductItem
 
         public decimal Price { get; set; }
 
+        public decimal MarketPrice { get; set; }
+
         public List<ProductConfigurationForProductQueryDto> Configurations { get; set; } = new();
 
     }
