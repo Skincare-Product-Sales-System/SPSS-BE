@@ -16,7 +16,8 @@ public interface IProductService
     Guid? brandId = null,
     Guid? categoryId = null,
     Guid? skinTypeId = null,
-    string sortBy = "newest"); // Thêm tham số sortBy với giá trị mặc định "newest"
+    string sortBy = "newest",
+    string name = null); // Thêm tham số sortBy với giá trị mặc định "newest"
     Task<bool> CreateAsync(ProductForCreationDto productDto, string userId);
     Task<bool> UpdateAsync(ProductForUpdateDto productDto, Guid userId, Guid productId);
     Task DeleteAsync(Guid id, string userId);

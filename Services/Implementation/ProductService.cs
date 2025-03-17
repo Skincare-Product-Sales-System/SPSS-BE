@@ -238,7 +238,9 @@ public class ProductService : IProductService
     Guid? brandId = null,
     Guid? categoryId = null,
     Guid? skinTypeId = null,
-    string sortBy = "newest") // Thêm tham số sortBy với giá trị mặc định "newest"
+    string sortBy = "newest", // Thêm tham số sortBy với giá trị mặc định "newest"
+    string name = null // Thêm tham số name để lọc theo tên sản phẩm
+)
     {
         // Lọc sản phẩm theo SkinTypeId nếu được cung cấp
         var productIdsBySkinType = skinTypeId.HasValue
@@ -262,7 +264,8 @@ public class ProductService : IProductService
                 cr.IsDeleted == false && // Không lấy các sản phẩm bị xóa
                 (!brandId.HasValue || cr.BrandId == brandId.Value) && // Lọc theo BrandId nếu có
                 (subCategoryIds == null || subCategoryIds.Contains(cr.ProductCategoryId)) && // Lọc theo CategoryId nếu có
-                (productIdsBySkinType == null || productIdsBySkinType.Contains(cr.Id)) // Lọc theo SkinTypeId nếu có
+                (productIdsBySkinType == null || productIdsBySkinType.Contains(cr.Id)) && // Lọc theo SkinTypeId nếu có
+                (string.IsNullOrEmpty(name) || cr.Name.Contains(name)) // Lọc theo tên sản phẩm nếu có
         );
 
         // Sắp xếp sản phẩm theo tiêu chí được chọn

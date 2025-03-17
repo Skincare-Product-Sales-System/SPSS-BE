@@ -89,7 +89,8 @@ public class ProductController : ControllerBase
         [FromQuery] Guid? brandId = null,
         [FromQuery] Guid? categoryId = null,
         [FromQuery] Guid? skinTypeId = null,
-        [FromQuery] string sortBy = "newest") // Thêm tham số sortBy với giá trị mặc định
+        [FromQuery] string sortBy = "newest",
+        [FromQuery] string name = null) // Thêm tham số sortBy với giá trị mặc định
     {
         // Kiểm tra tính hợp lệ của model
         if (!ModelState.IsValid)
@@ -99,7 +100,7 @@ public class ProductController : ControllerBase
         }
 
         // Gọi service với các tham số lọc và sắp xếp
-        var pagedData = await _productService.GetPagedAsync(pageNumber, pageSize, brandId, categoryId, skinTypeId, sortBy);
+        var pagedData = await _productService.GetPagedAsync(pageNumber, pageSize, brandId, categoryId, skinTypeId, sortBy, name);
 
         // Trả về kết quả thành công
         return Ok(ApiResponse<PagedResponse<ProductDto>>.SuccessResponse(pagedData));
