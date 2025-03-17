@@ -155,7 +155,7 @@ public class UserService : IUserService
             PhoneNumber = userForCreationDto.PhoneNumber,
             Status = userForCreationDto.Status,
             Password = userForCreationDto.Password,
-            AvatarUrl = !string.IsNullOrWhiteSpace(userForCreationDto.AvatarUrl) ? userForCreationDto.AvatarUrl : "https://i.pinimg.com/736x/dc/9c/61/dc9c614e3007080a5aff36aebb949474.jpg",
+            AvatarUrl = !string.IsNullOrWhiteSpace(userForCreationDto.AvatarUrl) ? userForCreationDto.AvatarUrl : null,
             CreatedBy = "System", 
             CreatedTime = DateTimeOffset.UtcNow,
             LastUpdatedBy = "System",

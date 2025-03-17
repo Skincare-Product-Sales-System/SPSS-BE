@@ -37,6 +37,7 @@ public class AddressService : IAddressService
         var addressDtos = allAddresses.Select(a => new AddressDto
         {
             Id = a.Id,
+            CountryId = a.CountryId,
             CustomerName = a.User?.UserName ?? "Unknown",
             IsDefault = a.IsDefault,
             PhoneNumber = a.User?.PhoneNumber ?? "N/A",
@@ -46,7 +47,7 @@ public class AddressService : IAddressService
             AddressLine2 = a.AddressLine2,
             City = a.City,
             Ward = a.Ward,
-            Postcode = a.Postcode,
+            PostCode = a.Postcode,
             Province = a.Province
         }).ToList();
 
@@ -76,13 +77,29 @@ public class AddressService : IAddressService
             Ward = addressForCreationDto.Ward,
             Postcode = addressForCreationDto.Postcode,
             Province = addressForCreationDto.Province,
-            IsDefault = addressForCreationDto.IsDefault,
             CreatedTime = DateTimeOffset.UtcNow,
             CreatedBy = userId.ToString(),
             LastUpdatedBy = userId.ToString(),
             LastUpdatedTime = DateTimeOffset.UtcNow,
             IsDeleted = false
         };
+
+        if(addressForCreationDto.IsDefault)
+        {
+            // Lấy danh sách địa chỉ của người dùng
+            var userAddresses = await _unitOfWork.Addresses.Entities
+                .Where(a => a.UserId == userId && !a.IsDeleted)
+                .ToListAsync();
+            // Bỏ mặc định địa chỉ hiện tại (nếu có)
+            foreach (var userAddress in userAddresses)
+            {
+                if (userAddress.IsDefault)
+                {
+                    userAddress.IsDefault = false;
+                }
+            }
+            address.IsDefault = true;
+        }
 
         _unitOfWork.Addresses.Add(address);
         await _unitOfWork.SaveChangesAsync();

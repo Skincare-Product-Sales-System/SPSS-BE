@@ -8,6 +8,7 @@ using Services.Dto.Api;
 using Services.Response;
 using Microsoft.AspNetCore.Authorization;
 using API.Extensions;
+using Services.Implementation;
 
 namespace API.Controllers;
 
@@ -72,6 +73,60 @@ public class AccountController : ControllerBase
         catch (ArgumentNullException ex)
         {
             return BadRequest(ApiResponse<AccountDto>.FailureResponse(ex.Message));
+        }
+    }
+
+    [CustomAuthorize("Customer")]
+    [Consumes("multipart/form-data")]
+    [HttpPost("upload-avatar")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UploadAvatar([FromForm] List<IFormFile> avatarFiles)
+    {
+        if (avatarFiles == null || avatarFiles.Count == 0 || avatarFiles.First().Length == 0)
+        {
+            return BadRequest(ApiResponse<string>.FailureResponse("Avatar file is missing or empty"));
+        }
+
+        try
+        {
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<string>.FailureResponse("User ID is missing or invalid"));
+            }
+
+            // Sử dụng file đầu tiên từ danh sách
+            var avatarFile = avatarFiles.First();
+            var avatarUrl = await _accountService.UpdateAvatarAsync(userId.Value, avatarFile);
+
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "Avatar updated successfully"));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ApiResponse<bool>.FailureResponse(ex.Message));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ApiResponse<bool>.FailureResponse(ex.Message));
+        }
+    }
+
+    [HttpDelete("delete-avatar")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteByImageUrl(string imageUrl)
+    {
+        try
+        {
+            var result = await _accountService.DeleteFirebaseLink(imageUrl);
+            return result ? Ok(ApiResponse<object>.SuccessResponse(null, "Image deleted successfully"))
+                : NotFound(ApiResponse<object>.FailureResponse("Image not found"));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ApiResponse<object>.FailureResponse(ex.Message));
         }
     }
 }

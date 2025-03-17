@@ -6,6 +6,7 @@ public class AddressDto
     public bool IsDefault { get; set; }
 
     public string CustomerName { get; set; }
+    public int CountryId { get; set; }
 
     public string PhoneNumber { get; set; }
 
@@ -21,7 +22,7 @@ public class AddressDto
 
     public string Ward { get; set; }
 
-    public string Postcode { get; set; }
+    public string PostCode { get; set; }
 
     public string Province { get; set; }
 }

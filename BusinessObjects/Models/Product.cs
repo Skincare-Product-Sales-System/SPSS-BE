@@ -43,7 +43,7 @@ public partial class Product : BaseEntity
 
     public Guid? BrandId { get; set; }
 
-    public Guid? ProductCategoryId { get; set; }
+    public Guid ProductCategoryId { get; set; }
     public virtual Brand Brand { get; set; }
 
     public virtual ProductCategory ProductCategory { get; set; }

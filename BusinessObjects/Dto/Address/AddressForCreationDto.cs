@@ -2,8 +2,6 @@ namespace BusinessObjects.Dto.Address;
 
 public class AddressForCreationDto
 {
-    public Guid UserId { get; set; }
-
     public int CountryId { get; set; }
 
     public string StreetNumber { get; set; }

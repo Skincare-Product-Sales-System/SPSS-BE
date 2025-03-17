@@ -12,7 +12,7 @@ using Services.Response;
 
 namespace API.Controllers;
 [ApiController]
-[Route("api/address")]
+[Route("api/addresses")]
 public class AddressController : ControllerBase
 {
     private readonly IAddressService _addressService;

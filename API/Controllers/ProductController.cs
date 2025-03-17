@@ -81,19 +81,27 @@ public class ProductController : ControllerBase
         return Ok(ApiResponse<PagedResponse<ProductDto>>.SuccessResponse(pagedData));
     }
 
-    // GET: api/products?pageNumber=1&pageSize=10
+    // GET: api/products?pageNumber=1&pageSize=10&brandId={brandId}&categoryId={categoryId}&skinTypeId={skinTypeId}&sortBy=newest
     [HttpGet]
     public async Task<IActionResult> GetPaged(
         [FromQuery, Range(1, int.MaxValue)] int pageNumber = 1,
-        [FromQuery, Range(1, 100)] int pageSize = 10)
+        [FromQuery, Range(1, 100)] int pageSize = 10,
+        [FromQuery] Guid? brandId = null,
+        [FromQuery] Guid? categoryId = null,
+        [FromQuery] Guid? skinTypeId = null,
+        [FromQuery] string sortBy = "newest") // Thêm tham số sortBy với giá trị mặc định
     {
+        // Kiểm tra tính hợp lệ của model
         if (!ModelState.IsValid)
         {
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-            return BadRequest(ApiResponse<PagedResponse<ProductDto>>.FailureResponse("Invalid pagination parameters", errors));
+            return BadRequest(ApiResponse<PagedResponse<ProductDto>>.FailureResponse("Invalid query parameters", errors));
         }
 
-        var pagedData = await _productService.GetPagedAsync(pageNumber, pageSize);
+        // Gọi service với các tham số lọc và sắp xếp
+        var pagedData = await _productService.GetPagedAsync(pageNumber, pageSize, brandId, categoryId, skinTypeId, sortBy);
+
+        // Trả về kết quả thành công
         return Ok(ApiResponse<PagedResponse<ProductDto>>.SuccessResponse(pagedData));
     }
 

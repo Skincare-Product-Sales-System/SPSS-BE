@@ -215,7 +215,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.AddressLine2, opt => opt.MapFrom(src => src.AddressLine2))
             .ForMember(dest => dest.City, opt => opt.MapFrom(src => src.City))
             .ForMember(dest => dest.Ward, opt => opt.MapFrom(src => src.Ward))
-            .ForMember(dest => dest.Postcode, opt => opt.MapFrom(src => src.Postcode))
+            .ForMember(dest => dest.PostCode, opt => opt.MapFrom(src => src.Postcode))
             .ForMember(dest => dest.Province, opt => opt.MapFrom(src => src.Province));
         CreateMap<AddressForCreationDto, Address>();
         CreateMap<AddressForUpdateDto, Address>();
