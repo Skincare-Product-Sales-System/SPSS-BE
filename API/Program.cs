@@ -33,6 +33,9 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<MappingProfile>();  // Add your mappings profile here
 }, typeof(Program).Assembly);
+builder.Services.AddDbContext<SPSSContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("SPSS"))
+        .EnableSensitiveDataLogging()); // EnableSensitiveDataLogging nếu cần thiết
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
