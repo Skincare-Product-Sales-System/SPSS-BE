@@ -2,6 +2,7 @@
 using Services.Interface;
 using Services.Response;
 using AutoMapper;
+using BusinessObjects.Dto.Variation;
 using BusinessObjects.Models;
 using Repositories.Interface;
 
@@ -30,7 +31,21 @@ namespace Services.Implementation
         public async Task<PagedResponse<VariationOptionDto>> GetPagedAsync(int pageNumber, int pageSize)
         {
             var variationOptions = await _unitOfWork.VariationOptions.GetPagedAsync(pageNumber, pageSize, v => v.IsDeleted == false);
-            var mappedOptions = _mapper.Map<IEnumerable<VariationOptionDto>>(variationOptions.Items);
+
+            var variationIds = variationOptions.Items.Select(vo => vo.VariationId).Distinct();
+            var variations = await _unitOfWork.Variations.FindAsync(v => variationIds.Contains(v.Id));
+
+            var mappedOptions = variationOptions.Items.Select(vo => new VariationOptionDto
+            {
+                Id = vo.Id,
+                Value = vo.Value,
+                VariationId = vo.VariationId,
+                VariationDto2 = variations.FirstOrDefault(v => v.Id == vo.VariationId) != null ? new VariationDto2
+                {
+                    Id = vo.Variation.Id,
+                    Name = vo.Variation.Name
+                } : null
+            }).ToList();
 
             return new PagedResponse<VariationOptionDto>
             {
@@ -40,7 +55,6 @@ namespace Services.Implementation
                 PageSize = pageSize
             };
         }
-
         public async Task<VariationOptionDto> CreateAsync(VariationOptionForCreationDto variationOptionDto, string userId)
         {
             if (variationOptionDto == null)
@@ -49,6 +63,7 @@ namespace Services.Implementation
             var variationOptionEntity = _mapper.Map<VariationOption>(variationOptionDto);
             variationOptionEntity.CreatedBy = userId;
             variationOptionEntity.CreatedTime = DateTime.UtcNow;
+            variationOptionEntity.Id = Guid.NewGuid();
 
             _unitOfWork.VariationOptions.Add(variationOptionEntity);
             await _unitOfWork.SaveChangesAsync();

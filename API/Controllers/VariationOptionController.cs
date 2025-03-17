@@ -47,7 +47,7 @@ public class VariationOptionController : ControllerBase
         return Ok(ApiResponse<PagedResponse<VariationOptionDto>>.SuccessResponse(pagedData));
     }
 
-    [CustomAuthorize("Manager")]
+    // [CustomAuthorize("Manager")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -71,7 +71,7 @@ public class VariationOptionController : ControllerBase
         }
     }
 
-    [CustomAuthorize("Manager")]
+    // [CustomAuthorize("Manager")]
     [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -99,7 +99,7 @@ public class VariationOptionController : ControllerBase
         }
     }
 
-    [CustomAuthorize("Manager")]
+    // [CustomAuthorize("Manager")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
