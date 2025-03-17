@@ -64,7 +64,8 @@ public class VNPAYService : IVNPayService
 
             string locate = "vn";
             vnp_Params.Add("vnp_Locale", locate);
-            
+
+            urlReturn += vnp_ReturnUrl;
             vnp_Params.Add("vnp_ReturnUrl", urlReturn);
             vnp_Params.Add("vnp_IpAddr", vnp_IpAddr);
 
@@ -185,9 +186,8 @@ public class VNPAYService : IVNPayService
             }
 
             var amount = double.Parse(totalPrice) / 100;
-            var returnUrl = $"(url trang web sau khi deploy/{orderInfo}";
+            var returnUrl = $"(http://localhost:3000/{orderInfo}";
 
-        //            var returnUrl = Constants.FrontUrl + "/Checkout/OrderSucess";
 
 
 
