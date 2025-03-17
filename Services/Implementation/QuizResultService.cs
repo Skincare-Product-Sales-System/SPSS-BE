@@ -21,15 +21,29 @@ namespace Services.Implementation
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public async Task<QuizResultDto> GetByPointAndSetIdAsync(string score, Guid quizSetId)
+        public QuizResultService(IUnitOfWork unitOfWork, IMapper mapper)
+        {
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        }
+
+        public async Task<QuizResultDto> GetByPointAndSetIdAsync(string score, Guid quizSetId, Guid userId)
         {
             // Lấy QuizResult và SkinType
             var quizResult = await _unitOfWork.QuizResults.Entities
                 .Include(q => q.SkinType)
-                .FirstOrDefaultAsync(q => q.Score == score && q.SetId == quizSetId);
+                .FirstOrDefaultAsync(q => q.Score == score && q.QuizSetId == quizSetId);
 
             if (quizResult == null)
                 throw new KeyNotFoundException($"QuizResult with Score {score} and QuizSetId {quizSetId} not found.");
+
+            // Gán SkinTypeId cho User
+            var user = await _unitOfWork.Users.Entities.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null)
+                throw new KeyNotFoundException($"User with Id {userId} not found.");
+            user.SkinTypeId = quizResult.SkinTypeId;
+            _unitOfWork.Users.Update(user);
+            await _unitOfWork.SaveChangesAsync();
 
             // Lấy RoutineSteps từ SkinTypeRoutineStep
             var routineSteps = _unitOfWork.SkinTypeRoutineSteps.Entities
@@ -43,7 +57,8 @@ namespace Services.Implementation
                         Id = rs.Category.Id,
                         CategoryName = rs.Category.CategoryName
                     }, // Lấy tên danh mục
-                    Instruction = rs.Instruction, // Hướng dẫn cho bước routine
+                    Instruction = rs.Instruction,
+                    Order = rs.Order,
                     Products = _unitOfWork.Products.Entities
                         .Where(p => p.ProductCategoryId == rs.CategoryId)
                         .OrderByDescending(p => p.SoldCount) // Ưu tiên sản phẩm bán chạy

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class PaymentMethod : BaseEntity
+public partial class PaymentMethod
 {
     public Guid Id { get; set; }
     public string PaymentType { get; set; }

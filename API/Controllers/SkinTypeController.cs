@@ -25,11 +25,11 @@ public class SkinTypeController : ControllerBase
         try
         {
             var skinType = await _skinTypeService.GetByIdAsync(id);
-            return Ok(ApiResponse<SkinTypeDto>.SuccessResponse(skinType));
+            return Ok(ApiResponse<SkinTypeWithDetailDto>.SuccessResponse(skinType));
         }
         catch (KeyNotFoundException ex)
         {
-            return NotFound(ApiResponse<SkinTypeDto>.FailureResponse(ex.Message));
+            return NotFound(ApiResponse<SkinTypeWithDetailDto>.FailureResponse(ex.Message));
         }
     }
 
@@ -57,7 +57,7 @@ public class SkinTypeController : ControllerBase
         if (!ModelState.IsValid)
         {
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-            return BadRequest(ApiResponse<SkinTypeDto>.FailureResponse("Invalid skin type data", errors));
+            return BadRequest(ApiResponse<SkinTypeWithDetailDto>.FailureResponse("Invalid skin type data", errors));
         }
 
         try
@@ -68,11 +68,11 @@ public class SkinTypeController : ControllerBase
                 return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
             }
             var skinType = await _skinTypeService.CreateAsync(skinTypeDto, userId.Value);
-            return Ok(ApiResponse<bool>.SuccessResponse(skinType, "Blog created successfully"));
+            return Ok(ApiResponse<bool>.SuccessResponse(skinType, "Skin type created successfully"));
         }
         catch (Exception ex)
         {
-            return BadRequest(ApiResponse<SkinTypeDto>.FailureResponse(ex.Message));
+            return BadRequest(ApiResponse<SkinTypeWithDetailDto>.FailureResponse(ex.Message));
         }
     }
 
@@ -85,7 +85,7 @@ public class SkinTypeController : ControllerBase
         if (!ModelState.IsValid)
         {
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-            return BadRequest(ApiResponse<SkinTypeDto>.FailureResponse("Invalid skin type data", errors));
+            return BadRequest(ApiResponse<SkinTypeWithDetailDto>.FailureResponse("Invalid skin type data", errors));
         }
 
         try
@@ -95,7 +95,7 @@ public class SkinTypeController : ControllerBase
         }
         catch (KeyNotFoundException ex)
         {
-            return NotFound(ApiResponse<SkinTypeDto>.FailureResponse(ex.Message));
+            return NotFound(ApiResponse<SkinTypeWithDetailDto>.FailureResponse(ex.Message));
         }
     }
 }

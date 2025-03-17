@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class ProductCategory : BaseEntity
+public partial class ProductCategory
 {
     public Guid Id { get; set; }
 
@@ -17,8 +17,6 @@ public partial class ProductCategory : BaseEntity
     public virtual ProductCategory ParentCategory { get; set; }
 
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
-
-    public virtual ICollection<PromotionTarget> PromotionTargets { get; set; } = new List<PromotionTarget>();
 
     public virtual ICollection<Variation> Variations { get; set; } = new List<Variation>();
 }

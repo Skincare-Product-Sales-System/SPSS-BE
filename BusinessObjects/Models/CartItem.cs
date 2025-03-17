@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class CartItem : BaseEntity
+public partial class CartItem
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }

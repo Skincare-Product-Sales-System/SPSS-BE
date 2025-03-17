@@ -21,14 +21,14 @@ public class RoleService : IRoleService
     public async Task<RoleDto> GetByIdAsync(Guid id)
     {
         var role = await _unitOfWork.Roles.GetByIdAsync(id);
-        if (role == null || role.IsDeleted)
+        if (role == null)
             throw new KeyNotFoundException($"Role with ID {id} not found.");
         return _mapper.Map<RoleDto>(role);
     }
 
     public async Task<PagedResponse<RoleDto>> GetPagedAsync(int pageNumber, int pageSize)
     {
-        var (roles, totalCount) = await _unitOfWork.Roles.GetPagedAsync(pageNumber, pageSize, r => r.IsDeleted == false);
+        var (roles, totalCount) = await _unitOfWork.Roles.GetPagedAsync(pageNumber, pageSize, null);
         var roleDtos = _mapper.Map<IEnumerable<RoleDto>>(roles);
         return new PagedResponse<RoleDto>
         {
@@ -44,14 +44,26 @@ public class RoleService : IRoleService
         if (roleForCreationDto is null)
             throw new ArgumentNullException(nameof(roleForCreationDto), "Role data cannot be null.");
 
-        var role = _mapper.Map<Role>(roleForCreationDto);
-        role.CreatedTime = DateTimeOffset.UtcNow;
-        role.CreatedBy = "System"; // Replace with actual user if available
-        role.IsDeleted = false;
+        // Manual mapping from RoleForCreationDto to Role
+        var role = new Role
+        {
+            RoleId = Guid.NewGuid(), // Assuming RoleId is generated during creation
+            RoleName = roleForCreationDto.RoleName,
+            Description = roleForCreationDto.Description,
+        };
 
         _unitOfWork.Roles.Add(role);
         await _unitOfWork.SaveChangesAsync();
-        return _mapper.Map<RoleDto>(role);
+
+        // Manual mapping from Role to RoleDto
+        var roleDto = new RoleDto
+        {
+            RoleId = role.RoleId,
+            RoleName = role.RoleName,
+            Description = role.Description,
+        };
+
+        return roleDto;
     }
 
     public async Task<RoleDto> UpdateAsync(Guid roleId, RoleForUpdateDto roleForUpdateDto)
@@ -62,9 +74,6 @@ public class RoleService : IRoleService
         var role = await _unitOfWork.Roles.GetByIdAsync(roleId);
         if (role == null)
             throw new KeyNotFoundException($"Role with ID {roleId} not found.");
-
-        role.LastUpdatedTime = DateTimeOffset.UtcNow;
-        role.LastUpdatedBy = "System"; // Replace with actual user if available
 
         _mapper.Map(roleForUpdateDto, role);
         await _unitOfWork.SaveChangesAsync();
@@ -78,10 +87,6 @@ public class RoleService : IRoleService
         if (role == null)
             throw new KeyNotFoundException($"Role with ID {id} not found.");
 
-        role.IsDeleted = true;
-        role.DeletedTime = DateTimeOffset.UtcNow;
-        role.DeletedBy = "System"; // Replace with actual user if available
-
         _unitOfWork.Roles.Update(role);
         await _unitOfWork.SaveChangesAsync();
     }
@@ -89,7 +94,7 @@ public class RoleService : IRoleService
     public async Task<RoleDto> GetByNameAsync(string roleName)
     {
         var role = await _unitOfWork.Roles.GetRoleByNameAsync(roleName);
-        if (role == null || role.IsDeleted)
+        if (role == null)
             throw new KeyNotFoundException($"Role {roleName} không tồn tại");
     
         return _mapper.Map<RoleDto>(role);

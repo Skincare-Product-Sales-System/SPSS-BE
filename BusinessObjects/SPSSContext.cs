@@ -55,12 +55,6 @@ public partial class SPSSContext : DbContext
 
     public virtual DbSet<ProductStatus> ProductStatuses { get; set; }
 
-    public virtual DbSet<Promotion> Promotions { get; set; }
-
-    public virtual DbSet<PromotionTarget> PromotionTargets { get; set; }
-
-    public virtual DbSet<PromotionType> PromotionTypes { get; set; }
-
     public virtual DbSet<QuizOption> QuizOptions { get; set; }
 
     public virtual DbSet<QuizQuestion> QuizQuestions { get; set; }
@@ -236,15 +230,12 @@ public partial class SPSSContext : DbContext
             entity.HasIndex(e => e.CountryId, "IX_Brands_CountryId");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.CreatedBy).HasMaxLength(100);
-            entity.Property(e => e.DeletedBy).HasMaxLength(100);
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(500);
             entity.Property(e => e.ImageUrl)
                 .IsRequired()
                 .HasMaxLength(500);
-            entity.Property(e => e.LastUpdatedBy).HasMaxLength(100);
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(100);
@@ -258,12 +249,9 @@ public partial class SPSSContext : DbContext
         modelBuilder.Entity<CancelReason>(entity =>
         {
             entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.CreatedBy).HasMaxLength(100);
-            entity.Property(e => e.DeletedBy).HasMaxLength(100);
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(500);
-            entity.Property(e => e.LastUpdatedBy).HasMaxLength(100);
             entity.Property(e => e.RefundRate).HasColumnType("decimal(5, 2)");
         });
 
@@ -274,9 +262,6 @@ public partial class SPSSContext : DbContext
             entity.HasIndex(e => e.UserId, "IX_CartItems_UserId");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.CreatedBy).HasMaxLength(100);
-            entity.Property(e => e.DeletedBy).HasMaxLength(100);
-            entity.Property(e => e.LastUpdatedBy).HasMaxLength(100);
             entity.Property(e => e.Quantity).HasDefaultValue(1);
 
             entity.HasOne(d => d.ProductItem).WithMany(p => p.CartItems).HasForeignKey(d => d.ProductItemId);
@@ -454,54 +439,6 @@ public partial class SPSSContext : DbContext
                 .IsRequired()
                 .HasMaxLength(500);
             entity.Property(e => e.StatusName)
-                .IsRequired()
-                .HasMaxLength(100);
-        });
-
-        modelBuilder.Entity<Promotion>(entity =>
-        {
-            entity.HasIndex(e => e.PromotionTypeId, "IX_Promotions_PromotionTypeId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Description)
-                .IsRequired()
-                .HasMaxLength(500);
-            entity.Property(e => e.DiscountRate).HasColumnType("decimal(5, 2)");
-            entity.Property(e => e.Name)
-                .IsRequired()
-                .HasMaxLength(200);
-            entity.Property(e => e.Type)
-                .IsRequired()
-                .HasMaxLength(50);
-
-            entity.HasOne(d => d.PromotionType).WithMany(p => p.Promotions).HasForeignKey(d => d.PromotionTypeId);
-        });
-
-        modelBuilder.Entity<PromotionTarget>(entity =>
-        {
-            entity.HasIndex(e => e.BrandId, "IX_PromotionTargets_BrandId");
-
-            entity.HasIndex(e => e.ProductCategoryId, "IX_PromotionTargets_ProductCategoryId");
-
-            entity.HasIndex(e => e.ProductId, "IX_PromotionTargets_ProductId");
-
-            entity.HasIndex(e => e.PromotionId, "IX_PromotionTargets_PromotionId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-
-            entity.HasOne(d => d.Brand).WithMany(p => p.PromotionTargets).HasForeignKey(d => d.BrandId);
-
-            entity.HasOne(d => d.ProductCategory).WithMany(p => p.PromotionTargets).HasForeignKey(d => d.ProductCategoryId);
-
-            entity.HasOne(d => d.Product).WithMany(p => p.PromotionTargets).HasForeignKey(d => d.ProductId);
-
-            entity.HasOne(d => d.Promotion).WithMany(p => p.PromotionTargets).HasForeignKey(d => d.PromotionId);
-        });
-
-        modelBuilder.Entity<PromotionType>(entity =>
-        {
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(100);
         });

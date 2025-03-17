@@ -21,12 +21,10 @@ public interface IUnitOfWork : IDisposable
     IBlogRepository Blogs { get; }
     IReviewRepository Reviews { get; }
     IReplyRepository Replies { get; }
-    IPromotionTypeRepository PromotionTypes { get; }
     ICartItemRepository CartItems { get; }
     IPaymentMethodRepository PaymentMethods { get; }
     IVoucherRepository Vouchers { get; }
     ISkinTypeRepository SkinTypes { get; }
-    IPromotionRepository Promotions { get; }
     IOrderRepository Orders { get; }
     IReviewImageRepository ReviewImages { get; }
     IOrderDetailRepository OrderDetails { get; }
@@ -37,8 +35,7 @@ public interface IUnitOfWork : IDisposable
     IQuizOptionRepository QuizOptions { get; }
     IQuizResultRepository QuizResults { get; }
     ICountryRepository Countries { get; }
-    IPromotionTargetRepository PromotionTargets { get; }
-    
+ 
 
 
 

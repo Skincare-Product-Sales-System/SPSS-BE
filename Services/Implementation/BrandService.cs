@@ -22,7 +22,7 @@ public class BrandService : IBrandService
     {
         var brand = await _unitOfWork.Brands.GetByIdAsync(id);
 
-        if (brand == null || brand.IsDeleted)
+        if (brand == null)
             throw new KeyNotFoundException($"Brand with ID {id} not found.");
 
         return _mapper.Map<BrandDto>(brand);
@@ -33,7 +33,7 @@ public class BrandService : IBrandService
         var (brands, totalCount) = await _unitOfWork.Brands.GetPagedAsync(
             pageNumber,
             pageSize,
-            b => !b.IsDeleted // Only active brands
+            null
         );
 
         var brandDtos = _mapper.Map<IEnumerable<BrandDto>>(brands);
@@ -59,11 +59,6 @@ public class BrandService : IBrandService
             Name = brandForCreationDto.Name,
             Description = brandForCreationDto.Description,
             ImageUrl = brandForCreationDto.ImageUrl,
-            CreatedTime = DateTimeOffset.UtcNow,
-            CreatedBy = userId.ToString(),
-            IsDeleted = false,
-            LastUpdatedBy = userId.ToString(),
-            LastUpdatedTime = DateTimeOffset.UtcNow
         };
 
         _unitOfWork.Brands.Add(brand);
@@ -87,15 +82,13 @@ public class BrandService : IBrandService
 
         // Retrieve the existing brand entity
         var brand = await _unitOfWork.Brands.GetByIdAsync(brandId);
-        if (brand == null || brand.IsDeleted)
+        if (brand == null)
             throw new KeyNotFoundException($"Brand with ID {brandId} not found.");
 
         // Update properties manually
         brand.Name = brandForUpdateDto.Name;
         brand.Description = brandForUpdateDto.Description;
         brand.ImageUrl = brandForUpdateDto.ImageUrl;
-        brand.LastUpdatedTime = DateTimeOffset.UtcNow;
-        brand.LastUpdatedBy = userId.ToString();
 
         _unitOfWork.Brands.Update(brand);
         await _unitOfWork.SaveChangesAsync();
@@ -116,13 +109,8 @@ public class BrandService : IBrandService
     {
         // Fetch the brand entity by ID
         var brand = await _unitOfWork.Brands.GetByIdAsync(id);
-        if (brand == null || brand.IsDeleted)
+        if (brand == null)
             throw new KeyNotFoundException($"Brand with ID {id} not found.");
-
-        // Update the properties manually for soft deletion
-        brand.IsDeleted = true;
-        brand.DeletedTime = DateTimeOffset.UtcNow;
-        brand.DeletedBy = userId.ToString();
 
         // Save the changes
         _unitOfWork.Brands.Update(brand);

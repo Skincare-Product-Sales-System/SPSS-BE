@@ -203,11 +203,6 @@ namespace Services.Implementation
                         ProductItemId = orderDetail.ProductItemId,
                         Quantity = orderDetail.Quantity,
                         Price = price,
-                        CreatedTime = DateTime.UtcNow,
-                        CreatedBy = userId.ToString(),
-                        LastUpdatedTime = DateTime.UtcNow,
-                        LastUpdatedBy = userId.ToString(),
-                        IsDeleted = false
                     };
                     orderDetailsEntities.Add(orderDetailEntity);
                 }
@@ -246,11 +241,6 @@ namespace Services.Implementation
                     OrderId = orderEntity.Id,
                     Status = orderEntity.Status,
                     Date = DateTimeOffset.UtcNow,
-                    CreatedTime = DateTime.UtcNow,
-                    CreatedBy = userId.ToString(),
-                    LastUpdatedTime = DateTime.UtcNow,
-                    LastUpdatedBy = userId.ToString(),
-                    IsDeleted = false
                 };
 
                 // Add StatusChange entity to UnitOfWork
@@ -269,6 +259,7 @@ namespace Services.Implementation
                     Status = orderEntity.Status,
                     OrderTotal = orderEntity.OrderTotal,
                     CreatedTime = orderEntity.CreatedTime,
+                    PaymentMethodId = orderEntity.PaymentMethodId,
                 };
 
                 return orderDtoResult;
@@ -293,7 +284,7 @@ namespace Services.Implementation
             if (newStatus.Equals(StatusForOrder.Cancelled, StringComparison.OrdinalIgnoreCase))
             {
                 var orderDetails = await _unitOfWork.OrderDetails.Entities
-                    .Where(od => od.OrderId == id && !od.IsDeleted)
+                    .Where(od => od.OrderId == id)
                     .ToListAsync();
 
                 foreach (var orderDetail in orderDetails)
@@ -324,11 +315,6 @@ namespace Services.Implementation
                 OrderId = order.Id,
                 Status = order.Status,
                 Date = DateTimeOffset.UtcNow,
-                CreatedTime = DateTime.UtcNow,
-                CreatedBy = userId.ToString(),
-                LastUpdatedTime = DateTime.UtcNow,
-                LastUpdatedBy = userId.ToString(),
-                IsDeleted = false
             };
 
             // Add the status change record

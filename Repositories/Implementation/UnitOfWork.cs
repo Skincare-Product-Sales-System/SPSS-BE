@@ -26,11 +26,9 @@ public class UnitOfWork : IUnitOfWork
     private IReplyRepository _replyRepository;
     private IPaymentMethodRepository _paymentMethodRepository;
     private ICartItemRepository _cartItemRepository;
-    private IPromotionTypeRepository _promotionTypeRepository;
     private IBrandRepository _brandRepository;
     private IVoucherRepository _voucherRepository;
     private ISkinTypeRepository _skinTypeRepository;
-    private IPromotionRepository _promotionRepository;
     private IDbContextTransaction _transaction; 
     private IOrderRepository _orderRepository;
     private IReviewImageRepository _reviewImageRepository;
@@ -45,7 +43,7 @@ public class UnitOfWork : IUnitOfWork
     private IAccountRepository _accountRepository;
     private IBlogSectionRepository _blogSectionRepository;
     private ISkinTypeRoutineStepRepository _skinTypeRoutineStepRepository;
-    private IPromotionTargetRepository _promotionTargetRepository;
+ 
     public UnitOfWork(SPSSContext context) =>  _context = context;
 
     public IAccountRepository Accounts => _accountRepository ??= new AccountRepository(_context);
@@ -73,21 +71,15 @@ public class UnitOfWork : IUnitOfWork
     public IBlogRepository Blogs => _blogRepository ??= new BlogRepository(_context);
     public IReviewRepository Reviews => _reviewRepository ??= new ReviewRepository(_context);
     public IReplyRepository Replies => _replyRepository ??= new ReplyRepository(_context);
-    public IPromotionTypeRepository PromotionTypes => _promotionTypeRepository ??= new PromotionTypeRepository(_context);
     public IPaymentMethodRepository PaymentMethods => _paymentMethodRepository ??= new PaymentMethodRepository(_context);
     public ICartItemRepository CartItems => _cartItemRepository ??= new CartItemRepository(_context);
     public IVoucherRepository Vouchers => _voucherRepository ??= new VoucherRepository(_context);
-    public IPromotionRepository Promotions => _promotionRepository ??= new PromotionRepository(_context);
     public IProductForSkinTypeRepository ProductForSkinTypes => _productForSkinTypeRepository ??= new ProductForSkinTypeRepository(_context);
     public IQuizSetRepository QuizSets => _quizSetRepository ??= new QuizSetRepository(_context);
     public IQuizQuestionRepository QuizQuestions => _quizQuestionRepository ??= new QuizQuestionRepository(_context);
     public IQuizOptionRepository QuizOptions => _quizOptionRepository ??= new QuizOptionRepository(_context);
     public IQuizResultRepository QuizResults => _quizResultRepository ??= new QuizResultRepository(_context);
-    public ICountryRepository Countries => _countryRepository ??= new CountryRepository(_context);
-
-    public IPromotionTargetRepository PromotionTargets =>
-        _promotionTargetRepository ??= new PromotionTargetRepository(_context);
-
+    public ICountryRepository Countries => _countryRepository ??= new CountryRepository(_context); 
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 
     public async Task BeginTransactionAsync()

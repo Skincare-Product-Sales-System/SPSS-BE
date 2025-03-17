@@ -10,6 +10,6 @@ namespace Services.Interface
 {
     public interface IQuizResultService
     {
-        Task<QuizResultDto> GetByPointAndSetIdAsync(string score, Guid quizSetId);
+        Task<QuizResultDto> GetByPointAndSetIdAsync(string score, Guid quizSetId, Guid userId);
     }
 }

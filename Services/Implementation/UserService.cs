@@ -155,16 +155,38 @@ public class UserService : IUserService
             PhoneNumber = userForCreationDto.PhoneNumber,
             Status = userForCreationDto.Status,
             Password = userForCreationDto.Password,
-            AvatarUrl = userForCreationDto.AvatarUrl,
+            AvatarUrl = !string.IsNullOrWhiteSpace(userForCreationDto.AvatarUrl) ? userForCreationDto.AvatarUrl : "https://i.pinimg.com/736x/dc/9c/61/dc9c614e3007080a5aff36aebb949474.jpg",
             CreatedBy = "System", 
             CreatedTime = DateTimeOffset.UtcNow,
+            LastUpdatedBy = "System",
+            LastUpdatedTime = DateTimeOffset.UtcNow,
             IsDeleted = false 
         };
         Console.WriteLine($"User before save: {JsonSerializer.Serialize(user)}");
         _unitOfWork.Users.Add(user);
         await _unitOfWork.SaveChangesAsync();
 
-        return _mapper.Map<UserDto>(user);
+        // Manual mapping from User to UserDto
+        var userDto = new UserDto
+        {
+            UserId = user.UserId,
+            SkinTypeId = user.SkinTypeId,
+            RoleId = user.RoleId,
+            UserName = user.UserName,
+            SurName = user.SurName,
+            LastName = user.LastName,
+            EmailAddress = user.EmailAddress,
+            PhoneNumber = user.PhoneNumber,
+            Status = user.Status,
+            AvatarUrl = user.AvatarUrl,
+            CreatedBy = user.CreatedBy,
+            CreatedTime = user.CreatedTime,
+            LastUpdatedBy = user.LastUpdatedBy,
+            LastUpdatedTime = user.LastUpdatedTime,
+            IsDeleted = user.IsDeleted
+        };
+
+        return userDto;
     }
 
     public async Task<UserDto> UpdateAsync(Guid userId, UserForUpdateDto userForUpdateDto)

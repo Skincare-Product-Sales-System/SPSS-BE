@@ -28,7 +28,7 @@ namespace Services.Implementation
 
             // Truy vấn tổng số bản ghi
             var totalCount = await _unitOfWork.CartItems.Entities
-                .Where(ci => ci.UserId == userId && !ci.IsDeleted)
+                .Where(ci => ci.UserId == userId)
                 .CountAsync();
 
             // Truy vấn dữ liệu với phân trang
@@ -45,8 +45,7 @@ namespace Services.Implementation
                 .Include(ci => ci.ProductItem)
                     .ThenInclude(p => p.ProductConfigurations)
                         .ThenInclude(pi => pi.VariationOption)
-                .Where(ci => ci.UserId == userId && !ci.IsDeleted)
-                .OrderByDescending(ci => ci.LastUpdatedTime) // Sắp xếp theo thời gian cập nhật gần đây nhất
+                .Where(ci => ci.UserId == userId)
                 .Skip(skip) // Bỏ qua số lượng phần tử theo trang
                 .Take(pageSize) // Lấy số lượng phần tử theo kích thước trang
                 .ToListAsync();
@@ -71,7 +70,7 @@ namespace Services.Implementation
 
             // Fetch the ProductItem to check its stock
             var productItem = await _unitOfWork.ProductItems
-                .SingleOrDefaultAsync(p => p.Id == cartItemDto.ProductItemId && !p.IsDeleted);
+                .SingleOrDefaultAsync(p => p.Id == cartItemDto.ProductItemId);
 
             if (productItem == null)
                 throw new KeyNotFoundException($"ProductItem with ID {cartItemDto.ProductItemId} not found.");
@@ -81,7 +80,7 @@ namespace Services.Implementation
 
             // Check if the user already has a CartItem with the same ProductItemId
             var existingCartItem = await _unitOfWork.CartItems
-                .SingleOrDefaultAsync(c => c.UserId == userId && c.ProductItemId == cartItemDto.ProductItemId && !c.IsDeleted);
+                .SingleOrDefaultAsync(c => c.UserId == userId && c.ProductItemId == cartItemDto.ProductItemId);
 
             if (existingCartItem != null)
             {
@@ -91,7 +90,6 @@ namespace Services.Implementation
 
                 // Update the existing CartItem's quantity
                 existingCartItem.Quantity += cartItemDto.Quantity;
-                existingCartItem.LastUpdatedTime = DateTimeOffset.UtcNow;
 
                 _unitOfWork.CartItems.Update(existingCartItem);
                 await _unitOfWork.SaveChangesAsync();
@@ -102,8 +100,6 @@ namespace Services.Implementation
             // Create a new CartItem if it doesn't exist
             var cartItem = _mapper.Map<CartItem>(cartItemDto);
             cartItem.Id = Guid.NewGuid();
-            cartItem.CreatedTime = DateTimeOffset.UtcNow;
-            cartItem.LastUpdatedTime = DateTimeOffset.UtcNow;
             cartItem.UserId = userId;
 
             _unitOfWork.CartItems.Add(cartItem);
@@ -120,7 +116,6 @@ namespace Services.Implementation
             var cartItem = await _unitOfWork.CartItems.GetByIdAsync(id);
             if (cartItem == null)
                 throw new KeyNotFoundException($"CartItem with ID {id} not found.");
-            cartItem.LastUpdatedTime = DateTimeOffset.UtcNow;
             _mapper.Map(cartItemDto, cartItem);
             _unitOfWork.CartItems.Update(cartItem);
             await _unitOfWork.SaveChangesAsync();

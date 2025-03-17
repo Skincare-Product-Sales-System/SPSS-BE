@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class ReviewImage : BaseEntity
+public partial class ReviewImage
 {
     public Guid Id { get; set; }
     public Guid ReviewId { get; set; }

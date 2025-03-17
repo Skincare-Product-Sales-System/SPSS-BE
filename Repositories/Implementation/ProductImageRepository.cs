@@ -15,7 +15,6 @@ public class ProductImageRepository : RepositoryBase<ProductImage, Guid>, IProdu
     {
         return await _context.Set<ProductImage>()
             .Where(pi => pi.ProductId == productId)
-            .OrderBy(pi => pi.CreatedTime)
             .Select(pi => new ProductImageByIdResponse
             {
                 Id = pi.Id,

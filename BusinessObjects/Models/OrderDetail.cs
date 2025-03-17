@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace BusinessObjects.Models;
 
-public partial class OrderDetail : BaseEntity
+public partial class OrderDetail
 {
     public Guid Id { get; set; }
 

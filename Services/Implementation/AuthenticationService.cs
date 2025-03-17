@@ -99,14 +99,6 @@ public class AuthenticationService : IAuthenticationService
     
     public async Task<string> RegisterAsync(RegisterRequest registerRequest)
     {
-        // Log giá trị của RegisterRequest
-        Console.WriteLine($"UserName: {registerRequest.UserName}");
-        Console.WriteLine($"SurName: {registerRequest.SurName}");
-        Console.WriteLine($"LastName: {registerRequest.LastName}");
-        Console.WriteLine($"EmailAddress: {registerRequest.EmailAddress}");
-        Console.WriteLine($"PhoneNumber: {registerRequest.PhoneNumber}");
-        Console.WriteLine($"Password: {registerRequest.Password}");
-        
         
         if (await _userService.CheckUserNameExistsAsync(registerRequest.UserName))
             throw new UnauthorizedAccessException("Username đã được sử dụng");
@@ -132,7 +124,7 @@ public class AuthenticationService : IAuthenticationService
         {
             
             createdUser = await _userService.CreateAsync(userForCreationDto);
-            await AssignRoleToUser(createdUser.UserId.ToString(), "customer");
+            await AssignRoleToUser(createdUser.UserId.ToString(), "Customer");
             return createdUser.UserId.ToString();
         }
         catch (Exception ex)
@@ -144,6 +136,88 @@ public class AuthenticationService : IAuthenticationService
             throw new ApplicationException("Đăng ký thất bại", ex);
         }
     }
+    
+    
+    public async Task<string> RegisterForManagerAsync(RegisterRequest registerRequest)
+    {
+        
+        if (await _userService.CheckUserNameExistsAsync(registerRequest.UserName))
+            throw new UnauthorizedAccessException("Username đã được sử dụng");
+
+        if (await _userService.CheckEmailExistsAsync(registerRequest.EmailAddress))
+            throw new UnauthorizedAccessException("Email đã được sử dụng");
+
+        ValidateRegisterModel(registerRequest);
+
+        var userForCreationDto = new UserForCreationDto
+        {
+            UserName = registerRequest.UserName,
+            EmailAddress = registerRequest.EmailAddress,
+            PhoneNumber = registerRequest.PhoneNumber,
+            Password = registerRequest.Password,
+            SurName = registerRequest.SurName,
+            LastName = registerRequest.LastName,
+            Status = "Active", 
+        };
+        UserDto createdUser = null;
+
+        try
+        {
+            
+            createdUser = await _userService.CreateAsync(userForCreationDto);
+            await AssignRoleToUser(createdUser.UserId.ToString(), "Manager");
+            return createdUser.UserId.ToString();
+        }
+        catch (Exception ex)
+        {
+            // Rollback nếu có lỗi
+            if (createdUser != null)
+                await _userService.DeleteAsync(createdUser.UserId);
+        
+            throw new ApplicationException("Đăng ký thất bại", ex);
+        }
+    }
+    
+    public async Task<string> RegisterForStaffAsync(RegisterRequest registerRequest)
+    {
+        
+        if (await _userService.CheckUserNameExistsAsync(registerRequest.UserName))
+            throw new UnauthorizedAccessException("Username đã được sử dụng");
+
+        if (await _userService.CheckEmailExistsAsync(registerRequest.EmailAddress))
+            throw new UnauthorizedAccessException("Email đã được sử dụng");
+
+        ValidateRegisterModel(registerRequest);
+
+        var userForCreationDto = new UserForCreationDto
+        {
+            UserName = registerRequest.UserName,
+            EmailAddress = registerRequest.EmailAddress,
+            PhoneNumber = registerRequest.PhoneNumber,
+            Password = registerRequest.Password,
+            SurName = registerRequest.SurName,
+            LastName = registerRequest.LastName,
+            Status = "Active", 
+        };
+        UserDto createdUser = null;
+
+        try
+        {
+            
+            createdUser = await _userService.CreateAsync(userForCreationDto);
+            await AssignRoleToUser(createdUser.UserId.ToString(), "Manager");
+            return createdUser.UserId.ToString();
+        }
+        catch (Exception ex)
+        {
+            // Rollback nếu có lỗi
+            if (createdUser != null)
+                await _userService.DeleteAsync(createdUser.UserId);
+        
+            throw new ApplicationException("Đăng ký thất bại", ex);
+        }
+    }
+    
     
     public async Task AssignRoleToUser(string userId, string roleName)
     {
@@ -176,21 +250,21 @@ public class AuthenticationService : IAuthenticationService
     {
         if (!IsValidEmail(registerRequest.EmailAddress))
         {
-            throw new Exception("Invalid Email format");
+            throw new Exception("Email không hợp lệ");
         }
 
         if (!IsValidUsername(registerRequest.UserName))
         {
-            throw new Exception("Invalid Username format");
+            throw new Exception("Username không hợp lệ");
         }
         
 
         if (!IsValidPhoneNumber(registerRequest.PhoneNumber)) {
-            throw new Exception("Invalid PhoneNumber format");
+            throw new Exception("Số điện thoại không hợp lệ");
         }
 
         if (string.IsNullOrWhiteSpace(registerRequest.Password) || !IsValidPassword(registerRequest.Password)) {
-                throw new Exception("Invalid Password format");
+                throw new Exception("Password không hợp lệ");
         }
     }
 

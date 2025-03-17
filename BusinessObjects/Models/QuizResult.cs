@@ -13,8 +13,6 @@ public partial class QuizResult : BaseEntity
 
     public Guid SkinTypeId { get; set; }
 
-    public Guid SetId { get; set; }
-
     public Guid? QuizSetId { get; set; }
     public virtual QuizSet QuizSet { get; set; }
 
