@@ -13,7 +13,7 @@ namespace API.Extensions
         }
 
         public void OnAuthorization(AuthorizationFilterContext context)
-        {
+        {   
             var role = context.HttpContext.Items["Role"]?.ToString();
 
             // Handle multiple roles in "Role"

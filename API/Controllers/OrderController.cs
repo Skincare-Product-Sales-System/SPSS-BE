@@ -92,7 +92,7 @@ namespace API.Controllers
             }
         }
 
-        [CustomAuthorize("Manager, Customer")]
+        [CustomAuthorize("Manager", "Customer")]
         [HttpPatch("{id:guid}/status")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
