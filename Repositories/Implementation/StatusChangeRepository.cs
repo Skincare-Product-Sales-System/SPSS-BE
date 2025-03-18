@@ -1,5 +1,7 @@
 ﻿using BusinessObjects.Models;
+using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
+using System.Linq.Expressions;
 
 namespace Repositories.Implementation
 {
@@ -7,6 +9,11 @@ namespace Repositories.Implementation
     {
         public StatusChangeRepository(SPSSContext context) : base(context)
         {
+        }
+
+        public async Task<StatusChange> FirstOrDefaultAsync(Expression<Func<StatusChange, bool>> predicate)
+        {
+            return await _context.StatusChanges.FirstOrDefaultAsync(predicate);
         }
     }
 }
