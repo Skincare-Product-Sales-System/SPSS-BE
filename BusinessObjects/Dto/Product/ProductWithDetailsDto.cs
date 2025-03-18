@@ -20,9 +20,8 @@ namespace BusinessObjects.Dto.Product
 
         public decimal MarketPrice { get; set; }
         public string Status { get; set; } = null!;
-
+        public string Thumbnail { get; set; } = null!;
         public List<SkinTypeForProductQueryDto> SkinTypes { get; set; } = new();
-        public List<string> ProductImageUrls { get; set; } = new();
         public List<ProductItemDto> ProductItems { get; set; } = new();
         public BrandDto Brand { get; set; } = null!;
         public ProductCategoryDto Category { get; set; } = null!;

@@ -1,5 +1,8 @@
-﻿namespace BusinessObjects.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace BusinessObjects.Models
 {
+    [Table("BlogSections")]
     public partial class BlogSection
     {
         public Guid Id { get; set; }

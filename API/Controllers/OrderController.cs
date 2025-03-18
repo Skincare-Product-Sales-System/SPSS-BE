@@ -15,7 +15,7 @@ namespace API.Controllers
         private readonly IOrderService _orderService;
 
         public OrderController(IOrderService orderService) => _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
-
+        [CustomAuthorize("Customer")]
         [HttpGet("user")]
         public async Task<IActionResult> GetOrdersByUserId([Range(1, int.MaxValue)] int pageNumber = 1, [Range(1, 100)] int pageSize = 10)
         {
@@ -37,7 +37,7 @@ namespace API.Controllers
             }
         }
 
-
+        [CustomAuthorize("Manager", "Customer")]
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -52,6 +52,7 @@ namespace API.Controllers
             }
         }
 
+        [CustomAuthorize("Manager")]
         [HttpGet]
         public async Task<IActionResult> GetPaged(
             [Range(1, int.MaxValue)] int pageNumber = 1,
@@ -92,12 +93,12 @@ namespace API.Controllers
             }
         }
 
-        //[CustomAuthorize("Manager, Customer")]
+        [CustomAuthorize("Manager", "Customer")]
         [HttpPatch("{id:guid}/status")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateOrderStatus(Guid id, string newStatus = "Cancelled")
+        public async Task<IActionResult> UpdateOrderStatus(Guid id, string newStatus = "Cancelled", Guid? cancelReasonId = null)
         {
             if (!ModelState.IsValid)
             {
@@ -109,7 +110,7 @@ namespace API.Controllers
 
             try
             {
-                var updatedOrder = await _orderService.UpdateOrderStatusAsync(id, newStatus, userId.Value);
+                var updatedOrder = await _orderService.UpdateOrderStatusAsync(id, newStatus, userId.Value, cancelReasonId);
                 return Ok(ApiResponse<bool>.SuccessResponse(updatedOrder, "Order status updated successfully"));
             }
             catch (KeyNotFoundException ex)

@@ -1,6 +1,8 @@
-﻿using BusinessObjects.Dto.Authentication;
+﻿using BusinessObjects.Dto.Account;
+using BusinessObjects.Dto.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Services.Dto.Api;
 using Services.Interface;
 
 namespace API.Controllers;
@@ -92,7 +94,46 @@ public class AuthenticationController : ControllerBase
             return StatusCode(500, new { message = ex.Message });
         }
     }
-    
+
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword(string currentPassword, string newPassword)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(currentPassword) || string.IsNullOrWhiteSpace(newPassword))
+            {
+                return BadRequest(new { message = "Current password and new password are required." });
+            }
+
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            }
+
+            await _authService.ChangePasswordAsync(userId.Value, currentPassword, newPassword);
+
+            return Ok(new { message = "Password changed successfully." });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
     [HttpPost("registerForStaff")]
     public async Task<ActionResult<string>> RegisterForStaff(RegisterRequest registerRequest)
     {

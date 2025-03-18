@@ -18,5 +18,6 @@ namespace BusinessObjects.Dto.Review
         public string Comment { get; set; }
         public DateTimeOffset? LastUpdatedTime { get; set; }
         public ReplyDto Reply { get; set; }
+        public bool IsEditble { get; set; }
     }
 }

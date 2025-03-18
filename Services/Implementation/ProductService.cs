@@ -15,6 +15,7 @@ using Repositories.Interface;
 using Services.Interface;
 using Services.Response;
 using Shared.Constants;
+using System.Linq;
 
 public class ProductService : IProductService
 {
@@ -183,6 +184,7 @@ public class ProductService : IProductService
             Rating = product.Rating,
             SoldCount = product.SoldCount,
             Status = product.ProductStatus.StatusName,
+            Thumbnail = product.ProductImages.FirstOrDefault(pi => pi.IsThumbnail)?.ImageUrl,
             Category = new ProductCategoryDto
             {
                 Id = product.ProductCategory.Id,
@@ -196,7 +198,6 @@ public class ProductService : IProductService
                 Description = product.Brand.Description,
                 ImageUrl = product.Brand.ImageUrl
             },
-            ProductImageUrls = product.ProductImages.Select(pi => pi.ImageUrl).ToList(),
             ProductItems = product.ProductItems.Select(pi => new ProductItemDto
             {
                 Id = pi.Id,
@@ -232,30 +233,70 @@ public class ProductService : IProductService
         return productDto;
     }
 
-    public async Task<PagedResponse<ProductDto>> GetPagedAsync(int pageNumber, int pageSize)
+    public async Task<PagedResponse<ProductDto>> GetPagedAsync(
+    int pageNumber,
+    int pageSize,
+    Guid? brandId = null,
+    Guid? categoryId = null,
+    Guid? skinTypeId = null,
+    string sortBy = "newest", // Thêm tham số sortBy với giá trị mặc định "newest"
+    string name = null // Thêm tham số name để lọc theo tên sản phẩm
+)
     {
+        // Lọc sản phẩm theo SkinTypeId nếu được cung cấp
+        var productIdsBySkinType = skinTypeId.HasValue
+            ? await _unitOfWork.ProductForSkinTypes.Entities
+                .Where(pst => pst.SkinTypeId == skinTypeId.Value)
+                .Select(pst => pst.ProductId)
+                .Distinct()
+                .ToListAsync()
+            : null;
+
+        // Lấy danh sách các CategoryId bao gồm cả subcategories
+        var subCategoryIds = categoryId.HasValue
+            ? await GetSubCategoryIdsAsync(categoryId.Value)
+            : null;
+
+        // Truy vấn sản phẩm từ cơ sở dữ liệu với các điều kiện lọc
         var (products, totalCount) = await _unitOfWork.Products.GetPagedAsync(
             pageNumber,
             pageSize,
-            cr => cr.IsDeleted == false
+            cr =>
+                cr.IsDeleted == false && // Không lấy các sản phẩm bị xóa
+                (!brandId.HasValue || cr.BrandId == brandId.Value) && // Lọc theo BrandId nếu có
+                (subCategoryIds == null || subCategoryIds.Contains(cr.ProductCategoryId)) && // Lọc theo CategoryId nếu có
+                (productIdsBySkinType == null || productIdsBySkinType.Contains(cr.Id)) && // Lọc theo SkinTypeId nếu có
+                (string.IsNullOrEmpty(name) || cr.Name.Contains(name)) // Lọc theo tên sản phẩm nếu có
         );
 
-        var orderedProducts = products.OrderByDescending(p => p.CreatedTime).ToList();
+        // Sắp xếp sản phẩm theo tiêu chí được chọn
+        products = sortBy.ToLower() switch
+        {
+            "newest" => products.OrderByDescending(p => p.CreatedTime),
+            "bestselling" => products.OrderByDescending(p => p.SoldCount), // Giả định `Sales` là số lượng sản phẩm bán được
+            "price_asc" => products.OrderBy(p => p.Price),
+            "price_desc" => products.OrderByDescending(p => p.Price),
+            _ => products.OrderByDescending(p => p.CreatedTime) // Mặc định là newest
+        };
 
-        var productIds = orderedProducts.Select(p => p.Id).ToList();
+        // Lấy danh sách Id của sản phẩm và các ảnh liên quan
+        var productIds = products.Select(p => p.Id).ToList();
         var productImages = await _unitOfWork.ProductImages.Entities
             .Where(pi => productIds.Contains(pi.ProductId))
             .ToListAsync();
 
-        foreach (var product in orderedProducts)
+        // Gán ảnh vào từng sản phẩm
+        foreach (var product in products)
         {
             product.ProductImages = productImages
                 .Where(pi => pi.ProductId == product.Id)
                 .ToList();
         }
 
-        var productDtos = _mapper.Map<IEnumerable<ProductDto>>(orderedProducts);
+        // Chuyển đổi sản phẩm sang DTO
+        var productDtos = _mapper.Map<IEnumerable<ProductDto>>(products);
 
+        // Trả về kết quả phân trang
         return new PagedResponse<ProductDto>
         {
             Items = productDtos,
@@ -263,6 +304,36 @@ public class ProductService : IProductService
             PageNumber = pageNumber,
             PageSize = pageSize
         };
+    }
+
+    private async Task<List<Guid>> GetSubCategoryIdsAsync(Guid categoryId)
+    {
+        var allCategories = await _unitOfWork.ProductCategories.Entities.ToListAsync();
+
+        // Sử dụng BFS hoặc DFS để lấy tất cả các CategoryId con
+        var subCategoryIds = new List<Guid> { categoryId };
+        var queue = new Queue<Guid>();
+        queue.Enqueue(categoryId);
+
+        while (queue.Count > 0)
+        {
+            var currentId = queue.Dequeue();
+            var children = allCategories
+                .Where(c => c.ParentCategoryId == currentId)
+                .Select(c => c.Id)
+                .ToList();
+
+            foreach (var childId in children)
+            {
+                if (!subCategoryIds.Contains(childId))
+                {
+                    subCategoryIds.Add(childId);
+                    queue.Enqueue(childId);
+                }
+            }
+        }
+
+        return subCategoryIds;
     }
 
     public async Task<PagedResponse<ProductDto>> GetBestSellerAsync(int pageNumber, int pageSize)
