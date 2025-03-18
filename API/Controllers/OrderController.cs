@@ -98,7 +98,7 @@ namespace API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateOrderStatus(Guid id, string newStatus = "Cancelled")
+        public async Task<IActionResult> UpdateOrderStatus(Guid id, string newStatus = "Cancelled", Guid? cancelReasonId = null)
         {
             if (!ModelState.IsValid)
             {
@@ -110,7 +110,7 @@ namespace API.Controllers
 
             try
             {
-                var updatedOrder = await _orderService.UpdateOrderStatusAsync(id, newStatus, userId.Value);
+                var updatedOrder = await _orderService.UpdateOrderStatusAsync(id, newStatus, userId.Value, cancelReasonId);
                 return Ok(ApiResponse<bool>.SuccessResponse(updatedOrder, "Order status updated successfully"));
             }
             catch (KeyNotFoundException ex)

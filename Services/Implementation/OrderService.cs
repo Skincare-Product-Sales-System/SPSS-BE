@@ -385,7 +385,7 @@ namespace Services.Implementation
             }
         }
 
-        public async Task<bool> UpdateOrderStatusAsync(Guid id, string newStatus, Guid userId)
+        public async Task<bool> UpdateOrderStatusAsync(Guid id, string newStatus, Guid userId, Guid? cancelReasonId = null)
         {
             if (string.IsNullOrWhiteSpace(newStatus))
                 throw new ArgumentNullException(nameof(newStatus), "Order status cannot be null or empty.");
@@ -414,6 +414,12 @@ namespace Services.Implementation
 
                     // Update the product item
                     _unitOfWork.ProductItems.Update(productItem);
+                }
+
+                // If cancelReasonId is provided, update the order's CancelReasonId
+                if (cancelReasonId.HasValue)
+                {
+                    order.CancelReasonId = cancelReasonId.Value;
                 }
             }
 
