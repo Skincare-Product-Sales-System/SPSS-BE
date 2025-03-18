@@ -125,7 +125,7 @@ namespace Services.Implementation
 
             // Validate User
             var userExists = await _unitOfWork.Users.Entities
-                .AnyAsync(u => u.UserId == userId && u.Status == );
+                .AnyAsync(u => u.UserId == userId && u.Status == StatusForAccount.Active);
             if (!userExists)
             {
                 throw new ArgumentException($"User with ID {userId} not found or is inactive.");
