@@ -11,4 +11,5 @@ public interface IVoucherService
     Task<VoucherDto> CreateAsync(VoucherForCreationDto? voucherForCreationDto);
     Task<VoucherDto> UpdateAsync(Guid voucherId, VoucherForUpdateDto voucherForUpdateDto);
     Task DeleteAsync(Guid id);
+    Task<VoucherDto> GetByCodeAsync(string voucherCode);
 }

@@ -108,4 +108,26 @@ public class VoucherController : ControllerBase
             return NotFound(ApiResponse<object>.FailureResponse(ex.Message));
         }
     }
+
+    [HttpGet("code/{voucherCode}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetByCode(string voucherCode)
+    {
+        if (string.IsNullOrWhiteSpace(voucherCode))
+        {
+            return BadRequest(ApiResponse<VoucherDto>.FailureResponse("Voucher code cannot be null or empty."));
+        }
+
+        try
+        {
+            var voucher = await _voucherService.GetByCodeAsync(voucherCode);
+            return Ok(ApiResponse<VoucherDto>.SuccessResponse(voucher));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ApiResponse<VoucherDto>.FailureResponse(ex.Message));
+        }
+    }
 }

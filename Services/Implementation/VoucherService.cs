@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using BusinessObjects.Dto.Voucher;
 using BusinessObjects.Models;
+using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
 using Services.Interface;
 using Services.Response;
@@ -83,5 +84,20 @@ public class VoucherService : IVoucherService
         voucher.DeletedBy = "System";
         _unitOfWork.Vouchers.Update(voucher);
         await _unitOfWork.SaveChangesAsync();
+    }
+
+    public async Task<VoucherDto> GetByCodeAsync(string voucherCode)
+    {
+        if (string.IsNullOrWhiteSpace(voucherCode))
+            throw new ArgumentException("Voucher code cannot be null or empty.", nameof(voucherCode));
+
+        // Tìm voucher bằng voucherCode
+        var voucher = await _unitOfWork.Vouchers.Entities
+            .FirstOrDefaultAsync(v => v.Code == voucherCode && !v.IsDeleted);
+
+        if (voucher == null)
+            throw new KeyNotFoundException($"Voucher with code {voucherCode} not found.");
+
+        return _mapper.Map<VoucherDto>(voucher);
     }
 }

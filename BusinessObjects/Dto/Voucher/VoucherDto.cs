@@ -8,7 +8,7 @@ public class VoucherDto
     public string Status { get; set; }
 
     public double DiscountRate { get; set; }
-    public string UsageLimit { get; set; }
+    public int UsageLimit { get; set; }
 
     public double MinimumOrderValue { get; set; }
 
