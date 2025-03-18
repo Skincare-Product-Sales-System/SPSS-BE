@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
 using Services.Interface;
 using Services.Response;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Services.Implementation;
 
@@ -64,6 +65,9 @@ public class BlogService : IBlogService
             pageSize,
             b => !b.IsDeleted // Chỉ lấy các blog chưa bị xóa
         );
+
+        // Sắp xếp giảm dần theo LastUpdatedTime
+        blogs = blogs.OrderByDescending(b => b.LastUpdatedTime);
 
         // Map thủ công từng đối tượng Blog sang BlogDto
         var blogDtos = blogs.Select(b => new BlogDto
