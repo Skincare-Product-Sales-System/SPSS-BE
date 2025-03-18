@@ -49,6 +49,7 @@ public static class ServiceExtensions
         services.AddScoped<ICountryRepository, CountryRepository>();
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<IRoleService, RoleService>();
+        services.AddScoped<IImageService, ImageService>();
         services.AddScoped<IQuizOptionService, QuizOptionService>();
         services.AddScoped<IQuizQuestionService, QuizQuestionService>();
         return services;

@@ -66,7 +66,6 @@ namespace Services.Implementation
             {
                 Id = category.Id,
                 CategoryName = category.CategoryName,
-                ParentId = category.ParentCategoryId,
                 Children = category.InverseParentCategory.Select(child => MapCategoryToDto(child)).ToList()
             };
         }

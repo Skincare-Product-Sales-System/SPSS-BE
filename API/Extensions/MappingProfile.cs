@@ -129,7 +129,6 @@ public class MappingProfile : Profile
 
         CreateMap<ProductForUpdateDto, Product>();
         CreateMap<Product, ProductWithDetailsDto>()
-            .ForMember(dest => dest.ProductImageUrls, opt => opt.MapFrom(src => src.ProductImages.Select(i => i.ImageUrl).ToList()))
             .ForMember(dest => dest.ProductItems, opt => opt.MapFrom(src => src.ProductItems))
             .ForMember(dest => dest.Brand, opt => opt.MapFrom(src => src.Brand))
             .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.ProductCategory))
@@ -216,7 +215,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.AddressLine2, opt => opt.MapFrom(src => src.AddressLine2))
             .ForMember(dest => dest.City, opt => opt.MapFrom(src => src.City))
             .ForMember(dest => dest.Ward, opt => opt.MapFrom(src => src.Ward))
-            .ForMember(dest => dest.Postcode, opt => opt.MapFrom(src => src.Postcode))
+            .ForMember(dest => dest.PostCode, opt => opt.MapFrom(src => src.Postcode))
             .ForMember(dest => dest.Province, opt => opt.MapFrom(src => src.Province));
         CreateMap<AddressForCreationDto, Address>();
         CreateMap<AddressForUpdateDto, Address>();

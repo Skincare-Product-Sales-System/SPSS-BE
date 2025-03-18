@@ -37,6 +37,7 @@ public class AddressService : IAddressService
         var addressDtos = allAddresses.Select(a => new AddressDto
         {
             Id = a.Id,
+            CountryId = a.CountryId,
             CustomerName = a.User?.UserName ?? "Unknown",
             IsDefault = a.IsDefault,
             PhoneNumber = a.User?.PhoneNumber ?? "N/A",
@@ -46,7 +47,7 @@ public class AddressService : IAddressService
             AddressLine2 = a.AddressLine2,
             City = a.City,
             Ward = a.Ward,
-            Postcode = a.Postcode,
+            PostCode = a.Postcode,
             Province = a.Province
         }).ToList();
 
@@ -59,11 +60,12 @@ public class AddressService : IAddressService
         };
     }
 
-    public async Task<bool> CreateAsync(AddressForCreationDto? addressForCreationDto, Guid userId)
+    public async Task<AddressDto> CreateAsync(AddressForCreationDto? addressForCreationDto, Guid userId)
     {
         if (addressForCreationDto is null)
             throw new ArgumentNullException(nameof(addressForCreationDto), "Address data cannot be null.");
 
+        // Thực hiện ánh xạ thủ công từ AddressForCreationDto sang Address
         var address = new Address
         {
             Id = Guid.NewGuid(),
@@ -76,7 +78,6 @@ public class AddressService : IAddressService
             Ward = addressForCreationDto.Ward,
             Postcode = addressForCreationDto.Postcode,
             Province = addressForCreationDto.Province,
-            IsDefault = addressForCreationDto.IsDefault,
             CreatedTime = DateTimeOffset.UtcNow,
             CreatedBy = userId.ToString(),
             LastUpdatedBy = userId.ToString(),
@@ -84,9 +85,58 @@ public class AddressService : IAddressService
             IsDeleted = false
         };
 
+        // Xử lý thiết lập IsDefault
+        if (addressForCreationDto.IsDefault)
+        {
+            // Lấy danh sách địa chỉ hiện tại của người dùng
+            var userAddresses = await _unitOfWork.Addresses.Entities
+                .Where(a => a.UserId == userId && !a.IsDeleted)
+                .ToListAsync();
+
+            // Đặt tất cả các địa chỉ hiện tại không còn là mặc định
+            foreach (var userAddress in userAddresses)
+            {
+                if (userAddress.IsDefault)
+                {
+                    userAddress.IsDefault = false;
+                }
+            }
+            // Đặt địa chỉ mới làm mặc định
+            address.IsDefault = true;
+        }
+
+        // Thêm địa chỉ mới vào cơ sở dữ liệu
         _unitOfWork.Addresses.Add(address);
         await _unitOfWork.SaveChangesAsync();
-        return true;
+
+        // Lấy dữ liệu Address cùng các liên quan (Country, User)
+        var savedAddress = await _unitOfWork.Addresses.Entities
+            .Include(a => a.Country) // Include Country
+            .Include(a => a.User)    // Include User
+            .FirstOrDefaultAsync(a => a.Id == address.Id);
+
+        if (savedAddress == null)
+            throw new Exception("Failed to retrieve the saved address.");
+
+        // Thực hiện ánh xạ thủ công từ Address sang AddressDto
+        var addressDto = new AddressDto
+        {
+            Id = savedAddress.Id,
+            CountryId = savedAddress.CountryId,
+            CountryName = savedAddress.Country?.CountryName ?? "Unknown",
+            CustomerName = $"{savedAddress.User?.SurName} {savedAddress.User?.LastName}".Trim() ?? "Unknown",
+            PhoneNumber = savedAddress.User?.PhoneNumber ?? "N/A",
+            StreetNumber = savedAddress.StreetNumber,
+            AddressLine1 = savedAddress.AddressLine1,
+            AddressLine2 = savedAddress.AddressLine2,
+            City = savedAddress.City,
+            Ward = savedAddress.Ward,
+            PostCode = savedAddress.Postcode,
+            Province = savedAddress.Province,
+            IsDefault = savedAddress.IsDefault
+        };
+
+        return addressDto;
     }
 
     public async Task<bool> UpdateAsync(Guid addressId, AddressForUpdateDto addressForUpdateDto, Guid userId)

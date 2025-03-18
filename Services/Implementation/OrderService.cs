@@ -118,6 +118,19 @@ namespace Services.Implementation
 
         public async Task<OrderDto> CreateAsync(OrderForCreationDto orderDto, Guid userId)
         {
+            if (orderDto.OrderDetail == null || !orderDto.OrderDetail.Any())
+            {
+                throw new ArgumentException("Order details cannot be empty.");
+            }
+
+            // Validate User
+            var userExists = await _unitOfWork.Users.Entities
+                .AnyAsync(u => u.UserId == userId && u.Status == StatusForAccount.Active);
+            if (!userExists)
+            {
+                throw new ArgumentException($"User with ID {userId} not found or is inactive.");
+            }
+
             await _unitOfWork.BeginTransactionAsync();
             try
             {
@@ -156,6 +169,12 @@ namespace Services.Implementation
                     if (!productItemExists)
                     {
                         throw new ArgumentException($"Product item with ID {orderDetail.ProductItemId} not found.");
+                    }
+
+                    // Validate Order Detail Quantity
+                    if (orderDetail.Quantity <= 0)
+                    {
+                        throw new ArgumentException($"Quantity for ProductItem ID {orderDetail.ProductItemId} must be greater than zero.");
                     }
                 }
 
@@ -205,6 +224,12 @@ namespace Services.Implementation
                         Price = price,
                     };
                     orderDetailsEntities.Add(orderDetailEntity);
+                }
+
+                // Validate Order Total
+                if (orderTotal <= 0)
+                {
+                    throw new ArgumentException("Order total must be greater than zero.");
                 }
 
                 // Step 6: Create Order entity
