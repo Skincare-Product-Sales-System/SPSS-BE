@@ -9,5 +9,6 @@ namespace BusinessObjects.Dto.Variation
         public CategoryForVariationQuery ProductCategory { get; set; }
         public List<VariationOptionForVariationQuery> VariationOptions { get; set; }
         public string Name { get; set; }
+        public ProductCategoryDto ProductCategoryDto { get; set; }
     }
 }

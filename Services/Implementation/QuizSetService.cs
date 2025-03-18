@@ -9,8 +9,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using BusinessObjects.Dto.SkinType;
 using AutoMapper;
+using BusinessObjects.Models;
 
 namespace Services.Implementation
 {
@@ -29,7 +29,6 @@ namespace Services.Implementation
         {
             var skip = (pageNumber - 1) * pageSize;
 
-            // Lấy QuizSet trước
             var quizSet = await _unitOfWork.QuizSets.Entities
                 .Where(qs => qs.Id == quizSetId)
                 .Select(qs => new
@@ -50,7 +49,6 @@ namespace Services.Implementation
                 };
             }
 
-            // Lấy danh sách câu hỏi có trong quizSetId (phân trang)
             var questions = await _unitOfWork.QuizQuestions.Entities
                 .Where(q => q.SetId == quizSetId)
                 .OrderBy(q => q.Id)
@@ -58,13 +56,11 @@ namespace Services.Implementation
                 .Take(pageSize)
                 .ToListAsync();
 
-            // Lấy danh sách đáp án cho các câu hỏi
             var questionIds = questions.Select(q => q.Id).ToList();
             var options = await _unitOfWork.QuizOptions.Entities
                 .Where(opt => questionIds.Contains(opt.QuestionId))
                 .ToListAsync();
 
-            // Ánh xạ vào DTO
             var result = new QuizSetQuestionAndAnswerDto
             {
                 Id = quizSet.Id,
@@ -84,7 +80,6 @@ namespace Services.Implementation
                 }).ToList()
             };
 
-            // Trả về kết quả phân trang
             return new PagedResponse<QuizSetQuestionAndAnswerDto>
             {
                 Items = new List<QuizSetQuestionAndAnswerDto> { result },
@@ -107,6 +102,64 @@ namespace Services.Implementation
                 PageNumber = pageNumber,
                 PageSize = pageSize
             };
+        }
+
+        public async Task<QuizSetDto> CreateAsync(QuizSetForCreationDto? quizSetForCreationDto)
+        {
+            if (quizSetForCreationDto is null)
+                throw new ArgumentNullException(nameof(quizSetForCreationDto), "QuizSet data cannot be null.");
+
+            var quizSet = _mapper.Map<QuizSet>(quizSetForCreationDto);
+            quizSet.Id = Guid.NewGuid();
+            quizSet.CreatedTime = DateTimeOffset.UtcNow;
+            quizSet.CreatedBy = "System"; 
+            quizSet.IsDeleted = false;
+
+            _unitOfWork.QuizSets.Add(quizSet);
+            await _unitOfWork.SaveChangesAsync();
+            return _mapper.Map<QuizSetDto>(quizSet);
+        }
+
+        public async Task<QuizSetDto> UpdateAsync(Guid quizSetId, QuizSetForUpdateDto quizSetForUpdateDto)
+        {
+            if (quizSetForUpdateDto is null)
+                throw new ArgumentNullException(nameof(quizSetForUpdateDto), "QuizSet data cannot be null.");
+
+            var quizSet = await _unitOfWork.QuizSets.GetByIdAsync(quizSetId);
+            if (quizSet == null || quizSet.IsDeleted)
+                throw new KeyNotFoundException($"QuizSet with ID {quizSetId} not found.");
+
+            quizSet.LastUpdatedTime = DateTimeOffset.UtcNow;
+            quizSet.LastUpdatedBy = "System"; // You can replace "System" with actual user context
+
+            _mapper.Map(quizSetForUpdateDto, quizSet);
+            await _unitOfWork.SaveChangesAsync();
+            return _mapper.Map<QuizSetDto>(quizSet);
+        }
+
+        public async Task DeleteAsync(Guid id)
+        {
+            var quizSet = await _unitOfWork.QuizSets.GetByIdAsync(id);
+            if (quizSet == null || quizSet.IsDeleted)
+                throw new KeyNotFoundException($"QuizSet with ID {id} not found.");
+
+            quizSet.IsDeleted = true;
+            quizSet.DeletedTime = DateTimeOffset.UtcNow;
+            quizSet.DeletedBy = "System"; // You can replace "System" with actual user context
+
+            _unitOfWork.QuizSets.Update(quizSet);
+            await _unitOfWork.SaveChangesAsync();
+        }
+        
+        public async Task SetQuizSetDefaultAsync(Guid quizSetId)
+        {
+            var quizSet = await _unitOfWork.QuizSets.GetByIdAsync(quizSetId);
+            if (quizSet == null || quizSet.IsDeleted)
+                throw new KeyNotFoundException($"QuizSet with ID {quizSetId} not found.");
+
+            quizSet.IsDefault = true;
+            _unitOfWork.QuizSets.Update(quizSet);
+            await _unitOfWork.SaveChangesAsync();
         }
     }
 }

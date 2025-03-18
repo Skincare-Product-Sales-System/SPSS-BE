@@ -202,6 +202,7 @@ public class ProductService : IProductService
             {
                 Id = pi.Id,
                 Price = pi.Price,
+                MarketPrice = pi.MarketPrice,
                 QuantityInStock = pi.QuantityInStock,
                 ImageUrl = pi.ImageUrl,
                 Configurations = pi.ProductConfigurations.Select(pc => new ProductConfigurationForProductQueryDto
@@ -544,6 +545,7 @@ public class ProductService : IProductService
                 Id = Guid.NewGuid(),
                 ProductId = product.Id,
                 Price = combination.Price,
+                MarketPrice = combination.MarketPrice,
                 QuantityInStock = combination.QuantityInStock,
                 ImageUrl = string.IsNullOrWhiteSpace(combination.ImageUrl)
                 ? defaultThumbnail // Use Product.Thumbnail if ImageUrl is empty
