@@ -7,7 +7,6 @@ public class AddressDto
 
     public string CustomerName { get; set; }
     public int CountryId { get; set; }
-
     public string PhoneNumber { get; set; }
 
     public string CountryName { get; set; }

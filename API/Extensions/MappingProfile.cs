@@ -129,7 +129,6 @@ public class MappingProfile : Profile
 
         CreateMap<ProductForUpdateDto, Product>();
         CreateMap<Product, ProductWithDetailsDto>()
-            .ForMember(dest => dest.ProductImageUrls, opt => opt.MapFrom(src => src.ProductImages.Select(i => i.ImageUrl).ToList()))
             .ForMember(dest => dest.ProductItems, opt => opt.MapFrom(src => src.ProductItems))
             .ForMember(dest => dest.Brand, opt => opt.MapFrom(src => src.Brand))
             .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.ProductCategory))

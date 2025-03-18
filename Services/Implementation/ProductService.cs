@@ -184,6 +184,7 @@ public class ProductService : IProductService
             Rating = product.Rating,
             SoldCount = product.SoldCount,
             Status = product.ProductStatus.StatusName,
+            Thumbnail = product.ProductImages.FirstOrDefault(pi => pi.IsThumbnail)?.ImageUrl,
             Category = new ProductCategoryDto
             {
                 Id = product.ProductCategory.Id,
@@ -197,7 +198,6 @@ public class ProductService : IProductService
                 Description = product.Brand.Description,
                 ImageUrl = product.Brand.ImageUrl
             },
-            ProductImageUrls = product.ProductImages.Select(pi => pi.ImageUrl).ToList(),
             ProductItems = product.ProductItems.Select(pi => new ProductItemDto
             {
                 Id = pi.Id,
