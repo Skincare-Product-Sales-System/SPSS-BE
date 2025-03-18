@@ -38,9 +38,9 @@ public class AddressService : IAddressService
         {
             Id = a.Id,
             CountryId = a.CountryId,
-            CustomerName = a.User?.UserName ?? "Unknown",
+            CustomerName = a.CustomerName,
             IsDefault = a.IsDefault,
-            PhoneNumber = a.User?.PhoneNumber ?? "N/A",
+            PhoneNumber = a.PhoneNumber,
             CountryName = a.Country?.CountryName ?? "Unknown",
             StreetNumber = a.StreetNumber,
             AddressLine1 = a.AddressLine1,
@@ -71,6 +71,8 @@ public class AddressService : IAddressService
             Id = Guid.NewGuid(),
             UserId = userId,
             CountryId = addressForCreationDto.CountryId,
+            CustomerName = addressForCreationDto.CustomerName,
+            PhoneNumber = addressForCreationDto.PhoneNumber,
             StreetNumber = addressForCreationDto.StreetNumber,
             AddressLine1 = addressForCreationDto.AddressLine1,
             AddressLine2 = addressForCreationDto.AddressLine2,
@@ -124,8 +126,8 @@ public class AddressService : IAddressService
             Id = savedAddress.Id,
             CountryId = savedAddress.CountryId,
             CountryName = savedAddress.Country?.CountryName ?? "Unknown",
-            CustomerName = $"{savedAddress.User?.SurName} {savedAddress.User?.LastName}".Trim() ?? "Unknown",
-            PhoneNumber = savedAddress.User?.PhoneNumber ?? "N/A",
+            CustomerName = savedAddress.CustomerName,
+            PhoneNumber = savedAddress.PhoneNumber,
             StreetNumber = savedAddress.StreetNumber,
             AddressLine1 = savedAddress.AddressLine1,
             AddressLine2 = savedAddress.AddressLine2,
@@ -152,6 +154,8 @@ public class AddressService : IAddressService
         address.CountryId = addressForUpdateDto.CountryId;
         address.StreetNumber = addressForUpdateDto.StreetNumber;
         address.AddressLine1 = addressForUpdateDto.AddressLine1;
+        address.CustomerName = addressForUpdateDto.CustomerName;
+        address.PhoneNumber = addressForUpdateDto.PhoneNumber;
         address.AddressLine2 = addressForUpdateDto.AddressLine2;
         address.City = addressForUpdateDto.City;
         address.Ward = addressForUpdateDto.Ward;

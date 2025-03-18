@@ -11,4 +11,5 @@ public interface IAuthenticationService
     Task<string> RegisterAsync(RegisterRequest registerRequest);
     Task<string> RegisterForManagerAsync(RegisterRequest registerRequest);
     Task<string> RegisterForStaffAsync(RegisterRequest registerRequest);
+    Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
 }

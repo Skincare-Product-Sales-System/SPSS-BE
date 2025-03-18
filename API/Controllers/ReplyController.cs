@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using BusinessObjects.Dto.Reply;
 using Services.Dto.Api;
 using Services.Response;
+using API.Extensions;
 
 namespace API.Controllers;
 
@@ -19,6 +20,7 @@ public class ReplyController : ControllerBase
     public ReplyController(IReplyService replyService) =>
         _replyService = replyService ?? throw new ArgumentNullException(nameof(replyService));
 
+    [CustomAuthorize("Manager")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -42,6 +44,7 @@ public class ReplyController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -70,6 +73,7 @@ public class ReplyController : ControllerBase
         }
     }
 
+    [CustomAuthorize("Manager")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -15,7 +15,7 @@ namespace API.Controllers
             _imageService = imageService;
         }
 
-        [HttpPost("migrateToFirebaseLinks")]
+        [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> MigrateToFirebaseLink([FromForm] List<IFormFile> files)
@@ -44,7 +44,7 @@ namespace API.Controllers
         }
 
 
-        [HttpDelete("DeleteByImageUrl")]
+        [HttpDelete]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteByImageUrl(string imageUrl)

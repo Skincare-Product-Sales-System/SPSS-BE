@@ -45,6 +45,7 @@ public class MappingProfile : Profile
                     .Select(od => new OrderDetailDto
                     {
                         ProductId = od.ProductItem.Product.Id,
+                        ProductItemId = od.ProductItemId,
                         ProductImage = od.ProductItem.Product.ProductImages
                             .Where(pi => pi.IsThumbnail)  // Filter for thumbnails
                             .Select(pi => pi.ImageUrl)    // Select image URL
