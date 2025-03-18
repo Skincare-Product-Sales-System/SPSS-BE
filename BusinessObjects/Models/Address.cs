@@ -11,6 +11,10 @@ public partial class Address : BaseEntity
 
     public Guid UserId { get; set; }
 
+    public string CustomerName { get; set; }
+
+    public string PhoneNumber { get; set; }
+
     public int CountryId { get; set; }
 
     public string StreetNumber { get; set; }

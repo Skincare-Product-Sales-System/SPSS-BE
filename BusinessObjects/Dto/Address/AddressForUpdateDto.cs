@@ -4,6 +4,10 @@ public class AddressForUpdateDto
 {
     public int CountryId { get; set; }
 
+    public string CustomerName { get; set; }
+
+    public string PhoneNumber { get; set; }
+
     public string StreetNumber { get; set; }
 
     public string AddressLine1 { get; set; }

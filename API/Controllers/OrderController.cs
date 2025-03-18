@@ -15,7 +15,7 @@ namespace API.Controllers
         private readonly IOrderService _orderService;
 
         public OrderController(IOrderService orderService) => _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
-
+        [CustomAuthorize("Customer")]
         [HttpGet("user")]
         public async Task<IActionResult> GetOrdersByUserId([Range(1, int.MaxValue)] int pageNumber = 1, [Range(1, 100)] int pageSize = 10)
         {
@@ -37,7 +37,7 @@ namespace API.Controllers
             }
         }
 
-
+        [CustomAuthorize("Manager", "Customer")]
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -52,6 +52,7 @@ namespace API.Controllers
             }
         }
 
+        [CustomAuthorize("Manager")]
         [HttpGet]
         public async Task<IActionResult> GetPaged(
             [Range(1, int.MaxValue)] int pageNumber = 1,
