@@ -52,6 +52,7 @@ public static class ServiceExtensions
         services.AddScoped<IImageService, ImageService>();
         services.AddScoped<IQuizOptionService, QuizOptionService>();
         services.AddScoped<IQuizQuestionService, QuizQuestionService>();
+        services.AddScoped<IVoucherService, VoucherService>();
         return services;
     }
 

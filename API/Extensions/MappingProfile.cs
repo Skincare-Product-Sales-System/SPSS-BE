@@ -25,6 +25,7 @@ using BusinessObjects.Dto.ProductForSkinType;
 using BusinessObjects.Dto.QuizSet;
 using BusinessObjects.Dto.QuizResult;
 using BusinessObjects.Dto.Country;
+using BusinessObjects.Dto.Voucher;
 
 namespace API.Extensions;
 
@@ -396,6 +397,13 @@ public class MappingProfile : Profile
         CreateMap<CountryForCreationDto, CountryDto>();
         CreateMap<CountryForUpdateDto, CountryDto>();
         #endregion
+
+        #region Voucher
+        CreateMap<Voucher, VoucherDto>();
+        CreateMap<VoucherForCreationDto, VoucherDto>();
+        CreateMap<VoucherForUpdateDto, VoucherDto>();
+        #endregion
+
 
 
     }

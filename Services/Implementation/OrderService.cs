@@ -306,27 +306,58 @@ namespace Services.Implementation
                     IsDeleted = false
                 };
 
-                // Add Order entity to UnitOfWork
-                _unitOfWork.Orders.Add(orderEntity);
-
-                // Associate OrderDetails with Order and add them to UnitOfWork
-                foreach (var orderDetailEntity in orderDetailsEntities)
+                // Kiểm tra PaymentMethodId và điều chỉnh trạng thái cùng việc tạo StatusChange
+                if (orderEntity.PaymentMethodId == Guid.Parse("ABB33A09-6065-4DC2-A943-51A9DD9DF27E"))
                 {
-                    orderDetailEntity.OrderId = orderEntity.Id;
-                    _unitOfWork.OrderDetails.Add(orderDetailEntity);
+                    // Nếu là "ABB33A09-6065-4DC2-A943-51A9DD9DF27E", trạng thái là Pending và tạo StatusChange
+                    orderEntity.Status = StatusForOrder.Processing;
+
+                    // Add Order entity to UnitOfWork
+                    _unitOfWork.Orders.Add(orderEntity);
+
+                    // Associate OrderDetails with Order and add them to UnitOfWork
+                    foreach (var orderDetailEntity in orderDetailsEntities)
+                    {
+                        orderDetailEntity.OrderId = orderEntity.Id;
+                        _unitOfWork.OrderDetails.Add(orderDetailEntity);
+                    }
+
+                    // Create StatusChange entity
+                    var statusChangeEntity = new StatusChange
+                    {
+                        Id = Guid.NewGuid(),
+                        OrderId = orderEntity.Id,
+                        Status = orderEntity.Status,
+                        Date = DateTimeOffset.UtcNow,
+                    };
+
+                    // Add StatusChange entity to UnitOfWork
+                    _unitOfWork.StatusChanges.Add(statusChangeEntity);
                 }
-
-                // Step 7: Create StatusChange entity
-                var statusChangeEntity = new StatusChange
+                else if (orderEntity.PaymentMethodId == Guid.Parse("354EDA95-5BE5-41BE-ACC3-CFD70188118A"))
                 {
-                    Id = Guid.NewGuid(),
-                    OrderId = orderEntity.Id,
-                    Status = orderEntity.Status,
-                    Date = DateTimeOffset.UtcNow,
-                };
+                    // Nếu là "354EDA95-5BE5-41BE-ACC3-CFD70188118A", trạng thái là Awaiting Payment và không tạo StatusChange
+                    orderEntity.Status = "Awaiting Payment";
 
-                // Add StatusChange entity to UnitOfWork
-                _unitOfWork.StatusChanges.Add(statusChangeEntity);
+                    // Add Order entity to UnitOfWork
+                    _unitOfWork.Orders.Add(orderEntity);
+
+                    // Associate OrderDetails with Order and add them to UnitOfWork
+                    foreach (var orderDetailEntity in orderDetailsEntities)
+                    {
+                        orderDetailEntity.OrderId = orderEntity.Id;
+                        _unitOfWork.OrderDetails.Add(orderDetailEntity);
+                    }
+                    var statusChangeEntity = new StatusChange
+                    {
+                        Id = Guid.NewGuid(),
+                        OrderId = orderEntity.Id,
+                        Status = orderEntity.Status,
+                        Date = DateTimeOffset.UtcNow,
+                    };
+                    // Add StatusChange entity to UnitOfWork
+                    _unitOfWork.StatusChanges.Add(statusChangeEntity);
+                }
 
                 // Step 8: Save changes
                 await _unitOfWork.SaveChangesAsync();
@@ -345,6 +376,7 @@ namespace Services.Implementation
                 };
 
                 return orderDtoResult;
+
             }
             catch (Exception)
             {
@@ -353,7 +385,7 @@ namespace Services.Implementation
             }
         }
 
-        public async Task<bool> UpdateOrderStatusAsync(Guid id, string newStatus, Guid userId)
+        public async Task<bool> UpdateOrderStatusAsync(Guid id, string newStatus, Guid userId, Guid? cancelReasonId = null)
         {
             if (string.IsNullOrWhiteSpace(newStatus))
                 throw new ArgumentNullException(nameof(newStatus), "Order status cannot be null or empty.");
@@ -382,6 +414,12 @@ namespace Services.Implementation
 
                     // Update the product item
                     _unitOfWork.ProductItems.Update(productItem);
+                }
+
+                // If cancelReasonId is provided, update the order's CancelReasonId
+                if (cancelReasonId.HasValue)
+                {
+                    order.CancelReasonId = cancelReasonId.Value;
                 }
             }
 
