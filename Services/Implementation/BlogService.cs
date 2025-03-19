@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
 using Services.Interface;
 using Services.Response;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Services.Implementation;
 
@@ -65,9 +64,6 @@ public class BlogService : IBlogService
             pageSize,
             b => !b.IsDeleted // Chỉ lấy các blog chưa bị xóa
         );
-
-        // Sắp xếp giảm dần theo LastUpdatedTime
-        blogs = blogs.OrderByDescending(b => b.LastUpdatedTime);
 
         // Map thủ công từng đối tượng Blog sang BlogDto
         var blogDtos = blogs.Select(b => new BlogDto
@@ -163,46 +159,42 @@ public class BlogService : IBlogService
         blog.LastUpdatedTime = DateTimeOffset.UtcNow;
         blog.LastUpdatedBy = userId.ToString();
 
-        // Kiểm tra nếu có sections trong DTO thì mới xử lý BlogSections
-        if (blogDto.Sections != null && blogDto.Sections.Any())
+        // Cập nhật hoặc thêm mới các BlogSections
+        var existingSections = blog.BlogSections.ToList();
+
+        foreach (var sectionDto in blogDto.Sections)
         {
-            // Cập nhật hoặc thêm mới các BlogSections
-            var existingSections = blog.BlogSections.ToList();
-
-            foreach (var sectionDto in blogDto.Sections)
+            var existingSection = existingSections.FirstOrDefault(s => s.Id == sectionDto.Id);
+            if (existingSection != null)
             {
-                var existingSection = existingSections.FirstOrDefault(s => s.Id == sectionDto.Id);
-                if (existingSection != null)
-                {
-                    // Cập nhật BlogSection đã tồn tại
-                    existingSection.ContentType = sectionDto.ContentType;
-                    existingSection.Subtitle = sectionDto.Subtitle;
-                    existingSection.Content = sectionDto.Content;
-                    existingSection.Order = sectionDto.Order;
-                }
-                else
-                {
-                    // Thêm mới BlogSection
-                    blog.BlogSections.Add(new BlogSection
-                    {
-                        Id = Guid.NewGuid(),
-                        ContentType = sectionDto.ContentType,
-                        Subtitle = sectionDto.Subtitle,
-                        Content = sectionDto.Content,
-                        Order = sectionDto.Order,
-                        BlogId = blog.Id
-                    });
-                }
+                // Cập nhật BlogSection đã tồn tại
+                existingSection.ContentType = sectionDto.ContentType;
+                existingSection.Subtitle = sectionDto.Subtitle;
+                existingSection.Content = sectionDto.Content;
+                existingSection.Order = sectionDto.Order;
             }
-
-            // Xóa các BlogSections không còn tồn tại trong DTO
-            var sectionIdsInDto = blogDto.Sections.Select(s => s.Id).ToList();
-            foreach (var section in existingSections)
+            else
             {
-                if (!sectionIdsInDto.Contains(section.Id))
+                // Thêm mới BlogSection
+                blog.BlogSections.Add(new BlogSection
                 {
-                    blog.BlogSections.Remove(section);
-                }
+                    Id = Guid.NewGuid(),
+                    ContentType = sectionDto.ContentType,
+                    Subtitle = sectionDto.Subtitle,
+                    Content = sectionDto.Content,
+                    Order = sectionDto.Order,
+                    BlogId = blog.Id
+                });
+            }
+        }
+
+        // Xóa các BlogSections không còn tồn tại trong DTO
+        var sectionIdsInDto = blogDto.Sections.Select(s => s.Id).ToList();
+        foreach (var section in existingSections)
+        {
+            if (!sectionIdsInDto.Contains(section.Id))
+            {
+                blog.BlogSections.Remove(section);
             }
         }
 

@@ -48,68 +48,62 @@ public class BlogController : ControllerBase
         return Ok(ApiResponse<PagedResponse<BlogDto>>.SuccessResponse(pagedBlogs));
     }
 
-    [CustomAuthorize("Manager")]
-    [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] BlogForCreationDto blogDto)
-    {
-        if (!ModelState.IsValid)
-        {
-            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-            return BadRequest(ApiResponse<BlogDto>.FailureResponse("Invalid blog data", errors));
-        }
+   [HttpPost]
+   [ProducesResponseType(StatusCodes.Status201Created)]
+   [ProducesResponseType(StatusCodes.Status400BadRequest)]
+   public async Task<IActionResult> Create([FromBody] BlogForCreationDto blogDto)
+   {
+       if (!ModelState.IsValid)
+       {
+           var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+           return BadRequest(ApiResponse<BlogDto>.FailureResponse("Invalid blog data", errors));
+       }
+   
+       try
+       {
+           var createdBlog = await _blogService.CreateBlogAsync(blogDto, new Guid("75786e5c-c310-4f8e-8c69-cd61c55d2d7b"));
+           return Ok(ApiResponse<BlogDto>.SuccessResponse(createdBlog, "Blog created successfully"));
+       }
+       catch (Exception ex)
+       {
+           return BadRequest(ApiResponse<BlogDto>.FailureResponse(ex.Message));
+       }
+   }
 
-        try
-        {
-            Guid? userId = HttpContext.Items["UserId"] as Guid?;
-            if (userId == null)
-            {
-                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
-            }
-            var createdBlog = await _blogService.CreateBlogAsync(blogDto, userId.Value);
-            return Ok(ApiResponse<BlogDto>.SuccessResponse(createdBlog, "Blog created successfully"));
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ApiResponse<BlogDto>.FailureResponse(ex.Message));
-        }
-    }
+   [CustomAuthorize("Manager")]
+   [HttpPatch("{id:guid}")]
+   [ProducesResponseType(StatusCodes.Status204NoContent)]
+   [ProducesResponseType(StatusCodes.Status400BadRequest)]
+   [ProducesResponseType(StatusCodes.Status404NotFound)]
+   public async Task<IActionResult> Update(Guid id, [FromBody] BlogForUpdateDto blogDto)
+   {
+       if (!ModelState.IsValid)
+       {
+           var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+           return BadRequest(ApiResponse<BlogDto>.FailureResponse("Invalid blog data", errors));
+       }
 
-    [CustomAuthorize("Manager")]
-    [HttpPatch("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] BlogForUpdateDto blogDto)
-    {
-        if (!ModelState.IsValid)
-        {
-            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-            return BadRequest(ApiResponse<BlogDto>.FailureResponse("Invalid blog data", errors));
-        }
+       try
+       {
+           Guid? userId = HttpContext.Items["UserId"] as Guid?;
+           if (userId == null)
+           {
+               return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+           }
+           return Ok(ApiResponse<BlogDto>.SuccessResponse(
+               await _blogService.UpdateBlogAsync(id, blogDto, userId.Value), "Blog updated successfully"));
+       }
+       catch (KeyNotFoundException ex)
+       {
+           return NotFound(ApiResponse<BlogDto>.FailureResponse(ex.Message));
+       }
+       catch (Exception ex)
+       {
+           return BadRequest(ApiResponse<BlogDto>.FailureResponse(ex.Message));
+       }
+   }
 
-        try
-        {
-            Guid? userId = HttpContext.Items["UserId"] as Guid?;
-            if (userId == null)
-            {
-                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
-            }
-            return Ok(ApiResponse<BlogDto>.SuccessResponse(
-            await _blogService.UpdateBlogAsync(id, blogDto, userId.Value), "Blog updated successfully"));
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ApiResponse<BlogDto>.FailureResponse(ex.Message));
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ApiResponse<BlogDto>.FailureResponse(ex.Message));
-        }
-    }
-
-    [CustomAuthorize("Manager")]
+    // [CustomAuthorize("Manager")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -117,13 +111,13 @@ public class BlogController : ControllerBase
     {
         try
         {
-            Guid? userId = HttpContext.Items["UserId"] as Guid?;
-            if (userId == null)
-            {
-                return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
-            }
+            // Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            // if (userId == null)
+            // {
+            //     return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+            // }
             return Ok(ApiResponse<bool>.SuccessResponse(
-            await _blogService.DeleteAsync(id, userId.Value), "Blog deleted successfully"));
+            await _blogService.DeleteAsync(id, new Guid("75786e5c-c310-4f8e-8c69-cd61c55d2d7b")), "Blog deleted successfully"));
         }
         catch (KeyNotFoundException ex)
         {
