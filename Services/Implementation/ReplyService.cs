@@ -83,11 +83,8 @@ namespace Services.Implementation
             var reply = await _unitOfWork.Replies.GetByIdAsync(id);
             if (reply == null)
                 throw new KeyNotFoundException($"Reply with ID {id} not found.");
-            reply.IsDeleted = true;
-            reply.DeletedTime = DateTimeOffset.UtcNow;
-            reply.DeletedBy = userId.ToString();
 
-            _unitOfWork.Replies.Update(reply);
+            _unitOfWork.Replies.Delete(reply);
             await _unitOfWork.SaveChangesAsync();
         }
     }
