@@ -114,7 +114,7 @@ public class UserService : IUserService
         var (users, totalCount) = await _unitOfWork.Users.GetPagedAsync(
             pageNumber,
             pageSize,
-            u => !u.IsDeleted // Only active users
+            u => u.IsDeleted == false // Only active users
         );
 
         var userDtos = _mapper.Map<IEnumerable<UserDto>>(users);
@@ -155,7 +155,7 @@ public class UserService : IUserService
             PhoneNumber = userForCreationDto.PhoneNumber,
             Status = userForCreationDto.Status,
             Password = userForCreationDto.Password,
-            AvatarUrl = !string.IsNullOrWhiteSpace(userForCreationDto.AvatarUrl) ? userForCreationDto.AvatarUrl : "https://i.pinimg.com/736x/dc/9c/61/dc9c614e3007080a5aff36aebb949474.jpg",
+            AvatarUrl = !string.IsNullOrWhiteSpace(userForCreationDto.AvatarUrl) ? userForCreationDto.AvatarUrl : null,
             CreatedBy = "System", 
             CreatedTime = DateTimeOffset.UtcNow,
             LastUpdatedBy = "System",

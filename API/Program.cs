@@ -33,14 +33,17 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<MappingProfile>();  // Add your mappings profile here
 }, typeof(Program).Assembly);
+builder.Services.AddDbContext<SPSSContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("SPSS"))
+        .EnableSensitiveDataLogging()); // EnableSensitiveDataLogging nếu cần thiết
 var app = builder.Build();
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || true) // Luôn bật Swagger
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "API V1");
-        c.RoutePrefix = string.Empty;
+        c.RoutePrefix = string.Empty; // Đặt root URL để Swagger mở tại trang chính
     });
 }
 

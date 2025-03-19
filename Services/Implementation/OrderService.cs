@@ -40,35 +40,103 @@ namespace Services.Implementation
                     .ThenInclude(u => u.User)
                 .Include(a => a.Address)
                     .ThenInclude(c => c.Country)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.ProductItem)
+                        .ThenInclude(pi => pi.Reviews)
                 .FirstOrDefaultAsync(p => p.Id == id);
             if (order == null)
                 throw new KeyNotFoundException($"Order with ID {id} not found.");
 
-            return _mapper.Map<OrderWithDetailDto>(order);
+            // Manually map Order to OrderWithDetailDto
+            var orderWithDetailDto = new OrderWithDetailDto
+            {
+                Id = order.Id,
+                Status = order.Status,
+                OrderTotal = order.OrderTotal,
+                CreatedTime = order.CreatedTime,
+                PaymentMethodId = order.PaymentMethodId,
+                Address = new AddressDto
+                {
+                    Id = order.Address.Id,
+                    IsDefault = order.Address.IsDefault,
+                    CustomerName = $"{order.Address.User.SurName} {order.Address.User.LastName}".Trim(),
+                    CountryId = order.Address.CountryId,
+                    PhoneNumber = order.Address.User.PhoneNumber,
+                    CountryName = order.Address.Country.CountryName,
+                    StreetNumber = order.Address.StreetNumber,
+                    AddressLine1 = order.Address.AddressLine1,
+                    AddressLine2 = order.Address.AddressLine2,
+                    City = order.Address.City,
+                    Ward = order.Address.Ward,
+                    PostCode = order.Address.Postcode,
+                    Province = order.Address.Province
+                },
+                StatusChanges = order.StatusChanges.OrderBy(sc => sc.Date)
+                .Select(sc => new StatusChangeDto
+                {
+                    Date = sc.Date,
+                    Status = sc.Status
+                }).ToList(),
+                OrderDetails = order.OrderDetails.Select(od => new OrderDetailDto
+                {
+                    ProductId = od.ProductItem.ProductId,
+                    ProductItemId = od.ProductItemId,
+                    ProductImage = od.ProductItem.Product.ProductImages.FirstOrDefault()?.ImageUrl ?? string.Empty,
+                    ProductName = od.ProductItem.Product.Name,
+                    VariationOptionValues = od.ProductItem.ProductConfigurations.Select(pc => pc.VariationOption.Value).ToList(),
+                    Quantity = od.Quantity,
+                    Price = od.Price,
+                    IsReviewable = od.ProductItem.Reviews == null || !od.ProductItem.Reviews.Any(r => r.UserId == order.UserId && r.ProductItemId == od.ProductItemId && !r.IsDeleted)
+                }).ToList()
+            };
+
+            return orderWithDetailDto;
         }
 
-        public async Task<PagedResponse<OrderDto>> GetOrdersByUserIdAsync(Guid userId, int pageNumber, int pageSize)
+        public async Task<PagedResponse<OrderDto>> GetOrdersByUserIdAsync(Guid userId, int pageNumber, int pageSize, string? status = null)
         {
-            var totalCount = await _unitOfWork.Orders.Entities
-                .Where(o => !o.IsDeleted && o.UserId == userId)
-                .CountAsync();
-
-            var orders = await _unitOfWork.Orders.Entities
+            // Filter orders by UserId, IsDeleted, and optional Status
+            var query = _unitOfWork.Orders.Entities
                 .Include(o => o.OrderDetails)
                     .ThenInclude(od => od.ProductItem)
                         .ThenInclude(pi => pi.Product)
                             .ThenInclude(p => p.ProductImages)
                 .Include(o => o.OrderDetails)
-                    .ThenInclude(pi => pi.ProductItem)
-                        .ThenInclude(pc => pc.ProductConfigurations)
+                    .ThenInclude(od => od.ProductItem)
+                        .ThenInclude(pi => pi.ProductConfigurations)
                             .ThenInclude(vo => vo.VariationOption)
-                .Where(o => !o.IsDeleted && o.UserId == userId) 
+                .Where(o => !o.IsDeleted && o.UserId == userId);
+
+            // Apply status filter if provided
+            if (!string.IsNullOrEmpty(status))
+            {
+                query = query.Where(o => o.Status == status);
+            }
+
+            // Calculate total count for pagination
+            var totalCount = await query.CountAsync();
+
+            // Apply pagination
+            var orders = await query
                 .OrderByDescending(o => o.CreatedTime)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
+            // Map orders to DTOs
             var orderDtos = _mapper.Map<IEnumerable<OrderDto>>(orders);
+
+            // Check if the user has already reviewed each product item
+            foreach (var orderDto in orderDtos)
+            {
+                foreach (var orderDetailDto in orderDto.OrderDetails)
+                {
+                    var hasReviewed = await _unitOfWork.Reviews.Entities
+                        .AnyAsync(r => r.UserId == userId && r.ProductItemId == orderDetailDto.ProductItemId && !r.IsDeleted);
+
+                    orderDetailDto.IsReviewable = !hasReviewed;
+                }
+            }
 
             return new PagedResponse<OrderDto>
             {
@@ -78,7 +146,6 @@ namespace Services.Implementation
                 PageSize = pageSize
             };
         }
-
 
         public async Task<PagedResponse<OrderDto>> GetPagedAsync(int pageNumber, int pageSize)
         {
@@ -118,6 +185,19 @@ namespace Services.Implementation
 
         public async Task<OrderDto> CreateAsync(OrderForCreationDto orderDto, Guid userId)
         {
+            if (orderDto.OrderDetail == null || !orderDto.OrderDetail.Any())
+            {
+                throw new ArgumentException("Order details cannot be empty.");
+            }
+
+            // Validate User
+            var userExists = await _unitOfWork.Users.Entities
+                .AnyAsync(u => u.UserId == userId && u.Status == StatusForAccount.Active);
+            if (!userExists)
+            {
+                throw new ArgumentException($"User with ID {userId} not found or is inactive.");
+            }
+
             await _unitOfWork.BeginTransactionAsync();
             try
             {
@@ -156,6 +236,12 @@ namespace Services.Implementation
                     if (!productItemExists)
                     {
                         throw new ArgumentException($"Product item with ID {orderDetail.ProductItemId} not found.");
+                    }
+
+                    // Validate Order Detail Quantity
+                    if (orderDetail.Quantity <= 0)
+                    {
+                        throw new ArgumentException($"Quantity for ProductItem ID {orderDetail.ProductItemId} must be greater than zero.");
                     }
                 }
 
@@ -207,6 +293,12 @@ namespace Services.Implementation
                     orderDetailsEntities.Add(orderDetailEntity);
                 }
 
+                // Validate Order Total
+                if (orderTotal <= 0)
+                {
+                    throw new ArgumentException("Order total must be greater than zero.");
+                }
+
                 // Step 6: Create Order entity
                 var orderEntity = new Order
                 {
@@ -214,7 +306,7 @@ namespace Services.Implementation
                     AddressId = orderDto.AddressId,
                     PaymentMethodId = orderDto.PaymentMethodId,
                     VoucherId = orderDto.VoucherId,
-                    Status = StatusForOrder.Pending,
+                    Status = StatusForOrder.Processing,
                     OrderTotal = orderTotal,
                     CreatedTime = DateTime.UtcNow,
                     CreatedBy = userId.ToString(),
@@ -224,27 +316,58 @@ namespace Services.Implementation
                     IsDeleted = false
                 };
 
-                // Add Order entity to UnitOfWork
-                _unitOfWork.Orders.Add(orderEntity);
-
-                // Associate OrderDetails with Order and add them to UnitOfWork
-                foreach (var orderDetailEntity in orderDetailsEntities)
+                // Kiểm tra PaymentMethodId và điều chỉnh trạng thái cùng việc tạo StatusChange
+                if (orderEntity.PaymentMethodId == Guid.Parse("ABB33A09-6065-4DC2-A943-51A9DD9DF27E"))
                 {
-                    orderDetailEntity.OrderId = orderEntity.Id;
-                    _unitOfWork.OrderDetails.Add(orderDetailEntity);
+                    // Nếu là "ABB33A09-6065-4DC2-A943-51A9DD9DF27E", trạng thái là Pending và tạo StatusChange
+                    orderEntity.Status = StatusForOrder.Processing;
+
+                    // Add Order entity to UnitOfWork
+                    _unitOfWork.Orders.Add(orderEntity);
+
+                    // Associate OrderDetails with Order and add them to UnitOfWork
+                    foreach (var orderDetailEntity in orderDetailsEntities)
+                    {
+                        orderDetailEntity.OrderId = orderEntity.Id;
+                        _unitOfWork.OrderDetails.Add(orderDetailEntity);
+                    }
+
+                    // Create StatusChange entity
+                    var statusChangeEntity = new StatusChange
+                    {
+                        Id = Guid.NewGuid(),
+                        OrderId = orderEntity.Id,
+                        Status = orderEntity.Status,
+                        Date = DateTimeOffset.UtcNow,
+                    };
+
+                    // Add StatusChange entity to UnitOfWork
+                    _unitOfWork.StatusChanges.Add(statusChangeEntity);
                 }
-
-                // Step 7: Create StatusChange entity
-                var statusChangeEntity = new StatusChange
+                else if (orderEntity.PaymentMethodId == Guid.Parse("354EDA95-5BE5-41BE-ACC3-CFD70188118A"))
                 {
-                    Id = Guid.NewGuid(),
-                    OrderId = orderEntity.Id,
-                    Status = orderEntity.Status,
-                    Date = DateTimeOffset.UtcNow,
-                };
+                    // Nếu là "354EDA95-5BE5-41BE-ACC3-CFD70188118A", trạng thái là Awaiting Payment và không tạo StatusChange
+                    orderEntity.Status = "Awaiting Payment";
 
-                // Add StatusChange entity to UnitOfWork
-                _unitOfWork.StatusChanges.Add(statusChangeEntity);
+                    // Add Order entity to UnitOfWork
+                    _unitOfWork.Orders.Add(orderEntity);
+
+                    // Associate OrderDetails with Order and add them to UnitOfWork
+                    foreach (var orderDetailEntity in orderDetailsEntities)
+                    {
+                        orderDetailEntity.OrderId = orderEntity.Id;
+                        _unitOfWork.OrderDetails.Add(orderDetailEntity);
+                    }
+                    var statusChangeEntity = new StatusChange
+                    {
+                        Id = Guid.NewGuid(),
+                        OrderId = orderEntity.Id,
+                        Status = orderEntity.Status,
+                        Date = DateTimeOffset.UtcNow,
+                    };
+                    // Add StatusChange entity to UnitOfWork
+                    _unitOfWork.StatusChanges.Add(statusChangeEntity);
+                }
 
                 // Step 8: Save changes
                 await _unitOfWork.SaveChangesAsync();
@@ -263,6 +386,7 @@ namespace Services.Implementation
                 };
 
                 return orderDtoResult;
+
             }
             catch (Exception)
             {
@@ -271,7 +395,7 @@ namespace Services.Implementation
             }
         }
 
-        public async Task<bool> UpdateOrderStatusAsync(Guid id, string newStatus, Guid userId)
+        public async Task<bool> UpdateOrderStatusAsync(Guid id, string newStatus, Guid userId, Guid? cancelReasonId = null)
         {
             if (string.IsNullOrWhiteSpace(newStatus))
                 throw new ArgumentNullException(nameof(newStatus), "Order status cannot be null or empty.");
@@ -300,6 +424,12 @@ namespace Services.Implementation
 
                     // Update the product item
                     _unitOfWork.ProductItems.Update(productItem);
+                }
+
+                // If cancelReasonId is provided, update the order's CancelReasonId
+                if (cancelReasonId.HasValue)
+                {
+                    order.CancelReasonId = cancelReasonId.Value;
                 }
             }
 

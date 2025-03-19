@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using BusinessObjects.Dto.CartItem;
 using BusinessObjects.Dto.ProductCategory;
+using BusinessObjects.Dto.Reply;
 using BusinessObjects.Dto.Review;
 using BusinessObjects.Models;
 using Firebase.Auth;
@@ -92,13 +93,35 @@ namespace Services.Implementation
                 .Take(pageSize)
                 .ToListAsync();
 
-            // Ánh xạ dữ liệu sang DTO
-            var mappedItems = _mapper.Map<IEnumerable<ReviewDto>>(userReviews);
+            // Manually map data to ReviewDto and set IsEditable
+            var reviewDtos = userReviews.Select(review => new ReviewDto
+            {
+                Id = review.Id,
+                UserName = review.User.UserName,
+                AvatarUrl = review.User.AvatarUrl,
+                ProductImage = review.ProductItem.Product.ProductImages.FirstOrDefault()?.ImageUrl,
+                ProductId = review.ProductItem.ProductId,
+                ProductName = review.ProductItem.Product.Name,
+                ReviewImages = review.ReviewImages.Select(ri => ri.ImageUrl).ToList(),
+                VariationOptionValues = review.ProductItem.ProductConfigurations.Select(pc => pc.VariationOption.Value).ToList(),
+                RatingValue = review.RatingValue,
+                Comment = review.Comment,
+                LastUpdatedTime = review.LastUpdatedTime,
+                Reply = review.Reply != null ? new ReplyDto
+                {
+                    Id = review.Reply.Id,
+                    AvatarUrl = review.Reply.User.AvatarUrl,
+                    UserName = review.Reply.User.UserName,
+                    ReplyContent = review.Reply.ReplyContent,
+                    LastUpdatedTime = review.Reply.LastUpdatedTime
+                } : null,
+                IsEditble = review.CreatedTime == review.LastUpdatedTime
+            }).ToList();
 
             // Trả về kết quả phân trang
             return new PagedResponse<ReviewDto>
             {
-                Items = mappedItems,
+                Items = reviewDtos,
                 TotalCount = totalCount,
                 PageNumber = pageNumber,
                 PageSize = pageSize

@@ -25,6 +25,7 @@ using BusinessObjects.Dto.ProductForSkinType;
 using BusinessObjects.Dto.QuizSet;
 using BusinessObjects.Dto.QuizResult;
 using BusinessObjects.Dto.Country;
+using BusinessObjects.Dto.Voucher;
 
 namespace API.Extensions;
 
@@ -45,6 +46,7 @@ public class MappingProfile : Profile
                     .Select(od => new OrderDetailDto
                     {
                         ProductId = od.ProductItem.Product.Id,
+                        ProductItemId = od.ProductItemId,
                         ProductImage = od.ProductItem.Product.ProductImages
                             .Where(pi => pi.IsThumbnail)  // Filter for thumbnails
                             .Select(pi => pi.ImageUrl)    // Select image URL
@@ -129,7 +131,6 @@ public class MappingProfile : Profile
 
         CreateMap<ProductForUpdateDto, Product>();
         CreateMap<Product, ProductWithDetailsDto>()
-            .ForMember(dest => dest.ProductImageUrls, opt => opt.MapFrom(src => src.ProductImages.Select(i => i.ImageUrl).ToList()))
             .ForMember(dest => dest.ProductItems, opt => opt.MapFrom(src => src.ProductItems))
             .ForMember(dest => dest.Brand, opt => opt.MapFrom(src => src.Brand))
             .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.ProductCategory))
@@ -156,6 +157,7 @@ public class MappingProfile : Profile
         // Mapping from VariationCombinationDto to ProductItem
         CreateMap<VariationCombinationDto, ProductItem>()
             .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price))
+            .ForMember(dest => dest.MarketPrice, opt => opt.MapFrom(src => src.MarketPrice))
             .ForMember(dest => dest.QuantityInStock, opt => opt.MapFrom(src => src.QuantityInStock))
             .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ImageUrl));
         #endregion
@@ -215,7 +217,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.AddressLine2, opt => opt.MapFrom(src => src.AddressLine2))
             .ForMember(dest => dest.City, opt => opt.MapFrom(src => src.City))
             .ForMember(dest => dest.Ward, opt => opt.MapFrom(src => src.Ward))
-            .ForMember(dest => dest.Postcode, opt => opt.MapFrom(src => src.Postcode))
+            .ForMember(dest => dest.PostCode, opt => opt.MapFrom(src => src.Postcode))
             .ForMember(dest => dest.Province, opt => opt.MapFrom(src => src.Province));
         CreateMap<AddressForCreationDto, Address>();
         CreateMap<AddressForUpdateDto, Address>();
@@ -395,6 +397,13 @@ public class MappingProfile : Profile
         CreateMap<CountryForCreationDto, CountryDto>();
         CreateMap<CountryForUpdateDto, CountryDto>();
         #endregion
+
+        #region Voucher
+        CreateMap<Voucher, VoucherDto>();
+        CreateMap<VoucherForCreationDto, VoucherDto>();
+        CreateMap<VoucherForUpdateDto, VoucherDto>();
+        #endregion
+
 
 
     }

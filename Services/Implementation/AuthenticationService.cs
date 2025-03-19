@@ -77,7 +77,7 @@ public class AuthenticationService : IAuthenticationService
         {
             AccessToken = accessToken,
             RefreshToken = refreshToken,
-            AuthUserDto = authUserDto
+            // AuthUserDto = authUserDto
         };
     }
 
@@ -90,6 +90,35 @@ public class AuthenticationService : IAuthenticationService
             AccessToken = newAccessToken,
             RefreshToken = newRefreshToken
         };
+    }
+    public async Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+    {
+        // Validate new password
+        if (string.IsNullOrWhiteSpace(newPassword) || !IsValidPassword(newPassword))
+        {
+            throw new ArgumentException("New password is not valid.");
+        }
+
+        // Get the user by ID
+        var user = await _unitOfWork.Users.GetByIdAsync(userId);
+        if (user == null || user.IsDeleted)
+        {
+            throw new KeyNotFoundException("User not found.");
+        }
+
+        // Validate current password
+        if (user.Password != currentPassword)
+        {
+            throw new UnauthorizedAccessException("Current password is incorrect.");
+        }
+
+        // Update the password
+        user.Password = newPassword;
+        user.LastUpdatedTime = DateTimeOffset.UtcNow;
+        user.LastUpdatedBy = userId.ToString();
+
+        _unitOfWork.Users.Update(user);
+        await _unitOfWork.SaveChangesAsync();
     }
 
     public async Task LogoutAsync(string refreshToken)

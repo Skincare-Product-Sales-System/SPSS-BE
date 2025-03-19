@@ -16,5 +16,9 @@ namespace Services.Interface
         Task<PagedResponse<QuizSetQuestionAndAnswerDto>> GetQuizSetWithQuestionsAsync(Guid quizSetId, int pageNumber, int pageSize);
 
         Task<PagedResponse<QuizSetDto>> GetPagedAsync(int pageNumber, int pageSize);
+        Task<QuizSetDto> CreateAsync(QuizSetForCreationDto? quizSetForCreationDto);
+        Task<QuizSetDto> UpdateAsync(Guid promotionId, QuizSetForUpdateDto quizSetForUpdateDto);
+        Task DeleteAsync(Guid id);
+        Task SetQuizSetDefaultAsync(Guid quizSetId);
     }
 }

@@ -10,6 +10,5 @@ namespace BusinessObjects.Dto.Account
         [EmailAddress]
         public string EmailAddress { get; set; }
         public string PhoneNumber { get; set; }
-        public string AvatarUrl { get; set; }
     }
 }

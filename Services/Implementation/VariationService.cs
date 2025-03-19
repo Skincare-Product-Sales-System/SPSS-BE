@@ -83,6 +83,7 @@ namespace Services.Implementation
             var variationEntity = _mapper.Map<Variation>(variationDto);
             variationEntity.CreatedBy = userId;
             variationEntity.CreatedTime = DateTime.UtcNow;
+            variationEntity.Id = Guid.NewGuid();
 
              _unitOfWork.Variations.Add(variationEntity);
             await _unitOfWork.SaveChangesAsync();

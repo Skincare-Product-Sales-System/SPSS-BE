@@ -12,7 +12,7 @@ using Services.Response;
 
 namespace API.Controllers;
 [ApiController]
-[Route("api/address")]
+[Route("api/addresses")]
 public class AddressController : ControllerBase
 {
     private readonly IAddressService _addressService;
@@ -59,7 +59,7 @@ public class AddressController : ControllerBase
                 return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
             }
             var address = await _addressService.CreateAsync(addressDto, userId.Value);
-            return Ok(ApiResponse<bool>.SuccessResponse(address, "Address created successfully"));
+            return Ok(ApiResponse<AddressDto>.SuccessResponse(address, "Address created successfully"));
         }
         catch (Exception ex)
         {

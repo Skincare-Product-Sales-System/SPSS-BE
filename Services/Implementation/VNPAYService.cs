@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using BusinessObjects.Dto.VNPay;
+using BusinessObjects.Models;
 using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
 using Services.Interface;
@@ -112,7 +113,7 @@ public class VNPAYService : IVNPayService
 
         
             order.Status = "Awaiting Payment";
-            order.PaymentMethodId = Guid.Parse("2bbc0050-bfae-4764-8bd7-8c73579ee3e1");
+            order.PaymentMethodId = Guid.Parse("354EDA95-5BE5-41BE-ACC3-CFD70188118A");
 
             _unitOfWork.Orders.Update(order);
             await _unitOfWork.SaveChangesAsync();
@@ -186,13 +187,14 @@ public class VNPAYService : IVNPayService
             }
 
             var amount = double.Parse(totalPrice) / 100;
-            var returnUrl = $"(url trang web sau khi deploy/{orderInfo}";
-//            var returnUrl = Constants.FrontUrl + "/Checkout/OrderSucess";
+        //var returnUrl = $"http://localhost:3000/payment-success?id={orderInfo}";
+            var returnUrl = "";
 
 
 
 
-            fields.Add("vnp_Amount", totalPrice ?? string.Empty);
+
+        fields.Add("vnp_Amount", totalPrice ?? string.Empty);
             fields.Add("vnp_BankCode", bankCode ?? string.Empty);
             fields.Add("vnp_BankTranNo", bankTranNo ?? string.Empty);
             fields.Add("vnp_CardType", cardType ?? string.Empty);
@@ -214,95 +216,49 @@ public class VNPAYService : IVNPayService
                 if ("00".Equals(request.VnpTransactionStatus))
                 {
                     order.Status = "Processing";
-                    order.PaymentMethodId = Guid.Parse("2bbc0050-bfae-4764-8bd7-8c73579ee3e1");
+                    order.PaymentMethodId = Guid.Parse("354EDA95-5BE5-41BE-ACC3-CFD70188118A");
 
                     _unitOfWork.Orders.Update(order);
                     await _unitOfWork.SaveChangesAsync();
-                    
-                    // updateDto = new UpdateStatusOrderDto
-                    // {
-                    //     OrderId = order.Id,
-                    //     Status = "Processing"
-                    // };
-                    //
-                    // await _orderService.UpdateOrderStatusAsync(order.UserId.ToString(), updateDto);
+                var statusChange = await _unitOfWork.StatusChanges.FirstOrDefaultAsync(sc => sc.OrderId == order.Id);
 
-                    // var statusChangeDto = new StatusChangeForCreationDto
-                    // {
-                    //     OrderId = order.Id,
-                    //     Status = "Processing"
-                    // };
-                    // await _statusChangeService.Create(statusChangeDto, order.UserId.ToString());
+                if (statusChange != null)
+                {
+                    statusChange.Status = "Processing"; 
+                    statusChange.Date = DateTimeOffset.UtcNow; 
+                    _unitOfWork.StatusChanges.Update(statusChange);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+
+                returnUrl = $"http://localhost:3000/payment-success?id={orderInfo}";
+
+
+                // updateDto = new UpdateStatusOrderDto
+                // {
+                //     OrderId = order.Id,
+                //     Status = "Processing"
+                // };
+                //
+                // await _orderService.UpdateOrderStatusAsync(order.UserId.ToString(), updateDto);
+
+                // var statusChangeDto = new StatusChangeForCreationDto
+                // {
+                //     OrderId = order.Id,
+                //     Status = "Processing"
+                // };
+                // await _statusChangeService.Create(statusChangeDto, order.UserId.ToString());
                 }
 
                 else
                 {
                     order.Status = "Payment Failed";
-                    order.PaymentMethodId = Guid.Parse("2bbc0050-bfae-4764-8bd7-8c73579ee3e1");
+                    order.PaymentMethodId = Guid.Parse("354EDA95-5BE5-41BE-ACC3-CFD70188118A");
 
                     _unitOfWork.Orders.Update(order);
                     await _unitOfWork.SaveChangesAsync();
-                    
-                    // updateDto = new UpdateStatusOrderDto
-                    // {
-                    //     OrderId = order.Id,
-                    //     Status = "Payment Failed"
-                    // };
-                    //
-                    // await _orderService.UpdateOrderStatusAsync(order.UserId.ToString(), updateDto);
+                    returnUrl = $"http://localhost:3000/payment-failure?id={orderInfo}";
 
-                    // // Create a new status change record after updating the order status
-                    // var statusChangeDto = new StatusChangeForCreationDto
-                    // {
-                    //     OrderId = order.Id,
-                    //     Status = order.Status
-                    // };
-                    //
-                    // await _statusChangeService.Create(statusChangeDto, order.UserId.ToString());
-                    // await _unitOfWork.SaveAsync();
-
-                    // // Retrieve the order details to update product stock
-                    // var orderDetailRepository = _unitOfWork.GetRepository<OrderDetail>();
-                    // var orderDetails = await orderDetailRepository.Entities
-                    //     .Where(od => od.OrderId == order.Id)
-                    //     .ToListAsync();
-                    //
-                    // var productItemRepository = _unitOfWork.GetRepository<ProductItem>();
-                    //
-                    // // Add back the product quantities to the stock
-                    // foreach (var detail in orderDetails)
-                    // {
-                    //     var productItem = await productItemRepository.Entities
-                    //         .FirstOrDefaultAsync(p => p.Id == detail.ProductItemId && !p.DeletedTime.HasValue)
-                    //         ?? throw new BaseException.NotFoundException(StatusCodeHelper.NotFound.ToString(),
-                    //             string.Format(Constants.ErrorMessageProductItemNotFound, detail.ProductItemId));
-                    //
-                    //     productItem.QuantityInStock += detail.ProductQuantity;
-                    //
-                    //     productItemRepository.Update(productItem);
-                    //     await _unitOfWork.SaveAsync();
-                    // }
-
-                    //returnUrl = Constants.FrontUrl + "/Order/OrderHistory";
-                    response.IsSucceed = false;
-                    response.Text = returnUrl;
-                    return response;
-                }
-
-
-                response.IsSucceed = true;  
-                response.Text = returnUrl;
-                return response;
-
-            }
-            else
-            {
-                order.Status = "Awaiting Payment";
-                order.PaymentMethodId = Guid.Parse("2bbc0050-bfae-4764-8bd7-8c73579ee3e1");
-
-                _unitOfWork.Orders.Update(order);
-                await _unitOfWork.SaveChangesAsync();
-                
                 // updateDto = new UpdateStatusOrderDto
                 // {
                 //     OrderId = order.Id,
@@ -342,6 +298,67 @@ public class VNPAYService : IVNPayService
                 //     productItemRepository.Update(productItem);
                 //     await _unitOfWork.SaveAsync();
                 // }
+
+                //returnUrl = Constants.FrontUrl + "/Order/OrderHistory";
+                response.IsSucceed = false;
+                    response.Text = returnUrl;
+                    return response;
+                }
+
+
+                response.IsSucceed = true;  
+                response.Text = returnUrl;
+                return response;
+
+            }
+            else
+            {
+                order.Status = "Awaiting Payment";
+                order.PaymentMethodId = Guid.Parse("354EDA95-5BE5-41BE-ACC3-CFD70188118A");
+
+                _unitOfWork.Orders.Update(order);
+                await _unitOfWork.SaveChangesAsync();
+                returnUrl = $"http://localhost:3000/payment-failure?id={orderInfo}";
+
+            // updateDto = new UpdateStatusOrderDto
+            // {
+            //     OrderId = order.Id,
+            //     Status = "Payment Failed"
+            // };
+            //
+            // await _orderService.UpdateOrderStatusAsync(order.UserId.ToString(), updateDto);
+
+            // // Create a new status change record after updating the order status
+            // var statusChangeDto = new StatusChangeForCreationDto
+            // {
+            //     OrderId = order.Id,
+            //     Status = order.Status
+            // };
+            //
+            // await _statusChangeService.Create(statusChangeDto, order.UserId.ToString());
+            // await _unitOfWork.SaveAsync();
+
+            // // Retrieve the order details to update product stock
+            // var orderDetailRepository = _unitOfWork.GetRepository<OrderDetail>();
+            // var orderDetails = await orderDetailRepository.Entities
+            //     .Where(od => od.OrderId == order.Id)
+            //     .ToListAsync();
+            //
+            // var productItemRepository = _unitOfWork.GetRepository<ProductItem>();
+            //
+            // // Add back the product quantities to the stock
+            // foreach (var detail in orderDetails)
+            // {
+            //     var productItem = await productItemRepository.Entities
+            //         .FirstOrDefaultAsync(p => p.Id == detail.ProductItemId && !p.DeletedTime.HasValue)
+            //         ?? throw new BaseException.NotFoundException(StatusCodeHelper.NotFound.ToString(),
+            //             string.Format(Constants.ErrorMessageProductItemNotFound, detail.ProductItemId));
+            //
+            //     productItem.QuantityInStock += detail.ProductQuantity;
+            //
+            //     productItemRepository.Update(productItem);
+            //     await _unitOfWork.SaveAsync();
+            // }
 
 
                 response.IsSucceed = false;
