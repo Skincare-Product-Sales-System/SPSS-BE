@@ -288,22 +288,6 @@ namespace Services.Implementation
                         // Find the Voucher
                         var voucher = await _unitOfWork.Vouchers.Entities
                             .FirstOrDefaultAsync(v => v.Id == orderDto.VoucherId);
-
-                        if (voucher == null)
-                            throw new ArgumentException($"Voucher with ID {orderDto.VoucherId} does not exist.");
-
-                        // Check if voucher is still valid
-                        if (voucher.StartDate > DateTimeOffset.Now || voucher.EndDate < DateTimeOffset.Now)
-                            throw new ArgumentException($"Voucher with ID {orderDto.VoucherId} is not valid at this time.");
-
-                        // Check if the order meets the minimum order value requirement
-                        if (orderTotal < (decimal)voucher.MinimumOrderValue)
-                            throw new ArgumentException($"Order total does not meet the minimum order value requirement for Voucher ID {orderDto.VoucherId}.");
-
-                        // Check if the voucher has remaining usage limit
-                        if (voucher.UsageLimit <= 0)
-                            throw new ArgumentException($"Voucher with ID {orderDto.VoucherId} has reached its usage limit.");
-
                         // Apply discount based on voucher discount rate
                         decimal discountAmount = orderTotal * (decimal)(voucher.DiscountRate / 100);
                         orderTotal -= discountAmount;
