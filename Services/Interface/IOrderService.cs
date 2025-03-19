@@ -7,7 +7,7 @@ namespace Services.Interface
     public interface IOrderService
     {
         Task<OrderWithDetailDto> GetByIdAsync(Guid id);
-        Task<PagedResponse<OrderDto>> GetOrdersByUserIdAsync(Guid userId, int pageNumber, int pageSize);
+        Task<PagedResponse<OrderDto>> GetOrdersByUserIdAsync(Guid userId, int pageNumber, int pageSize, string? status = null);
         Task<PagedResponse<OrderDto>> GetPagedAsync(int pageNumber, int pageSize);
         Task<OrderDto> CreateAsync(OrderForCreationDto orderDto, Guid userId);
         Task DeleteAsync(Guid id, Guid userId);

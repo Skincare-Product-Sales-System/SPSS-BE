@@ -1,4 +1,5 @@
-﻿using API.Extensions;
+﻿using API;
+using API.Extensions;
 using API.Middleware;
 using API.Middlewares;
 using BusinessObjects.Models;
@@ -22,6 +23,19 @@ builder.Host.UseSerilog((context, services, configuration) =>
             fileSizeLimitBytes: 10485760,
             retainedFileCountLimit: 31);
 });
+// In your Program.cs or Startup.cs
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", builder =>
+    {
+        builder
+            .AllowAnyOrigin()  // For development only - restrict this in production
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .WithExposedHeaders("Content-Disposition");
+    });
+});
+builder.Services.AddSignalR();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.ConfigureCors();
@@ -37,13 +51,13 @@ builder.Services.AddDbContext<SPSSContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("SPSS"))
         .EnableSensitiveDataLogging()); // EnableSensitiveDataLogging nếu cần thiết
 var app = builder.Build();
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || true) // Luôn bật Swagger
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "API V1");
-        c.RoutePrefix = string.Empty;
+        c.RoutePrefix = string.Empty; // Đặt root URL để Swagger mở tại trang chính
     });
 }
 
@@ -51,10 +65,19 @@ app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors("AllowFrontendApp");
+app.UseCors("AllowAll");
 app.UseMiddleware<API.Middlewares.RequestResponseMiddleware>();
 app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseMiddleware<AuthMiddleware>();
 app.UseAuthentication(); 
 app.UseAuthorization();
+app.UseEndpoints(endpoints =>
+{
+    // Định nghĩa SignalR Hub
+    endpoints.MapHub<ChatHub>("/chathub");
+
+    // Định nghĩa API endpoints
+    endpoints.MapControllers();
+});
 app.MapControllers();
 app.Run();

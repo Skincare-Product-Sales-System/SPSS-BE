@@ -17,7 +17,10 @@ namespace API.Controllers
         public OrderController(IOrderService orderService) => _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
         [CustomAuthorize("Customer")]
         [HttpGet("user")]
-        public async Task<IActionResult> GetOrdersByUserId([Range(1, int.MaxValue)] int pageNumber = 1, [Range(1, 100)] int pageSize = 10)
+        public async Task<IActionResult> GetOrdersByUserId(
+        [Range(1, int.MaxValue)] int pageNumber = 1,
+        [Range(1, 100)] int pageSize = 10,
+        string? status = null)
         {
             if (!ModelState.IsValid)
             {
@@ -28,7 +31,13 @@ namespace API.Controllers
             try
             {
                 Guid? userId = HttpContext.Items["UserId"] as Guid?;
-                var pagedData = await _orderService.GetOrdersByUserIdAsync(userId.Value, pageNumber, pageSize);
+                if (userId == null)
+                {
+                    return Unauthorized(ApiResponse<PagedResponse<OrderDto>>.FailureResponse("Unauthorized access", new List<string> { "User ID not found in context." }));
+                }
+
+                // Retrieve orders with the optional status filter
+                var pagedData = await _orderService.GetOrdersByUserIdAsync(userId.Value, pageNumber, pageSize, status);
                 return Ok(ApiResponse<PagedResponse<OrderDto>>.SuccessResponse(pagedData));
             }
             catch (Exception ex)
