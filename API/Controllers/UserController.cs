@@ -21,15 +21,15 @@ public class UserController : ControllerBase
     }
 
   
-    private Guid GetUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
-            throw new UnauthorizedAccessException("User ID not found in token");
-
-        return userId;
-    }
+    // private Guid GetUserId()
+    // {
+    //     var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    //
+    //     if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+    //         throw new UnauthorizedAccessException("User ID not found in token");
+    //
+    //     return userId;
+    // }
 
     
     [HttpGet]
@@ -93,11 +93,11 @@ public class UserController : ControllerBase
             return BadRequest(ApiResponse<UserDto>.FailureResponse("Invalid user data", errors));
         }
 
-        var currentUserId = GetUserId();
+        // var currentUserId = GetUserId();
         var isAdmin = User.IsInRole("Admin");
 
-        if (!isAdmin && id != currentUserId)
-            return Forbid("You can only update your own profile.");
+        // if (!isAdmin && id != currentUserId)
+        //     return Forbid("You can only update your own profile.");
 
         try
         {

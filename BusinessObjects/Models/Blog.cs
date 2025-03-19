@@ -14,4 +14,5 @@ public partial class Blog : BaseEntity
     public Guid UserId { get; set; }
     public virtual ICollection<BlogSection> BlogSections { get; set; } = new List<BlogSection>();
     public virtual User User { get; set; }
+    
 }
