@@ -93,27 +93,37 @@ namespace Services.Implementation
             return orderWithDetailDto;
         }
 
-        public async Task<PagedResponse<OrderDto>> GetOrdersByUserIdAsync(Guid userId, int pageNumber, int pageSize)
+        public async Task<PagedResponse<OrderDto>> GetOrdersByUserIdAsync(Guid userId, int pageNumber, int pageSize, string? status = null)
         {
-            var totalCount = await _unitOfWork.Orders.Entities
-                .Where(o => !o.IsDeleted && o.UserId == userId)
-                .CountAsync();
-
-            var orders = await _unitOfWork.Orders.Entities
+            // Filter orders by UserId, IsDeleted, and optional Status
+            var query = _unitOfWork.Orders.Entities
                 .Include(o => o.OrderDetails)
                     .ThenInclude(od => od.ProductItem)
                         .ThenInclude(pi => pi.Product)
                             .ThenInclude(p => p.ProductImages)
                 .Include(o => o.OrderDetails)
-                    .ThenInclude(pi => pi.ProductItem)
-                        .ThenInclude(pc => pc.ProductConfigurations)
+                    .ThenInclude(od => od.ProductItem)
+                        .ThenInclude(pi => pi.ProductConfigurations)
                             .ThenInclude(vo => vo.VariationOption)
-                .Where(o => !o.IsDeleted && o.UserId == userId)
+                .Where(o => !o.IsDeleted && o.UserId == userId);
+
+            // Apply status filter if provided
+            if (!string.IsNullOrEmpty(status))
+            {
+                query = query.Where(o => o.Status == status);
+            }
+
+            // Calculate total count for pagination
+            var totalCount = await query.CountAsync();
+
+            // Apply pagination
+            var orders = await query
                 .OrderByDescending(o => o.CreatedTime)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
+            // Map orders to DTOs
             var orderDtos = _mapper.Map<IEnumerable<OrderDto>>(orders);
 
             // Check if the user has already reviewed each product item
