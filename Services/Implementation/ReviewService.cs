@@ -199,6 +199,32 @@ namespace Services.Implementation
             _unitOfWork.Reviews.Add(review);
             await _unitOfWork.SaveChangesAsync();
 
+            // Query the ProductItem to get the associated ProductId
+            var productItem = await _unitOfWork.ProductItems.Entities
+                .FirstOrDefaultAsync(pi => pi.Id == reviewDto.ProductItemId);
+
+            if (productItem == null)
+                throw new KeyNotFoundException($"ProductItem with ID {reviewDto.ProductItemId} not found.");
+
+            // Query all reviews for the product
+            var productReviews = await _unitOfWork.Reviews.Entities
+                .Where(r => r.ProductItem.ProductId == productItem.ProductId && !r.IsDeleted)
+                .ToListAsync();
+
+            // Calculate the average rating from all reviews for the product
+            var averageRating = productReviews.Average(r => r.RatingValue);
+
+            // Update the product's rating
+            var product = await _unitOfWork.Products.Entities
+                .FirstOrDefaultAsync(p => p.Id == productItem.ProductId);
+
+            if (product == null)
+                throw new KeyNotFoundException($"Product with ID {productItem.ProductId} not found.");
+
+            product.Rating = averageRating;
+            _unitOfWork.Products.Update(product);
+            await _unitOfWork.SaveChangesAsync();
+
             // Return the mapped DTO
             return _mapper.Map<ReviewForCreationDto>(review);
         }
