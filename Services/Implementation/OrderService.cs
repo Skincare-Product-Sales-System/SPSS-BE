@@ -448,6 +448,30 @@ namespace Services.Implementation
                 }
             }
 
+            // Handle updating SoldCount for delivered orders
+            if (newStatus.Equals(StatusForOrder.Delivered, StringComparison.OrdinalIgnoreCase))
+            {
+                var orderDetails = await _unitOfWork.OrderDetails.Entities
+                    .Where(od => od.OrderId == id)
+                    .ToListAsync();
+
+                foreach (var orderDetail in orderDetails)
+                {
+                    var productItem = await _unitOfWork.ProductItems.Entities
+                        .Include(pi => pi.Product)
+                        .FirstOrDefaultAsync(pi => pi.Id == orderDetail.ProductItemId);
+
+                    if (productItem == null)
+                        throw new KeyNotFoundException($"ProductItem with ID {orderDetail.ProductItemId} not found.");
+
+                    // Update the SoldCount
+                    productItem.Product.SoldCount += orderDetail.Quantity;
+
+                    // Update the product
+                    _unitOfWork.Products.Update(productItem.Product);
+                }
+            }
+
             // Update the order's status
             order.Status = newStatus;
             order.LastUpdatedTime = DateTimeOffset.UtcNow;

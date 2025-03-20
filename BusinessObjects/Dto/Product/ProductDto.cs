@@ -12,4 +12,6 @@ public class ProductDto
     public decimal Price { get; set; }
 
     public decimal MarketPrice { get; set; }
+
+    public int SoldCount { get; set; }
 }
