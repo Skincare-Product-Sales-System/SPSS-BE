@@ -80,7 +80,10 @@ public partial class SPSSContext : DbContext
     public virtual DbSet<VariationOption> VariationOptions { get; set; }
 
     public virtual DbSet<Voucher> Vouchers { get; set; }
-    
+
+    public virtual DbSet<SkinTypeRoutineStep> SkinTypeRoutineSteps { get; set; }
+
+
     // protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     // {
     //
@@ -91,7 +94,7 @@ public partial class SPSSContext : DbContext
     //     IConfigurationRoot configurationRoot = builder.Build();
     //     optionsBuilder.UseSqlServer(configurationRoot.GetConnectionString("SPSS"));
     // }
-    
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
@@ -100,10 +103,10 @@ public partial class SPSSContext : DbContext
             optionsBuilder.EnableSensitiveDataLogging();
         }
     }
-    
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        
+
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasIndex(e => e.RoleId, "IX_Users_RoleId");
@@ -139,7 +142,7 @@ public partial class SPSSContext : DbContext
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users).HasForeignKey(d => d.RoleId);
         });
-        
+
         modelBuilder.Entity<Role>(entity =>
         {
             entity.Property(e => e.RoleId).ValueGeneratedNever();
@@ -150,13 +153,13 @@ public partial class SPSSContext : DbContext
                 .IsRequired()
                 .HasMaxLength(500);
 
-            entity.HasMany(e => e.Users) 
-                .WithOne(e => e.Role)   
-                .HasForeignKey(e => e.RoleId) 
-                .OnDelete(DeleteBehavior.NoAction); 
+            entity.HasMany(e => e.Users)
+                .WithOne(e => e.Role)
+                .HasForeignKey(e => e.RoleId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
 
-        
+
         modelBuilder.Entity<Address>(entity =>
         {
             entity.HasIndex(e => e.CountryId, "IX_Addresses_CountryId");
@@ -192,7 +195,7 @@ public partial class SPSSContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.Addresses).HasForeignKey(d => d.UserId);
         });
 
-      
+
 
         modelBuilder.Entity<Blog>(entity =>
         {
@@ -609,6 +612,30 @@ public partial class SPSSContext : DbContext
                 .HasMaxLength(50);
         });
         OnModelCreatingPartial(modelBuilder);
+
+        modelBuilder.Entity<SkinTypeRoutineStep>(entity =>
+        {
+            // Định nghĩa khóa chính
+            entity.HasKey(e => e.Id);
+
+            // Cấu hình các thuộc tính
+            entity.Property(e => e.Id).ValueGeneratedNever(); // Hoặc ValueGeneratedOnAdd() nếu ID tự động
+            entity.Property(e => e.StepName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Instruction).HasMaxLength(1000);
+            entity.Property(e => e.Order).IsRequired();
+
+            // Quan hệ với SkinType
+            entity.HasOne(e => e.SkinType)
+                  .WithMany(e => e.SkinTypeRoutineSteps)
+                  .HasForeignKey(e => e.SkinTypeId)
+                  .OnDelete(DeleteBehavior.Cascade); // Xóa các bước khi SkinType bị xóa
+
+            // Quan hệ với ProductCategory
+            entity.HasOne(e => e.Category)
+                  .WithMany()
+                  .HasForeignKey(e => e.CategoryId)
+                  .OnDelete(DeleteBehavior.Restrict); // Không xóa Category nếu có bước liên quan
+        });
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
