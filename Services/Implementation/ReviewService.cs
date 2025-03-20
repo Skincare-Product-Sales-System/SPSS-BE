@@ -180,9 +180,13 @@ namespace Services.Implementation
 
             // Map the review data
             var review = _mapper.Map<Review>(reviewDto);
+            review.Id = Guid.NewGuid();
             review.UserId = userId;
             review.CreatedBy = userId.ToString();
             review.LastUpdatedBy = userId.ToString();
+
+            // Add the review to the database
+            _unitOfWork.Reviews.Add(review);
 
             // Add ReviewImages if they exist
             if (reviewDto.ReviewImages != null && reviewDto.ReviewImages.Any())
@@ -193,10 +197,15 @@ namespace Services.Implementation
                     ReviewId = review.Id,
                     ImageUrl = imageUrl
                 }).ToList();
+
+                // Add ReviewImages to the database
+                foreach (var reviewImage in review.ReviewImages)
+                {
+                    _unitOfWork.ReviewImages.Add(reviewImage);
+                }
             }
 
-            // Add the review to the database
-            _unitOfWork.Reviews.Add(review);
+            // Save changes to persist the new review and images
             await _unitOfWork.SaveChangesAsync();
 
             // Query the ProductItem to get the associated ProductId
@@ -206,13 +215,15 @@ namespace Services.Implementation
             if (productItem == null)
                 throw new KeyNotFoundException($"ProductItem with ID {reviewDto.ProductItemId} not found.");
 
-            // Query all reviews for the product
+            // Query all reviews for the product, including the newly added review
             var productReviews = await _unitOfWork.Reviews.Entities
                 .Where(r => r.ProductItem.ProductId == productItem.ProductId && !r.IsDeleted)
                 .ToListAsync();
 
             // Calculate the average rating from all reviews for the product
-            var averageRating = productReviews.Average(r => r.RatingValue);
+            var averageRating = productReviews.Any()
+                ? productReviews.Average(r => r.RatingValue)
+                : 0; // Default to 0 if there are no reviews
 
             // Update the product's rating
             var product = await _unitOfWork.Products.Entities
