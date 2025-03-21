@@ -401,8 +401,8 @@ public class MappingProfile : Profile
 
         #region Voucher
         CreateMap<Voucher, VoucherDto>();
-        CreateMap<VoucherForCreationDto, VoucherDto>();
-        CreateMap<VoucherForUpdateDto, VoucherDto>();
+        CreateMap<VoucherForCreationDto, Voucher>();
+        CreateMap<VoucherForUpdateDto, Voucher>();
         #endregion
     }
 }
