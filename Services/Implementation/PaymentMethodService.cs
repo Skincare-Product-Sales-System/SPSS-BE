@@ -52,7 +52,7 @@ namespace Services.Implementation
                 throw new ArgumentNullException(nameof(paymentMethodDto), "Payment method data cannot be null.");
 
             var paymentMethod = _mapper.Map<PaymentMethod>(paymentMethodDto);
-
+            paymentMethod.Id = Guid.NewGuid();
             _unitOfWork.PaymentMethods.Add(paymentMethod);
             await _unitOfWork.SaveChangesAsync();
             return _mapper.Map<PaymentMethodDto>(paymentMethod);
