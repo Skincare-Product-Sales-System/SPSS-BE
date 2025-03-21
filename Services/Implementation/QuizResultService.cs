@@ -60,7 +60,8 @@ namespace Services.Implementation
                     Instruction = rs.Instruction,
                     Order = rs.Order,
                     Products = _unitOfWork.Products.Entities
-                        .Where(p => p.ProductCategoryId == rs.CategoryId)
+                        .Where(p => p.ProductCategoryId == rs.CategoryId
+                            && p.ProductForSkinTypes.Any(s => s.SkinTypeId == quizResult.SkinTypeId)) // Kiểm tra SkinTypeId qua bảng liên kết
                         .OrderByDescending(p => p.SoldCount) // Ưu tiên sản phẩm bán chạy
                         .ThenByDescending(p => p.CreatedTime) // Ưu tiên sản phẩm mới
                         .Take(5) // Lấy tối đa 5 sản phẩm
