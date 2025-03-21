@@ -146,28 +146,38 @@ public class BlogService : IBlogService
 
         var blogQuery = await _unitOfWork.Blogs.GetQueryableAsync();
         var blog = await blogQuery
-            .Include(b => b.BlogSections) // Load các BlogSections liên quan
+            .Include(b => b.BlogSections)
             .FirstOrDefaultAsync(b => b.Id == blogId);
 
         if (blog == null || blog.IsDeleted)
             throw new KeyNotFoundException($"Blog with ID {blogId} not found.");
 
-        // Cập nhật các thuộc tính chính của blog
+        // Cập nhật thông tin chính của blog
         blog.Title = blogDto.Title;
         blog.Description = blogDto.Description;
         blog.Thumbnail = blogDto.Thumbnail;
         blog.LastUpdatedTime = DateTimeOffset.UtcNow;
         blog.LastUpdatedBy = userId.ToString();
 
-        // Cập nhật hoặc thêm mới các BlogSections
+        // Cập nhật BlogSections một cách tường minh
         var existingSections = blog.BlogSections.ToList();
+        var sectionIdsInDto = blogDto.Sections.Select(s => s.Id).ToHashSet();
 
+        // Xóa các mục không còn trong DTO
+        foreach (var section in existingSections)
+        {
+            if (!sectionIdsInDto.Contains(section.Id))
+            {
+                _unitOfWork.BlogSections.Delete(section);
+            }
+        }
+
+        // Thêm hoặc cập nhật các mục từ DTO
         foreach (var sectionDto in blogDto.Sections)
         {
             var existingSection = existingSections.FirstOrDefault(s => s.Id == sectionDto.Id);
             if (existingSection != null)
             {
-                // Cập nhật BlogSection đã tồn tại
                 existingSection.ContentType = sectionDto.ContentType;
                 existingSection.Subtitle = sectionDto.Subtitle;
                 existingSection.Content = sectionDto.Content;
@@ -175,26 +185,16 @@ public class BlogService : IBlogService
             }
             else
             {
-                // Thêm mới BlogSection
-                blog.BlogSections.Add(new BlogSection
+                var newSection = new BlogSection
                 {
                     Id = Guid.NewGuid(),
+                    BlogId = blog.Id,
                     ContentType = sectionDto.ContentType,
                     Subtitle = sectionDto.Subtitle,
                     Content = sectionDto.Content,
-                    Order = sectionDto.Order,
-                    BlogId = blog.Id
-                });
-            }
-        }
-
-        // Xóa các BlogSections không còn tồn tại trong DTO
-        var sectionIdsInDto = blogDto.Sections.Select(s => s.Id).ToList();
-        foreach (var section in existingSections)
-        {
-            if (!sectionIdsInDto.Contains(section.Id))
-            {
-                blog.BlogSections.Remove(section);
+                    Order = sectionDto.Order
+                };
+                _unitOfWork.BlogSections.Add(newSection);
             }
         }
 
@@ -202,11 +202,9 @@ public class BlogService : IBlogService
         {
             await _unitOfWork.SaveChangesAsync();
         }
-        catch (Exception ex)
+        catch (DbUpdateConcurrencyException ex)
         {
-            // Log lỗi chi tiết
-            Console.WriteLine($"Error: {ex.Message}");
-            throw;
+            throw new InvalidOperationException("Concurrency conflict detected while updating the blog.", ex);
         }
 
         return new BlogDto

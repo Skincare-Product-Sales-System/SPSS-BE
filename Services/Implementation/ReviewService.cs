@@ -115,7 +115,9 @@ namespace Services.Implementation
                     ReplyContent = review.Reply.ReplyContent,
                     LastUpdatedTime = review.Reply.LastUpdatedTime
                 } : null,
-                IsEditble = review.CreatedTime == review.LastUpdatedTime
+                IsEditble = review.CreatedTime.HasValue && review.LastUpdatedTime.HasValue &&
+            review.CreatedTime.Value.ToUniversalTime().AddTicks(-(review.CreatedTime.Value.Ticks % TimeSpan.TicksPerSecond)) ==
+            review.LastUpdatedTime.Value.ToUniversalTime().AddTicks(-(review.LastUpdatedTime.Value.Ticks % TimeSpan.TicksPerSecond)),
             }).ToList();
 
             // Trả về kết quả phân trang

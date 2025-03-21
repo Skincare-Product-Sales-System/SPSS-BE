@@ -48,6 +48,8 @@ public class BlogController : ControllerBase
         return Ok(ApiResponse<PagedResponse<BlogDto>>.SuccessResponse(pagedBlogs));
     }
 
+    
+   [CustomAuthorize("Staff")]
    [HttpPost]
    [ProducesResponseType(StatusCodes.Status201Created)]
    [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -70,7 +72,7 @@ public class BlogController : ControllerBase
        }
    }
 
-   [CustomAuthorize("Manager")]
+   [CustomAuthorize("Staff")]
    [HttpPatch("{id:guid}")]
    [ProducesResponseType(StatusCodes.Status204NoContent)]
    [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -103,7 +105,7 @@ public class BlogController : ControllerBase
        }
    }
 
-    // [CustomAuthorize("Manager")]
+    [CustomAuthorize("Staff")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

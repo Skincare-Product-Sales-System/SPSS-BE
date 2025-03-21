@@ -21,6 +21,14 @@ public class RepositoryBase<T, TKey> : IRepositoryBase<T, TKey> where T : class
         return await Task.FromResult(_context.Set<T>().AsQueryable());
     }
 
+    public void Attach(T entity)
+    {
+        if (entity == null)
+            throw new ArgumentNullException(nameof(entity));
+
+        _context.Set<T>().Attach(entity);
+    }
+
     public async Task<T?> GetByIdAsync(TKey id) => await _context.Set<T>().FindAsync(id);
     public IQueryable<T> Entities => _context.Set<T>();
     public async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
