@@ -45,10 +45,9 @@ public class VoucherService : IVoucherService
     {
         if (voucherForCreationDto is null)
             throw new ArgumentNullException(nameof(voucherForCreationDto), "Voucher data cannot be null.");
-
         var voucher = _mapper.Map<Voucher>(voucherForCreationDto);
         voucher.Id = Guid.NewGuid();
-        voucher.Code = Generator.GenerateId();
+        voucher.Code = voucherForCreationDto.Code.ToUpper();
         voucher.CreatedTime = DateTimeOffset.UtcNow;
         voucher.CreatedBy = "System";
         voucher.IsDeleted = false;
