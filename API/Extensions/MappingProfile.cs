@@ -403,6 +403,7 @@ public class MappingProfile : Profile
         CreateMap<Voucher, VoucherDto>();
         CreateMap<VoucherForCreationDto, Voucher>();
         CreateMap<VoucherForUpdateDto, Voucher>();
+        CreateMap<Voucher, VoucherForCreationDto>();
         #endregion
     }
 }
