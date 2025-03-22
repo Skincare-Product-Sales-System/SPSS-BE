@@ -16,6 +16,7 @@ public interface IRepositoryBase<T, TKey> where T : class
     void Add(T entity);
     void AddRange(IEnumerable<T> entities);
     void Update(T entity);
+    void Attach(T entity);
     void Delete(T entity);
     void RemoveRange(IEnumerable<T> entities);
     void DetachEntities();
