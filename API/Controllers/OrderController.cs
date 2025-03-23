@@ -133,6 +133,36 @@ namespace API.Controllers
         }
 
         [CustomAuthorize("Customer")]
+        [HttpPatch("{id:guid}/payment-method")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateOrderPaymentMethod(Guid id, Guid paymentMethodId)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<bool>.FailureResponse("Invalid payment method data", errors));
+            }
+
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+
+            try
+            {
+                var updated = await _orderService.UpdateOrderPaymentMethodAsync(id, paymentMethodId, userId.Value);
+                return Ok(ApiResponse<bool>.SuccessResponse(updated, "Payment method updated successfully"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse(ex.Message));
+            }
+            catch (ArgumentNullException ex)
+            {
+                return BadRequest(ApiResponse<bool>.FailureResponse(ex.Message));
+            }
+        }
+
+        [CustomAuthorize("Customer")]
         [HttpPatch("{id:guid}/address")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

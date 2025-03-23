@@ -498,6 +498,36 @@ namespace Services.Implementation
             return true;
         }
 
+        public async Task<bool> UpdateOrderPaymentMethodAsync(Guid orderId, Guid paymentMethodId, Guid userId)
+        {
+            // Validate payment method ID
+            if (paymentMethodId == Guid.Empty)
+                throw new ArgumentNullException(nameof(paymentMethodId), "Payment method cannot be null or empty.");
+
+            // Fetch the order
+            var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
+            if (order == null || order.IsDeleted)
+                throw new KeyNotFoundException($"Order with ID {orderId} not found or has been deleted.");
+
+            // Fetch the payment method to ensure it exists
+            var paymentMethod = await _unitOfWork.PaymentMethods.GetByIdAsync(paymentMethodId);
+            if (paymentMethod == null)
+                throw new KeyNotFoundException($"Payment method with ID {paymentMethodId} not found.");
+
+            // Update the order's payment method
+            order.PaymentMethodId = paymentMethodId;
+            order.LastUpdatedTime = DateTimeOffset.UtcNow;
+            order.LastUpdatedBy = userId.ToString();
+
+            // Update the order
+            _unitOfWork.Orders.Update(order);
+
+            // Save changes
+            await _unitOfWork.SaveChangesAsync();
+
+            return true;
+        }
+
         public async Task<bool> UpdateOrderAddressAsync(Guid id, Guid newAddressId, Guid userId)
         {
 
