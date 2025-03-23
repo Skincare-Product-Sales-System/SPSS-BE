@@ -362,7 +362,7 @@ namespace Services.Implementation
                 else if (orderEntity.PaymentMethodId == Guid.Parse("354EDA95-5BE5-41BE-ACC3-CFD70188118A"))
                 {
                     // Nếu là "354EDA95-5BE5-41BE-ACC3-CFD70188118A", trạng thái là Awaiting Payment và không tạo StatusChange
-                    orderEntity.Status = "Awaiting Payment";
+                    orderEntity.Status = StatusForOrder.AwaitingPayment;
 
                     // Add Order entity to UnitOfWork
                     _unitOfWork.Orders.Add(orderEntity);
