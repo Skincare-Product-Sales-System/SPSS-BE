@@ -509,6 +509,10 @@ namespace Services.Implementation
             if (order == null || order.IsDeleted)
                 throw new KeyNotFoundException($"Order with ID {orderId} not found or has been deleted.");
 
+            // Ensure the order is in "Awaiting Payment" status
+            if (!order.Status.Equals(StatusForOrder.AwaitingPayment, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"Payment method can only be updated when the order is in 'Awaiting Payment' status. Current status: {order.Status}");
+
             // Fetch the payment method to ensure it exists
             var paymentMethod = await _unitOfWork.PaymentMethods.GetByIdAsync(paymentMethodId);
             if (paymentMethod == null)
