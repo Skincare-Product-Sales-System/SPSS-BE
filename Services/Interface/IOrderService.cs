@@ -8,6 +8,7 @@ namespace Services.Interface
     {
         Task<OrderWithDetailDto> GetByIdAsync(Guid id);
         Task<PagedResponse<OrderDto>> GetOrdersByUserIdAsync(Guid userId, int pageNumber, int pageSize, string? status = null);
+        Task<int> GetTotalOrdersByUserIdAsync(Guid userId);
         Task<PagedResponse<OrderDto>> GetPagedAsync(int pageNumber, int pageSize);
         Task<OrderDto> CreateAsync(OrderForCreationDto orderDto, Guid userId);
         Task<bool> UpdateOrderPaymentMethodAsync(Guid orderId, Guid paymentMethodId, Guid userId);

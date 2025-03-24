@@ -184,6 +184,16 @@ namespace Services.Implementation
             };
         }
 
+        public async Task<int> GetTotalOrdersByUserIdAsync(Guid userId)
+        {
+            // Đếm tổng số lượng đơn hàng của người dùng không bị xóa
+            var totalOrders = await _unitOfWork.Orders.Entities
+                .Where(o => !o.IsDeleted && o.UserId == userId)
+                .CountAsync();
+
+            return totalOrders;
+        }
+
         public async Task<OrderDto> CreateAsync(OrderForCreationDto orderDto, Guid userId)
         {
             if (orderDto.OrderDetail == null || !orderDto.OrderDetail.Any())

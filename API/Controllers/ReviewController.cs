@@ -40,6 +40,28 @@ public class ReviewController : ControllerBase
         return Ok(ApiResponse<PagedResponse<ReviewDto>>.SuccessResponse(pagedReviews));
     }
 
+    [HttpGet("user/total-reviews")]
+    public async Task<IActionResult> GetTotalReviewsByUserId()
+    {
+        try
+        {
+            // Lấy UserId từ HttpContext
+            Guid? userId = HttpContext.Items["UserId"] as Guid?;
+            if (userId == null)
+            {
+                return Unauthorized(ApiResponse<int>.FailureResponse("Unauthorized access", new List<string> { "User ID not found in context." }));
+            }
+
+            // Gọi service để đếm tổng số review
+            var totalReviews = await _reviewService.GetTotalReviewsByUserIdAsync(userId.Value);
+            return Ok(ApiResponse<int>.SuccessResponse(totalReviews));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ApiResponse<int>.FailureResponse("Failed to retrieve total reviews", new List<string> { ex.Message }));
+        }
+    }
+
     // Lấy danh sách đánh giá phân trang theo sản phẩm
     [HttpGet("product/{productId:guid}")]
     public async Task<IActionResult> GetByProductId(

@@ -130,6 +130,16 @@ namespace Services.Implementation
             };
         }
 
+        public async Task<int> GetTotalReviewsByUserIdAsync(Guid userId)
+        {
+            // Đếm tổng số review của người dùng với điều kiện không bị xóa
+            var totalReviews = await _unitOfWork.Reviews.Entities
+                .Where(r => r.UserId == userId && !r.IsDeleted)
+                .CountAsync();
+
+            return totalReviews;
+        }
+
         public async Task<PagedResponse<ReviewForProductQueryDto>> GetReviewsByProductIdAsync(Guid productId, int pageNumber, int pageSize, int? ratingFilter = null)
         {
             // Tính toán số bản ghi cần bỏ qua
