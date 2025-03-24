@@ -528,6 +528,23 @@ namespace Services.Implementation
             if (paymentMethod == null)
                 throw new KeyNotFoundException($"Payment method with ID {paymentMethodId} not found.");
 
+            // Check if the current payment method is COD and the new payment method is different
+            if (order.PaymentMethodId == Guid.Empty || paymentMethod.PaymentType.Equals(Shared.Constants.PaymentMethod.COD, StringComparison.OrdinalIgnoreCase))
+            {
+                var oldStatus = order.Status;
+                order.Status = StatusForOrder.Processing;
+
+                // Record the status change
+                var statusChange = new StatusChange
+                {
+                    Id = Guid.NewGuid(),
+                    OrderId = order.Id,
+                    Status = order.Status,
+                    Date = DateTimeOffset.UtcNow,
+                };
+                _unitOfWork.StatusChanges.Add(statusChange);
+            }
+
             // Update the order's payment method
             order.PaymentMethodId = paymentMethodId;
             order.LastUpdatedTime = DateTimeOffset.UtcNow;
