@@ -519,7 +519,7 @@ namespace Services.Implementation
             if (order == null || order.IsDeleted)
                 throw new KeyNotFoundException($"Order with ID {orderId} not found or has been deleted.");
 
-            // Ensure the order is in "Awaiting Payment" status
+            // Ensure the order is in a modifiable status
             if (!order.Status.Equals(StatusForOrder.AwaitingPayment, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException($"Payment method can only be updated when the order is in 'Awaiting Payment' status. Current status: {order.Status}");
 
@@ -528,21 +528,24 @@ namespace Services.Implementation
             if (paymentMethod == null)
                 throw new KeyNotFoundException($"Payment method with ID {paymentMethodId} not found.");
 
-            // Check if the current payment method is COD and the new payment method is different
-            if (order.PaymentMethodId == Guid.Empty || paymentMethod.PaymentType.Equals(Shared.Constants.PaymentMethod.COD, StringComparison.OrdinalIgnoreCase))
+            // If the new payment method is COD, update the order status to Processing
+            if (paymentMethod.PaymentType.Equals(Shared.Constants.PaymentMethod.COD, StringComparison.OrdinalIgnoreCase))
             {
-                var oldStatus = order.Status;
-                order.Status = StatusForOrder.Processing;
-
-                // Record the status change
-                var statusChange = new StatusChange
+                if (!order.Status.Equals(StatusForOrder.Processing, StringComparison.OrdinalIgnoreCase))
                 {
-                    Id = Guid.NewGuid(),
-                    OrderId = order.Id,
-                    Status = order.Status,
-                    Date = DateTimeOffset.UtcNow,
-                };
-                _unitOfWork.StatusChanges.Add(statusChange);
+                    // Update status to Processing
+                    order.Status = StatusForOrder.Processing;
+
+                    // Record the status change
+                    var statusChange = new StatusChange
+                    {
+                        Id = Guid.NewGuid(),
+                        OrderId = order.Id,
+                        Status = order.Status,
+                        Date = DateTimeOffset.UtcNow,
+                    };
+                    _unitOfWork.StatusChanges.Add(statusChange);
+                }
             }
 
             // Update the order's payment method
