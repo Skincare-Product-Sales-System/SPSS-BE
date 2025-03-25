@@ -25,7 +25,6 @@ namespace Services.Implementation
             var cancelReason = await _unitOfWork.CancelReasons.GetByIdAsync(id);
             if (cancelReason == null)
                 throw new KeyNotFoundException($"Cancel Reason with ID {id} not found or has been deleted.");
-
             return _mapper.Map<CancelReasonDto>(cancelReason);
         }
 
@@ -51,11 +50,21 @@ namespace Services.Implementation
             if (cancelReasonDto == null)
                 throw new ArgumentNullException(nameof(cancelReasonDto), "Cancel reason data cannot be null.");
 
-            var cancelReason = _mapper.Map<CancelReason>(cancelReasonDto);
+            var cancelReason = new CancelReason
+            {
+                Id = Guid.NewGuid(),
+                Description = cancelReasonDto.Description,
+                RefundRate = cancelReasonDto.RefundRate
+            };
 
             _unitOfWork.CancelReasons.Add(cancelReason);
             await _unitOfWork.SaveChangesAsync();
-            return _mapper.Map<CancelReasonDto>(cancelReason);
+            return new CancelReasonDto
+            {
+                Id = cancelReason.Id,
+                Description = cancelReason.Description,
+                RefundRate = cancelReason.RefundRate
+            };
         }
 
         public async Task<CancelReasonDto> UpdateAsync(Guid id, CancelReasonForUpdateDto cancelReasonDto, Guid userId)
@@ -67,10 +76,17 @@ namespace Services.Implementation
             if (cancelReason == null)
                 throw new KeyNotFoundException($"Cancel reason with ID {id} not found or has been deleted.");
 
-            _mapper.Map(cancelReasonDto, cancelReason);
+            cancelReason.Description = cancelReasonDto.Description;
+            cancelReason.RefundRate = cancelReasonDto.RefundRate;
+
             _unitOfWork.CancelReasons.Update(cancelReason);
             await _unitOfWork.SaveChangesAsync();
-            return _mapper.Map<CancelReasonDto>(cancelReason);
+            return new CancelReasonDto
+            {
+                Id = cancelReason.Id,
+                Description = cancelReason.Description,
+                RefundRate = cancelReason.RefundRate
+            };
         }
 
         public async Task DeleteAsync(Guid id, Guid userId)
@@ -79,7 +95,7 @@ namespace Services.Implementation
             if (cancelReason == null)
                 throw new KeyNotFoundException($"Cancel reason with ID {id} not found or has been deleted.");
 
-            _unitOfWork.CancelReasons.Update(cancelReason); // Soft delete via update
+            _unitOfWork.CancelReasons.Delete(cancelReason); // Soft delete via update
             await _unitOfWork.SaveChangesAsync();
         }
     }
