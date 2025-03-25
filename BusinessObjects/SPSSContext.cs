@@ -110,39 +110,32 @@ public partial class SPSSContext : DbContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasIndex(e => e.RoleId, "IX_Users_RoleId");
+            entity.HasIndex(e => e.SkinTypeId, "IX_Users_SkinTypeId");
 
             entity.Property(e => e.UserId).ValueGeneratedNever();
+            entity.Property(e => e.SkinTypeId); // Nullable by default
+            entity.Property(e => e.RoleId);     // Nullable by default
+            entity.Property(e => e.UserName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.SurName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.EmailAddress).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.PhoneNumber).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Password).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.AvatarUrl).HasMaxLength(500); // Remove IsRequired() to match string?
             entity.Property(e => e.CreatedBy).HasMaxLength(100);
-            entity.Property(e => e.DeletedBy).HasMaxLength(100);
-            entity.Property(e => e.EmailAddress)
-                .IsRequired()
-                .HasMaxLength(100);
-            entity.Property(e => e.SurName)
-                .IsRequired()
-                .HasMaxLength(100);
-            entity.Property(e => e.LastName)
-                .IsRequired()
-                .HasMaxLength(100);
             entity.Property(e => e.LastUpdatedBy).HasMaxLength(100);
-            entity.Property(e => e.Password)
-                .IsRequired()
-                .HasMaxLength(500);
-            entity.Property(e => e.PhoneNumber)
-                .IsRequired()
-                .HasMaxLength(20);
-            entity.Property(e => e.AvatarUrl)
-                .IsRequired()
-                .HasMaxLength(500);
-            entity.Property(e => e.UserName)
-                .IsRequired()
-                .HasMaxLength(100);
-            entity.Property(e => e.Status)
-                .IsRequired()
-                .HasMaxLength(50);
+            entity.Property(e => e.DeletedBy).HasMaxLength(100); // Nullable by default
+
+            // Add missing fields
+            entity.Property(e => e.CreatedTime).IsRequired();
+            entity.Property(e => e.LastUpdatedTime).IsRequired();
+            entity.Property(e => e.DeletedTime).IsRequired();
+            entity.Property(e => e.IsDeleted).IsRequired().HasDefaultValue(false);
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users).HasForeignKey(d => d.RoleId);
+            entity.HasOne(d => d.SkinType).WithMany(p => p.AspNetUsers).HasForeignKey(d => d.SkinTypeId);
         });
-
         modelBuilder.Entity<Role>(entity =>
         {
             entity.Property(e => e.RoleId).ValueGeneratedNever();
