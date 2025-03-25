@@ -1,4 +1,5 @@
-﻿using BusinessObjects.Models.Dto.Dashboard;
+﻿using BusinessObjects.Dto.Order;
+using BusinessObjects.Models.Dto.Dashboard;
 using Services.Response;
 
 namespace Services.Interface;
@@ -10,4 +11,5 @@ public interface IDashboardService
     // Task<List<RevenueTrendDto>> GetRevenueTrendAsync(DateTime startDate, DateTime endDate, string granularity = "daily");
     Task<PagedResponse<TopProductDto>> GetTopSellingProductsAsync(int pageNumber, int pageSize, DateTime? startDate = null, DateTime? endDate = null);
     Task<List<OrderStatusDistributionDto>> GetOrderStatusDistributionAsync(DateTime? startDate = null, DateTime? endDate = null);
+    Task<PagedResponse<OrderDto>> GetTopPendingOrdersAsync(int topCount);
 }

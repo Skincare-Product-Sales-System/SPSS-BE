@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
+using BusinessObjects.Dto.Order;
 using BusinessObjects.Models.Dto.Dashboard;
 using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
 using Services.Interface;
 using Services.Response;
+using Shared.Constants;
 
 namespace Services.Implementation
 {
@@ -149,6 +151,36 @@ namespace Services.Implementation
                 .ToListAsync();
 
             return distribution;
+        }
+        
+        public async Task<PagedResponse<OrderDto>> GetTopPendingOrdersAsync(int topCount)
+        {
+            var pendingOrdersQuery = _unitOfWork.Orders.Entities
+                .Include(o => o.OrderDetails)
+                .ThenInclude(od => od.ProductItem)
+                .ThenInclude(pi => pi.Product)
+                .ThenInclude(p => p.ProductImages)
+                .Include(o => o.OrderDetails)
+                .ThenInclude(od => od.ProductItem)
+                .ThenInclude(pi => pi.ProductConfigurations)
+                .ThenInclude(vo => vo.VariationOption)
+                .Where(o => !o.IsDeleted && o.Status == StatusForOrder.Processing)
+                .OrderByDescending(o => o.CreatedTime);
+
+            var totalCount = await pendingOrdersQuery.CountAsync();
+            var pendingOrders = await pendingOrdersQuery
+                .Take(topCount)
+                .ToListAsync();
+
+            var orderDtos = _mapper.Map<List<OrderDto>>(pendingOrders);
+
+            return new PagedResponse<OrderDto>
+            {
+                Items = orderDtos,
+                TotalCount = totalCount,
+                PageNumber = 1,
+                PageSize = topCount
+            };
         }
     }
 }

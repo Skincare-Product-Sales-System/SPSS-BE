@@ -13,5 +13,6 @@ namespace Services.Interface
         Task DeleteAsync(Guid id, Guid userId);
         Task<bool> UpdateOrderStatusAsync(Guid id, string newStatus, Guid userId, Guid? cancelReasonId = null);
         Task<bool> UpdateOrderAddressAsync(Guid id, Guid newAddressId, Guid userId);
+       
     }
 }
