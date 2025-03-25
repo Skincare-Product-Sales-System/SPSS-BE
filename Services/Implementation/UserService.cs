@@ -128,6 +128,8 @@ public class UserService : IUserService
         };
     }
 
+
+
     public async Task<UserDto> CreateAsync(UserForCreationDto? userForCreationDto)
     {
         
@@ -142,6 +144,17 @@ public class UserService : IUserService
         
         if (userForCreationDto == null)
             throw new ArgumentNullException(nameof(userForCreationDto), "User data cannot be null.");
+        
+        // Check if the email already exists
+        if (await CheckEmailExistsAsync(userForCreationDto.EmailAddress))
+            throw new InvalidOperationException($"Email {userForCreationDto.EmailAddress} is already in use.");
+
+        // Check if the username already exists
+        if (await CheckUserNameExistsAsync(userForCreationDto.UserName))
+            throw new InvalidOperationException($"Username {userForCreationDto.UserName} is already in use.");
+        
+        if (await CheckPhoneNumberExistsAsync(userForCreationDto.PhoneNumber))
+            throw new InvalidOperationException($"Phone number {userForCreationDto.PhoneNumber} is already in use.");
 
         var user = new User
         {
@@ -198,7 +211,17 @@ public class UserService : IUserService
 
         if (user == null || user.IsDeleted)
             throw new KeyNotFoundException($"User with ID {userId} not found.");
+        
+        // Check if the email already exists for another user
+        if (await _unitOfWork.Users.GetQueryable().AnyAsync(u => u.EmailAddress == userForUpdateDto.EmailAddress && u.UserId != userId))
+            throw new InvalidOperationException($"Email {userForUpdateDto.EmailAddress} is already in use.");
 
+        // Check if the username already exists for another user
+        if (await _unitOfWork.Users.GetQueryable().AnyAsync(u => u.UserName == userForUpdateDto.UserName && u.UserId != userId))
+            throw new InvalidOperationException($"Username {userForUpdateDto.UserName} is already in use.");
+
+        if (await _unitOfWork.Users.GetQueryable().AnyAsync(u => u.PhoneNumber == userForUpdateDto.PhoneNumber && u.UserId != userId))
+            throw new InvalidOperationException($"Phone number {userForUpdateDto.PhoneNumber} is already in use.");
         user.LastUpdatedTime = DateTimeOffset.UtcNow;
         user.LastUpdatedBy = "System"; // Optionally replace with the current user if available
 
@@ -249,5 +272,10 @@ public class UserService : IUserService
         {
             return false;
         }
+    }
+    
+    public async Task<bool> CheckPhoneNumberExistsAsync(string phoneNumber)
+    {
+        return await _unitOfWork.Users.GetQueryable().AnyAsync(u => u.PhoneNumber == phoneNumber);
     }
 }

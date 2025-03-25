@@ -72,6 +72,10 @@ public class VoucherService : IVoucherService
         if (voucher == null)
             throw new KeyNotFoundException($"Voucher with ID {voucherId} not found.");
 
+        // Check if the voucher code already exists for another voucher
+        if (await _unitOfWork.Vouchers.GetQueryable().AnyAsync(v => v.Code == voucherForUpdateDto.Code && v.Id != voucherId))
+            throw new InvalidOperationException($"Voucher code {voucherForUpdateDto.Code} is already in use.");
+
         voucher.LastUpdatedTime = DateTimeOffset.UtcNow;
         voucher.LastUpdatedBy = "System";
 
