@@ -8,7 +8,7 @@ namespace BusinessObjects.Dto.CancelReason
         [StringLength(250, ErrorMessage = "Description can't exceed 250 characters.")]
         public string Description { get; set; } = null!;
 
-        [Range(0, 1, ErrorMessage = "Refund rate must be between 0 and 1.")]
+        [Range(0, 100, ErrorMessage = "Refund rate must be between 0 and 100.")]
         public decimal RefundRate { get; set; }
     }
 }

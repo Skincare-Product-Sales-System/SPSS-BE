@@ -30,4 +30,5 @@ public class UserForUpdateDto
     public string Password { get; set; }
 
     public string AvatarUrl { get; set; }
+    public string UserName { get; set; }
 }
