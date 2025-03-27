@@ -103,48 +103,6 @@ namespace Services.Implementation
             return orderWithDetailDto;
         }
 
-        public async Task<PagedResponse<CanceledOrderDto>> GetCanceledOrdersAsync(int pageNumber, int pageSize)
-        {
-            var query = _unitOfWork.Orders.Entities
-                .Where(o => o.Status == StatusForOrder.Cancelled)
-                .Include(o => o.Address)
-                    .ThenInclude(a => a.User)
-                .Include(o => o.StatusChanges)
-                .Include(cr => cr.CancelReason);
-
-            var totalCount = await query.CountAsync();
-
-            var canceledOrders = await query
-                .OrderByDescending(o => o.CreatedTime)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            var canceledOrderDtos = canceledOrders.Select(order => new CanceledOrderDto
-            {
-                OrderId = order.Id,
-                UserId = order.UserId,
-                Username = order.Address.User.UserName,
-                Fullname = $"{order.Address.User.SurName} {order.Address.User.LastName}".Trim(),
-                Total = order.OrderTotal,
-                RefundTime = order.StatusChanges
-                    .Where(sc => sc.Status == StatusForOrder.Cancelled)
-                    .OrderByDescending(sc => sc.Date)
-                    .FirstOrDefault()?.Date,
-                RefundReason = order.CancelReason.Description,
-                RefundRate = order.CancelReason.RefundRate,
-                RefundAmount = order.OrderTotal * (decimal)(order.CancelReason.RefundRate / 100)
-            }).ToList();
-
-            return new PagedResponse<CanceledOrderDto>
-            {
-                Items = canceledOrderDtos,
-                TotalCount = totalCount,
-                PageNumber = pageNumber,
-                PageSize = pageSize
-            };
-        }
-
         public async Task<PagedResponse<OrderDto>> GetOrdersByUserIdAsync(Guid userId, int pageNumber, int pageSize, string? status = null)
         {
             // Filter orders by UserId, IsDeleted, and optional Status

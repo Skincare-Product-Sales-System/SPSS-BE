@@ -46,31 +46,6 @@ namespace API.Controllers
             }
         }
 
-        [CustomAuthorize("Manager")]
-        [HttpGet("canceled-orders")]
-        public async Task<IActionResult> GetCanceledOrders(
-        [Range(1, int.MaxValue)] int pageNumber = 1,
-        [Range(1, 100)] int pageSize = 10)
-        {
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<PagedResponse<CanceledOrderDto>>.FailureResponse("Invalid pagination parameters", errors));
-            }
-
-            try
-            {
-                // Retrieve canceled orders
-                var pagedData = await _orderService.GetCanceledOrdersAsync(pageNumber, pageSize);
-                return Ok(ApiResponse<PagedResponse<CanceledOrderDto>>.SuccessResponse(pagedData));
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ApiResponse<PagedResponse<CanceledOrderDto>>.FailureResponse("Failed to retrieve canceled orders", new List<string> { ex.Message }));
-            }
-        }
-
-
         [HttpGet("total-orders")]
         public async Task<IActionResult> GetTotalOrdersByUserId()
         {

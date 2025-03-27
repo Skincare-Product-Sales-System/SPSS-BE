@@ -6,10 +6,10 @@ namespace BusinessObjects.Dto.Blog;
 public class BlogForUpdateDto
 {
     [Required(ErrorMessage = "Title is required.")]
-    [StringLength(200, ErrorMessage = "Title can't exceed 150 characters.")]
+    [StringLength(150, ErrorMessage = "Title can't exceed 150 characters.")]
     public string Title { get; set; }
-    
-    [Required(ErrorMessage = "Description is required.")]
+
+    [StringLength(500, ErrorMessage = "Description can't exceed 500 characters.")]
     public string Description { get; set; }
 
     [Url(ErrorMessage = "Invalid URL format for Thumbnail.")]
