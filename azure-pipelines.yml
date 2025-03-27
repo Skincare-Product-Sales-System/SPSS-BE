@@ -6,8 +6,7 @@
 trigger:
   branches:
     include:
-      - feature/test-uat
-
+      - feature/tuann
 pool:
   vmImage: 'windows-latest'
 
