@@ -6,7 +6,7 @@
 trigger:
   branches:
     include:
-      - feature/tuann
+      - test/tuann
 pool:
   vmImage: 'windows-latest'
 
@@ -30,7 +30,7 @@ steps:
 - task: DotNetCoreCLI@2
   name: 'buildArtifact'
   inputs:
-    command: 'build'
+    command: 'publish'
     publishWebProjects: false
     projects: $(project)
     arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
