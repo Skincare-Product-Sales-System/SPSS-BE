@@ -13,7 +13,7 @@ using Services.Implementation;
 namespace API.Controllers;
 
 [ApiController]
-[Route("api/accounts")]
+[Route("api/GETaccounts")]
 public class AccountController : ControllerBase
 {
     private readonly IAccountService _accountService;
