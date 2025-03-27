@@ -26,5 +26,5 @@ steps:
       azureSubscription: 'Prod_Cuong'
       appType: 'webApp'
       appName: 'spssapi'
-      package: '$(Build.DefaultWorkingDirectory)/SPSSartifact/*.zip'
+      package: '$(Build.ArtifactsDirectory)/SPSSartifact/*.zip'
       deploymentMethod: 'auto'
