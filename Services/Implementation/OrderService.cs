@@ -103,6 +103,48 @@ namespace Services.Implementation
             return orderWithDetailDto;
         }
 
+        public async Task<PagedResponse<CanceledOrderDto>> GetCanceledOrdersAsync(int pageNumber, int pageSize)
+        {
+            var query = _unitOfWork.Orders.Entities
+                .Where(o => o.Status == StatusForOrder.Cancelled)
+                .Include(o => o.Address)
+                    .ThenInclude(a => a.User)
+                .Include(o => o.StatusChanges)
+                .Include(cr => cr.CancelReason);
+
+            var totalCount = await query.CountAsync();
+
+            var canceledOrders = await query
+                .OrderByDescending(o => o.CreatedTime)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var canceledOrderDtos = canceledOrders.Select(order => new CanceledOrderDto
+            {
+                OrderId = order.Id,
+                UserId = order.UserId,
+                Username = order.Address.User.UserName,
+                Fullname = $"{order.Address.User.SurName} {order.Address.User.LastName}".Trim(),
+                Total = order.OrderTotal,
+                RefundTime = order.StatusChanges
+                    .Where(sc => sc.Status == StatusForOrder.Cancelled)
+                    .OrderByDescending(sc => sc.Date)
+                    .FirstOrDefault()?.Date,
+                RefundReason = order.CancelReason.Description,
+                RefundRate = order.CancelReason.RefundRate,
+                RefundAmount = order.OrderTotal * (decimal)(order.CancelReason.RefundRate / 100)
+            }).ToList();
+
+            return new PagedResponse<CanceledOrderDto>
+            {
+                Items = canceledOrderDtos,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+        }
+
         public async Task<PagedResponse<OrderDto>> GetOrdersByUserIdAsync(Guid userId, int pageNumber, int pageSize, string? status = null)
         {
             // Filter orders by UserId, IsDeleted, and optional Status
@@ -528,7 +570,7 @@ namespace Services.Implementation
             if (order == null || order.IsDeleted)
                 throw new KeyNotFoundException($"Order with ID {orderId} not found or has been deleted.");
 
-            // Ensure the order is in "Awaiting Payment" status
+            // Ensure the order is in a modifiable status
             if (!order.Status.Equals(StatusForOrder.AwaitingPayment, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException($"Payment method can only be updated when the order is in 'Awaiting Payment' status. Current status: {order.Status}");
 
@@ -537,21 +579,24 @@ namespace Services.Implementation
             if (paymentMethod == null)
                 throw new KeyNotFoundException($"Payment method with ID {paymentMethodId} not found.");
 
-            // Check if the current payment method is COD and the new payment method is different
-            if (order.PaymentMethodId == Guid.Empty || paymentMethod.PaymentType.Equals(Shared.Constants.PaymentMethod.COD, StringComparison.OrdinalIgnoreCase))
+            // If the new payment method is COD, update the order status to Processing
+            if (paymentMethod.PaymentType.Equals(Shared.Constants.PaymentMethod.COD, StringComparison.OrdinalIgnoreCase))
             {
-                var oldStatus = order.Status;
-                order.Status = StatusForOrder.Processing;
-
-                // Record the status change
-                var statusChange = new StatusChange
+                if (!order.Status.Equals(StatusForOrder.Processing, StringComparison.OrdinalIgnoreCase))
                 {
-                    Id = Guid.NewGuid(),
-                    OrderId = order.Id,
-                    Status = order.Status,
-                    Date = DateTimeOffset.UtcNow,
-                };
-                _unitOfWork.StatusChanges.Add(statusChange);
+                    // Update status to Processing
+                    order.Status = StatusForOrder.Processing;
+
+                    // Record the status change
+                    var statusChange = new StatusChange
+                    {
+                        Id = Guid.NewGuid(),
+                        OrderId = order.Id,
+                        Status = order.Status,
+                        Date = DateTimeOffset.UtcNow,
+                    };
+                    _unitOfWork.StatusChanges.Add(statusChange);
+                }
             }
 
             // Update the order's payment method
