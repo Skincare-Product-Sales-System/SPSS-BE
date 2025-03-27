@@ -45,6 +45,13 @@ public class VoucherService : IVoucherService
     {
         if (voucherForCreationDto is null)
             throw new ArgumentNullException(nameof(voucherForCreationDto), "Voucher data cannot be null.");
+
+        // Check if a voucher with the same name already exists
+        var existingVoucher = await _unitOfWork.Vouchers.Entities
+            .FirstOrDefaultAsync(v => v.Code == voucherForCreationDto.Code && !v.IsDeleted);
+        if (existingVoucher != null)
+            throw new ArgumentException($"Mã giảm giá '{voucherForCreationDto.Code}' đã tồn tại");
+
         var voucher = _mapper.Map<Voucher>(voucherForCreationDto);
         voucher.Id = Guid.NewGuid();
         voucher.Code = voucherForCreationDto.Code.ToUpper();
@@ -64,6 +71,10 @@ public class VoucherService : IVoucherService
         var voucher = await _unitOfWork.Vouchers.GetByIdAsync(voucherId);
         if (voucher == null)
             throw new KeyNotFoundException($"Voucher with ID {voucherId} not found.");
+
+        // Check if the voucher code already exists for another voucher
+        if (await _unitOfWork.Vouchers.GetQueryable().AnyAsync(v => v.Code == voucherForUpdateDto.Code && v.Id != voucherId))
+            throw new InvalidOperationException($"Voucher code {voucherForUpdateDto.Code} is already in use.");
 
         voucher.LastUpdatedTime = DateTimeOffset.UtcNow;
         voucher.LastUpdatedBy = "System";
