@@ -126,12 +126,13 @@ public partial class SPSSContext : DbContext
             entity.Property(e => e.CreatedBy).HasMaxLength(100);
             entity.Property(e => e.LastUpdatedBy).HasMaxLength(100);
             entity.Property(e => e.DeletedBy).HasMaxLength(100); // Nullable by default
+            entity.Property(e => e.IsDeleted);
 
             // Add missing fields
             entity.Property(e => e.CreatedTime).IsRequired();
             entity.Property(e => e.LastUpdatedTime).IsRequired();
             entity.Property(e => e.DeletedTime).IsRequired();
-            entity.Property(e => e.IsDeleted).IsRequired().HasDefaultValue(false);
+ 
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users).HasForeignKey(d => d.RoleId);
             entity.HasOne(d => d.SkinType).WithMany(p => p.AspNetUsers).HasForeignKey(d => d.SkinTypeId);
