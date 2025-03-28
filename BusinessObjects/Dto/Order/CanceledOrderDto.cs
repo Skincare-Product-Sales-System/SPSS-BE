@@ -12,5 +12,4 @@
         public decimal RefundRate { get; set; }
         public decimal RefundAmount { get; set; }
     }
-
 }

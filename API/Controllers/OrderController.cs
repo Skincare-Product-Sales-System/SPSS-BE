@@ -15,6 +15,26 @@ namespace API.Controllers
         private readonly IOrderService _orderService;
 
         public OrderController(IOrderService orderService) => _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
+
+        [CustomAuthorize("Manager")]
+        [HttpGet("canceled-orders")]
+        public async Task<IActionResult> GetCanceledOrders()
+        {
+            try
+            {
+                // Retrieve all canceled orders
+                var canceledOrders = await _orderService.GetCanceledOrdersAsync();
+                return Ok(ApiResponse<List<CanceledOrderDto>>.SuccessResponse(canceledOrders));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<List<CanceledOrderDto>>.FailureResponse(
+                    "Failed to retrieve canceled orders",
+                    new List<string> { ex.Message }
+                ));
+            }
+        }
+
         [CustomAuthorize("Customer")]
         [HttpGet("user")]
         public async Task<IActionResult> GetOrdersByUserId(
@@ -45,31 +65,6 @@ namespace API.Controllers
                 return BadRequest(ApiResponse<PagedResponse<OrderDto>>.FailureResponse("Failed to retrieve orders", new List<string> { ex.Message }));
             }
         }
-
-        [CustomAuthorize("Manager")]
-        [HttpGet("canceled-orders")]
-        public async Task<IActionResult> GetCanceledOrders(
-        [Range(1, int.MaxValue)] int pageNumber = 1,
-        [Range(1, 100)] int pageSize = 10)
-        {
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<PagedResponse<CanceledOrderDto>>.FailureResponse("Invalid pagination parameters", errors));
-            }
-
-            try
-            {
-                // Retrieve canceled orders
-                var pagedData = await _orderService.GetCanceledOrdersAsync(pageNumber, pageSize);
-                return Ok(ApiResponse<PagedResponse<CanceledOrderDto>>.SuccessResponse(pagedData));
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ApiResponse<PagedResponse<CanceledOrderDto>>.FailureResponse("Failed to retrieve canceled orders", new List<string> { ex.Message }));
-            }
-        }
-
 
         [HttpGet("total-orders")]
         public async Task<IActionResult> GetTotalOrdersByUserId()
@@ -112,7 +107,7 @@ namespace API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPaged(
             [Range(1, int.MaxValue)] int pageNumber = 1,
-            [Range(1, 100)] int pageSize = 10)
+            [Range(1, 500)] int pageSize = 10)
         {
             if (!ModelState.IsValid)
             {
