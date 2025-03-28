@@ -79,7 +79,7 @@ namespace Services.Implementation
             if (paymentMethod == null)
                 throw new KeyNotFoundException($"Payment method with ID {id} not found or has been deleted.");
 
-            _unitOfWork.PaymentMethods.Update(paymentMethod); // Soft delete via update
+            _unitOfWork.PaymentMethods.Delete(paymentMethod);
             await _unitOfWork.SaveChangesAsync();
         }
     }
