@@ -25,6 +25,8 @@ using BusinessObjects.Dto.ProductForSkinType;
 using BusinessObjects.Dto.QuizSet;
 using BusinessObjects.Dto.QuizResult;
 using BusinessObjects.Dto.Country;
+using BusinessObjects.Dto.QuizOption;
+using BusinessObjects.Dto.QuizQuestion;
 using BusinessObjects.Dto.Voucher;
 
 namespace API.Extensions;
@@ -379,6 +381,8 @@ public class MappingProfile : Profile
 
         #region QuizSet
         CreateMap<QuizSet, QuizSetDto>();
+        CreateMap<QuizSetForCreationDto, QuizSet>();
+        CreateMap<QuizSetForUpdateDto, QuizSet>();
         #endregion
 
         #region QuizResult
@@ -387,6 +391,18 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.SkinType.Description));
         #endregion
 
+        #region QuizOption
+        CreateMap<QuizOption, QuizOptionDto>();
+        CreateMap<QuizOptionForCreationDto, QuizOption>();
+        CreateMap<QuizOptionForUpdateDto, QuizOption>();
+        #endregion
+
+        #region QuizQuestions
+        CreateMap<QuizQuestion, QuizQuestionDto>();
+        CreateMap<QuizQuestionForCreationDto, QuizQuestion>();
+        CreateMap<QuizQuestionForUpdateDto, QuizQuestion>();
+        #endregion
+      
         #region SkinType
         CreateMap<SkinType, SkinTypeWithDetailDto>();
         CreateMap<SkinTypeForCreationDto, SkinTypeWithDetailDto>();

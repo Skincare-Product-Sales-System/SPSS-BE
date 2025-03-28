@@ -12,5 +12,6 @@ namespace BusinessObjects.Dto.Brand
         public string ImageUrl { get; set; }
         public bool? IsLiked { get; set; }
         public CountryDto Country { get; set; }
+        public int CountryId { get; set; }
     }
 }

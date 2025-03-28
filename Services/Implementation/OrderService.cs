@@ -43,9 +43,15 @@ namespace Services.Implementation
                 .Include(o => o.OrderDetails)
                     .ThenInclude(od => od.ProductItem)
                         .ThenInclude(pi => pi.Reviews)
+                .Include(o => o.Voucher) // Include Voucher entity
                 .FirstOrDefaultAsync(p => p.Id == id);
             if (order == null)
                 throw new KeyNotFoundException($"Order with ID {id} not found.");
+
+            // Calculate the original order total before applying the voucher
+            decimal originalOrderTotal = order.OrderDetails.Sum(od => od.Quantity * od.Price);
+            decimal discountAmount = order.Voucher != null ? originalOrderTotal * (decimal)(order.Voucher.DiscountRate / 100) : 0;
+            decimal discountedOrderTotal = originalOrderTotal - discountAmount;
 
             // Manually map Order to OrderWithDetailDto
             var orderWithDetailDto = new OrderWithDetailDto
@@ -53,7 +59,10 @@ namespace Services.Implementation
                 Id = order.Id,
                 Status = order.Status,
                 CancelReasonId = order.CancelReasonId,
-                OrderTotal = order.OrderTotal,
+                OriginalOrderTotal = originalOrderTotal, // Add original order total
+                DiscountedOrderTotal = discountedOrderTotal, // Add discounted order total
+                VoucherCode = order.Voucher?.Code, // Add voucher code
+                DiscountAmount = discountAmount, // Add discount amount
                 CreatedTime = order.CreatedTime,
                 PaymentMethodId = order.PaymentMethodId,
                 Address = new AddressDto
@@ -634,5 +643,9 @@ namespace Services.Implementation
             _unitOfWork.Orders.Update(order); // Soft delete via update
             await _unitOfWork.SaveChangesAsync();
         }
+        
+       
     }
+    
+    
 }

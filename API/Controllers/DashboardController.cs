@@ -12,10 +12,12 @@ public class DashboardController : ControllerBase
 {
     private readonly IDashboardService _dashboardService;
     private readonly IProductService _productService;
+   
     public DashboardController(IDashboardService dashboardService, IProductService productService)
     {
         _dashboardService = dashboardService;
         _productService = productService;
+        
     }
 
     [HttpGet("total-revenue")]
@@ -64,5 +66,13 @@ public class DashboardController : ControllerBase
         var pagedData = await _productService.GetBestSellerAsync(pageNumber, pageSize);
         return Ok(ApiResponse<PagedResponse<ProductDto>>.SuccessResponse(pagedData));
     }
+    
+    [HttpGet("top-pending")]
+    public async Task<IActionResult> GetTopPendingOrders([FromQuery] int topCount = 10)
+    {
+        var orders = await _dashboardService.GetTopPendingOrdersAsync(topCount);
+        return Ok(orders);
+    }
+
 
 }

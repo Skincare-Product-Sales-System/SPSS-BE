@@ -609,124 +609,125 @@ public class ProductService : IProductService
         return result.Select(c => c.ToList());
     }
 
-    public async Task<bool> UpdateAsync(ProductForUpdateDto productDto, Guid userId, Guid productId)
+   public async Task<bool> UpdateAsync(ProductForUpdateDto productDto, Guid userId, Guid productId)
+{
+    await _unitOfWork.BeginTransactionAsync();
+
+    try
     {
-        await _unitOfWork.BeginTransactionAsync();
+        // Step 1: Retrieve the existing product
+        var existingProduct = await _unitOfWork.Products.Entities
+            .Include(p => p.ProductItems)
+            .Include(p => p.ProductImages)
+            .Include(p => p.ProductForSkinTypes)
+            .FirstOrDefaultAsync(p => p.Id == productId);
 
-        try
+        if (existingProduct == null)
         {
-            // Step 1: Retrieve the existing product
-            var existingProduct = await _unitOfWork.Products.Entities
-                .Include(p => p.ProductItems)
-                .Include(p => p.ProductImages)
-                .Include(p => p.ProductForSkinTypes)
-                .FirstOrDefaultAsync(p => p.Id == productId);
+            throw new ArgumentException("Product not found.");
+        }
 
-            if (existingProduct == null)
+        // Step 2: Update simple fields
+        if (!string.IsNullOrEmpty(productDto.Name)) existingProduct.Name = productDto.Name;
+        if (!string.IsNullOrEmpty(productDto.Description)) existingProduct.Description = productDto.Description;
+        if (productDto.BrandId.HasValue) existingProduct.BrandId = productDto.BrandId.Value;
+        if (productDto.ProductCategoryId.HasValue) existingProduct.ProductCategoryId = productDto.ProductCategoryId.Value;
+        existingProduct.Price = productDto.Price;
+        existingProduct.MarketPrice = productDto.MarketPrice;
+        existingProduct.LastUpdatedBy = userId.ToString();
+        existingProduct.LastUpdatedTime = DateTime.UtcNow;
+
+        // Step 3: Update SkinTypeIds
+        var existingSkinTypeIds = existingProduct.ProductForSkinTypes.Select(pfs => pfs.SkinTypeId).ToList();
+        var skinTypesToRemove = existingSkinTypeIds.Except(productDto.SkinTypeIds).ToList();
+        var skinTypesToAdd = productDto.SkinTypeIds.Except(existingSkinTypeIds).ToList();
+
+        foreach (var skinTypeId in skinTypesToRemove)
+        {
+            var toRemove = existingProduct.ProductForSkinTypes.FirstOrDefault(pfs => pfs.SkinTypeId == skinTypeId);
+            if (toRemove != null)
+                _unitOfWork.ProductForSkinTypes.Delete(toRemove);
+        }
+
+        foreach (var skinTypeId in skinTypesToAdd)
+        {
+            _unitOfWork.ProductForSkinTypes.Add(new ProductForSkinType
             {
-                throw new ArgumentException("Product not found.");
-            }
+                Id = Guid.NewGuid(),
+                ProductId = productId,
+                SkinTypeId = skinTypeId,
+            });
+        }
 
-            // Step 2: Update simple fields
-            if (!string.IsNullOrEmpty(productDto.Name)) existingProduct.Name = productDto.Name;
-            if (!string.IsNullOrEmpty(productDto.Description)) existingProduct.Description = productDto.Description;
-            if (productDto.BrandId.HasValue) existingProduct.BrandId = productDto.BrandId.Value;
-            if (productDto.ProductCategoryId.HasValue) existingProduct.ProductCategoryId = productDto.ProductCategoryId.Value;
-            existingProduct.Price = productDto.Price;
-            existingProduct.MarketPrice = productDto.MarketPrice;
-            existingProduct.LastUpdatedBy = userId.ToString();
-            existingProduct.LastUpdatedTime = DateTime.UtcNow;
+        // Step 4: Update ProductImages
+        var existingImageUrls = existingProduct.ProductImages.Select(pi => pi.ImageUrl).ToList();
+        var imagesToRemove = existingProduct.ProductImages.Where(pi => !productDto.ProductImageUrls.Contains(pi.ImageUrl)).ToList();
+        var imagesToAdd = productDto.ProductImageUrls.Except(existingImageUrls).ToList();
 
-            // Step 3: Update SkinTypeIds
-            var existingSkinTypeIds = existingProduct.ProductForSkinTypes.Select(pfs => pfs.SkinTypeId).ToList();
-            var skinTypesToRemove = existingSkinTypeIds.Except(productDto.SkinTypeIds).ToList();
-            var skinTypesToAdd = productDto.SkinTypeIds.Except(existingSkinTypeIds).ToList();
+        foreach (var image in imagesToRemove)
+        {
+            _unitOfWork.ProductImages.Delete(image);
+        }
 
-            foreach (var skinTypeId in skinTypesToRemove)
+        for (int i = 0; i < imagesToAdd.Count; i++)
+        {
+            _unitOfWork.ProductImages.Add(new ProductImage
             {
-                var toRemove = existingProduct.ProductForSkinTypes.FirstOrDefault(pfs => pfs.SkinTypeId == skinTypeId);
-                if (toRemove != null)
-                    _unitOfWork.ProductForSkinTypes.Delete(toRemove);
-            }
+                Id = Guid.NewGuid(),
+                ProductId = productId,
+                ImageUrl = imagesToAdd[i],
+                IsThumbnail = (i == 0 && !existingProduct.ProductImages.Any(pi => pi.IsThumbnail)),
+            });
+        }
 
-            foreach (var skinTypeId in skinTypesToAdd)
+        // Step 5: Update Variations and VariationOptions
+        if (productDto.Variations != null)
+        {
+            foreach (var variationDto in productDto.Variations)
             {
-                _unitOfWork.ProductForSkinTypes.Add(new ProductForSkinType
+                var variationExists = await _unitOfWork.Variations.Entities
+                    .AnyAsync(v => v.Id == variationDto.Id);
+                if (!variationExists)
                 {
-                    Id = Guid.NewGuid(),
-                    ProductId = productId,
-                    SkinTypeId = skinTypeId,
-                });
-            }
+                    throw new ArgumentException("Variation not found.");
+                }
 
-            // Step 4: Update ProductImages
-            var existingImageUrls = existingProduct.ProductImages.Select(pi => pi.ImageUrl).ToList();
-            var imagesToRemove = existingProduct.ProductImages.Where(pi => !productDto.ProductImageUrls.Contains(pi.ImageUrl)).ToList();
-            var imagesToAdd = productDto.ProductImageUrls.Except(existingImageUrls).ToList();
-
-            foreach (var image in imagesToRemove)
-            {
-                _unitOfWork.ProductImages.Delete(image);
-            }
-
-            for (int i = 0; i < imagesToAdd.Count; i++)
-            {
-                _unitOfWork.ProductImages.Add(new ProductImage
+                if (variationDto.VariationOptionIds != null)
                 {
-                    Id = Guid.NewGuid(),
-                    ProductId = productId,
-                    ImageUrl = imagesToAdd[i],
-                    IsThumbnail = (i == 0 && !existingProduct.ProductImages.Any(pi => pi.IsThumbnail)),
-                });
-            }
-
-            if (productDto.Variations != null)
-            {
-                foreach (var variationDto in productDto.Variations)
-                {
-
-                    var variationExists = await _unitOfWork.Variations.Entities
-                        .AnyAsync(v => v.Id == variationDto.Id);
-                    if (!variationExists)
+                    foreach (var variationOptionId in variationDto.VariationOptionIds)
                     {
-                        throw new ArgumentException("Variation not found.");
-                    }
-
-                    if (variationDto.VariationOptionIds != null)
-                    {
-                        foreach (var variationOptionId in variationDto.VariationOptionIds)
+                        var variationOptionExists = await _unitOfWork.VariationOptions.Entities
+                            .AnyAsync(vo => vo.Id == variationOptionId && vo.VariationId == variationDto.Id);
+                        if (!variationOptionExists)
                         {
-                            var variationOptionExists = await _unitOfWork.VariationOptions.Entities
-                                .AnyAsync(vo => vo.Id == variationOptionId && vo.VariationId == variationDto.Id);
-                            if (!variationOptionExists)
-                            {
-                                throw new ArgumentException("Variation Option Not Belong To Variation.");
-                            }
+                            throw new ArgumentException("Variation Option Not Belong To Variation.");
                         }
                     }
                 }
             }
-
-            if (productDto.VariationCombinations != null)
-            {
-                await UpdateVariationOptionsForProduct(existingProduct, productDto.VariationCombinations, userId);
-            }
-
-            existingProduct.LastUpdatedBy = userId.ToString();
-            existingProduct.LastUpdatedTime = DateTime.UtcNow;
-
-            // Step 7: Save Changes
-            await _unitOfWork.SaveChangesAsync();
-            await _unitOfWork.CommitTransactionAsync();
-
-            return true;
         }
-        catch (Exception)
+
+        // Step 6: Update ProductItems and ProductConfigurations
+        if (productDto.VariationCombinations != null)
         {
-            await _unitOfWork.RollbackTransactionAsync();
-            throw;
+            await UpdateVariationOptionsForProduct(existingProduct, productDto.VariationCombinations, userId);
         }
+
+        existingProduct.LastUpdatedBy = userId.ToString();
+        existingProduct.LastUpdatedTime = DateTime.UtcNow;
+
+        // Step 7: Save Changes
+        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.CommitTransactionAsync();
+
+        return true;
     }
+    catch (Exception)
+    {
+        await _unitOfWork.RollbackTransactionAsync();
+        throw;
+    }
+}
 
     public async Task UpdateVariationOptionsForProduct(Product product, List<VariationCombinationUpdateDto> variationCombinations, Guid userId)
     {
