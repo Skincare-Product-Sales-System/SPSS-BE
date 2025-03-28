@@ -15,6 +15,26 @@ namespace API.Controllers
         private readonly IOrderService _orderService;
 
         public OrderController(IOrderService orderService) => _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
+
+        [CustomAuthorize("Manager")]
+        [HttpGet("canceled-orders")]
+        public async Task<IActionResult> GetCanceledOrders()
+        {
+            try
+            {
+                // Retrieve all canceled orders
+                var canceledOrders = await _orderService.GetCanceledOrdersAsync();
+                return Ok(ApiResponse<List<CanceledOrderDto>>.SuccessResponse(canceledOrders));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<List<CanceledOrderDto>>.FailureResponse(
+                    "Failed to retrieve canceled orders",
+                    new List<string> { ex.Message }
+                ));
+            }
+        }
+
         [CustomAuthorize("Customer")]
         [HttpGet("user")]
         public async Task<IActionResult> GetOrdersByUserId(

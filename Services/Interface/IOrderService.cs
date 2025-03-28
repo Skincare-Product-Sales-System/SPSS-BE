@@ -7,6 +7,7 @@ namespace Services.Interface
     public interface IOrderService
     {
         Task<OrderWithDetailDto> GetByIdAsync(Guid id);
+        Task<List<CanceledOrderDto>> GetCanceledOrdersAsync();
         Task<PagedResponse<OrderDto>> GetOrdersByUserIdAsync(Guid userId, int pageNumber, int pageSize, string? status = null);
         Task<int> GetTotalOrdersByUserIdAsync(Guid userId);
         Task<PagedResponse<OrderDto>> GetPagedAsync(int pageNumber, int pageSize);
