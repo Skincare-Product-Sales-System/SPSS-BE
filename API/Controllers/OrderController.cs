@@ -107,7 +107,7 @@ namespace API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPaged(
             [Range(1, int.MaxValue)] int pageNumber = 1,
-            [Range(1, 100)] int pageSize = 10)
+            [Range(1, 500)] int pageSize = 10)
         {
             if (!ModelState.IsValid)
             {
