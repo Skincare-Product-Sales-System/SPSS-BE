@@ -57,8 +57,10 @@ public class BrandService : IBrandService
         {
             Id = Guid.NewGuid(),
             Name = brandForCreationDto.Name,
+            CountryId = brandForCreationDto.CountryId,
             Description = brandForCreationDto.Description,
             ImageUrl = brandForCreationDto.ImageUrl,
+            Title = brandForCreationDto.Title
         };
 
         _unitOfWork.Brands.Add(brand);
@@ -69,7 +71,10 @@ public class BrandService : IBrandService
             Id = brand.Id,
             Name = brand.Name,
             Description = brand.Description,
-            ImageUrl = brand.ImageUrl
+            ImageUrl = brand.ImageUrl,
+            Title = brand.Title,
+            CountryId = brand.CountryId
+            
         };
 
         return brandDto;
@@ -89,6 +94,8 @@ public class BrandService : IBrandService
         brand.Name = brandForUpdateDto.Name;
         brand.Description = brandForUpdateDto.Description;
         brand.ImageUrl = brandForUpdateDto.ImageUrl;
+        brand.Title = brandForUpdateDto.Title;
+        brand.CountryId = brandForUpdateDto.CountryId;
 
         _unitOfWork.Brands.Update(brand);
         await _unitOfWork.SaveChangesAsync();
@@ -99,7 +106,9 @@ public class BrandService : IBrandService
             Id = brand.Id,
             Name = brand.Name,
             Description = brand.Description,
-            ImageUrl = brand.ImageUrl
+            ImageUrl = brand.ImageUrl,
+            Title = brand.Title,
+            CountryId = brand.CountryId
         };
 
         return brandDto;
@@ -113,7 +122,7 @@ public class BrandService : IBrandService
             throw new KeyNotFoundException($"Brand with ID {id} not found.");
 
         // Save the changes
-        _unitOfWork.Brands.Update(brand);
+        _unitOfWork.Brands.Delete(brand);
         await _unitOfWork.SaveChangesAsync();
     }
 }
