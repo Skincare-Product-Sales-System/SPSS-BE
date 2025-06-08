@@ -5,9 +5,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Services.Dto.Api;
 using Services.Interface;
+using Services.Response;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace API.Controllers
@@ -53,15 +56,15 @@ namespace API.Controllers
                     return BadRequest(ApiResponse<object>.FailureResponse("Kích th??c t?p quá l?n, t?i ?a 10MB"));
                 }
 
-                // Get user ID from context (if needed)
+                // Get user ID from context
                 Guid? userId = HttpContext.Items["UserId"] as Guid?;
                 if (userId == null)
                 {
                     return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
                 }
 
-                // Process the image and analyze skin
-                var result = await _skinAnalysisService.AnalyzeSkinAsync(faceImage);
+                // Process the image and analyze skin - now passing the user ID
+                var result = await _skinAnalysisService.AnalyzeSkinAsync(faceImage, userId.Value);
                 
                 // Return success response with analysis results
                 return Ok(ApiResponse<SkinAnalysisResultDto>.SuccessResponse(result, "Phân tích da thành công"));
@@ -74,6 +77,98 @@ namespace API.Controllers
                 // Return error response
                 return StatusCode(StatusCodes.Status500InternalServerError, 
                     ApiResponse<object>.FailureResponse("L?i khi phân tích da", new List<string> { ex.Message }));
+            }
+        }
+
+        [CustomAuthorize("Customer")]
+        [HttpGet("{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<SkinAnalysisResultDto>))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(ApiResponse<object>))]
+        public async Task<IActionResult> GetSkinAnalysisById(Guid id)
+        {
+            try
+            {
+                var result = await _skinAnalysisService.GetSkinAnalysisResultByIdAsync(id);
+                return Ok(ApiResponse<SkinAnalysisResultDto>.SuccessResponse(result));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse<object>.FailureResponse("L?i khi l?y k?t qu? phân tích da", new List<string> { ex.Message }));
+            }
+        }
+
+        [CustomAuthorize("Customer")]
+        [HttpGet("user")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<SkinAnalysisResultDto>>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(ApiResponse<object>))]
+        public async Task<IActionResult> GetSkinAnalysisByUserId()
+        {
+            try
+            {
+                // Get user ID from context
+                Guid? userId = HttpContext.Items["UserId"] as Guid?;
+                if (userId == null)
+                {
+                    return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+                }
+
+                var results = await _skinAnalysisService.GetSkinAnalysisResultsByUserIdAsync(userId.Value);
+                return Ok(ApiResponse<List<SkinAnalysisResultDto>>.SuccessResponse(results));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse<object>.FailureResponse("L?i khi l?y l?ch s? phân tích da", new List<string> { ex.Message }));
+            }
+        }
+
+        [CustomAuthorize("Customer")]
+        [HttpGet("user/paged")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PagedResponse<SkinAnalysisResultDto>>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(ApiResponse<object>))]
+        public async Task<IActionResult> GetPagedSkinAnalysisByUserId(
+            [Range(1, int.MaxValue)] int pageNumber = 1,
+            [Range(1, 100)] int pageSize = 10)
+        {
+            try
+            {
+                // Get user ID from context
+                Guid? userId = HttpContext.Items["UserId"] as Guid?;
+                if (userId == null)
+                {
+                    return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
+                }
+
+                var results = await _skinAnalysisService.GetSkinAnalysisResultsByUserIdAsync(userId.Value);
+                
+                // Manual paging (ideally this would be in the service layer with proper DB queries)
+                var totalCount = results.Count;
+                var skip = (pageNumber - 1) * pageSize;
+                var pagedItems = results
+                    .Skip(skip)
+                    .Take(pageSize)
+                    .ToList();
+
+                var pagedResponse = new PagedResponse<SkinAnalysisResultDto>
+                {
+                    Items = pagedItems,
+                    TotalCount = totalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
+
+                return Ok(ApiResponse<PagedResponse<SkinAnalysisResultDto>>.SuccessResponse(pagedResponse));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse<object>.FailureResponse("L?i khi l?y l?ch s? phân tích da", new List<string> { ex.Message }));
             }
         }
     }

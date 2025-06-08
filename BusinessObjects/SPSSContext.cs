@@ -9,6 +9,8 @@ namespace BusinessObjects.Models;
 
 public partial class SPSSContext : DbContext
 {
+    private readonly IConfiguration _configuration;
+
     public SPSSContext()
     {
     }
@@ -16,6 +18,12 @@ public partial class SPSSContext : DbContext
     public SPSSContext(DbContextOptions<SPSSContext> options)
         : base(options)
     {
+    }
+
+    public SPSSContext(DbContextOptions<SPSSContext> options, IConfiguration configuration)
+        : base(options)
+    {
+        _configuration = configuration;
     }
 
     public virtual DbSet<User> Users { get; set; }
@@ -83,23 +91,28 @@ public partial class SPSSContext : DbContext
 
     public virtual DbSet<SkinTypeRoutineStep> SkinTypeRoutineSteps { get; set; }
 
+    public virtual DbSet<SkinAnalysisResult> SkinAnalysisResults { get; set; }
 
-    // protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    // {
-    //
-    //     var builder = new ConfigurationBuilder()
-    //         .SetBasePath(Directory.GetCurrentDirectory())
-    //         .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-    //     optionsBuilder.EnableSensitiveDataLogging();
-    //     IConfigurationRoot configurationRoot = builder.Build();
-    //     optionsBuilder.UseSqlServer(configurationRoot.GetConnectionString("SPSS"));
-    // }
+    public virtual DbSet<SkinAnalysisIssue> SkinAnalysisIssues { get; set; }
+
+    public virtual DbSet<SkinAnalysisRecommendation> SkinAnalysisRecommendations { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
         {
-            optionsBuilder.UseSqlServer("Server=LUAN-TRAN\\SQLEXPRESS;Database=SPSS;User ID=sa;Password=12345;TrustServerCertificate=True");
+            // Attempt to use configuration if available
+            if (_configuration != null)
+            {
+                string connectionString = _configuration.GetConnectionString("SPSS");
+                optionsBuilder.UseSqlServer(connectionString);
+            }
+            else
+            {
+                // Fallback connection string for migrations and design-time
+                optionsBuilder.UseSqlServer("Server=(local);Database=SPSS;User ID=sa;Password=123456789;TrustServerCertificate=True");
+            }
+            
             optionsBuilder.EnableSensitiveDataLogging();
         }
     }
@@ -629,6 +642,57 @@ public partial class SPSSContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.CategoryId)
                   .OnDelete(DeleteBehavior.Restrict); // Không xóa Category nếu có bước liên quan
+        });
+
+        modelBuilder.Entity<SkinAnalysisResult>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.ImageUrl).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.FullAnalysisJson).HasColumnType("nvarchar(max)");
+            
+            // Foreign keys
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+                
+            entity.HasOne(e => e.SkinType)
+                .WithMany()
+                .HasForeignKey(e => e.SkinTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+        
+        modelBuilder.Entity<SkinAnalysisIssue>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.IssueName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            
+            // Foreign key
+            entity.HasOne(e => e.SkinAnalysisResult)
+                .WithMany(e => e.SkinAnalysisIssues)
+                .HasForeignKey(e => e.SkinAnalysisResultId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        
+        modelBuilder.Entity<SkinAnalysisRecommendation>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.RecommendationReason).HasMaxLength(1000);
+            
+            // Foreign keys
+            entity.HasOne(e => e.SkinAnalysisResult)
+                .WithMany(e => e.SkinAnalysisRecommendations)
+                .HasForeignKey(e => e.SkinAnalysisResultId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            entity.HasOne(e => e.Product)
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 

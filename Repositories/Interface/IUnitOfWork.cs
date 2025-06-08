@@ -14,7 +14,7 @@ public interface IUnitOfWork : IDisposable
     IVariationOptionRepository VariationOptions { get; }
     ISkinTypeRoutineStepRepository SkinTypeRoutineSteps { get; }
     IProductStatusRepository ProductStatuses { get; }
-    IProductCategoryRepository  ProductCategories { get; }
+    IProductCategoryRepository ProductCategories { get; }
     IUserRepository Users { get; }
     IRoleRepository Roles { get; }
     IRefreshTokenRepository RefreshTokens { get; }
@@ -35,9 +35,9 @@ public interface IUnitOfWork : IDisposable
     IQuizOptionRepository QuizOptions { get; }
     IQuizResultRepository QuizResults { get; }
     ICountryRepository Countries { get; }
- 
-
-
+    ISkinAnalysisResultRepository SkinAnalysisResults { get; }
+    ISkinAnalysisIssueRepository SkinAnalysisIssues { get; }
+    ISkinAnalysisRecommendationRepository SkinAnalysisRecommendations { get; }
 
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();

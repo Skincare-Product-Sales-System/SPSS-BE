@@ -160,7 +160,14 @@ public static class ServiceExtensions
         services.AddDbContext<SPSSContext>(options =>
         {
             options.UseSqlServer(configuration.GetConnectionString("SPSS"));
+        }, ServiceLifetime.Scoped);
+        
+        // Register IConfiguration for the DbContext to use
+        services.AddScoped<SPSSContext>((provider) => {
+            var options = provider.GetRequiredService<DbContextOptions<SPSSContext>>();
+            return new SPSSContext(options, configuration);
         });
+        
         return services;
     }
     

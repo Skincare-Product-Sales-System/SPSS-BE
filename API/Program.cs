@@ -23,6 +23,7 @@ builder.Host.UseSerilog((context, services, configuration) =>
             fileSizeLimitBytes: 10485760,
             retainedFileCountLimit: 31);
 });
+
 // In your Program.cs or Startup.cs
 builder.Services.AddCors(options =>
 {
@@ -47,10 +48,20 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<MappingProfile>();  // Add your mappings profile here
 }, typeof(Program).Assembly);
-builder.Services.AddDbContext<SPSSContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("SPSS"))
-        .EnableSensitiveDataLogging()); // EnableSensitiveDataLogging nếu cần thiết
+
 var app = builder.Build();
+
+// Apply migrations at startup
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<SPSSContext>();
+    
+    // Apply pending migrations
+    Console.WriteLine("Applying pending migrations...");
+    dbContext.Database.Migrate();
+    Console.WriteLine("Migrations applied successfully!");
+}
+
 if (app.Environment.IsDevelopment() || true) // Luôn bật Swagger
 {
     app.UseSwagger();

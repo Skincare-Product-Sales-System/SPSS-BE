@@ -43,6 +43,9 @@ public class UnitOfWork : IUnitOfWork
     private IAccountRepository _accountRepository;
     private IBlogSectionRepository _blogSectionRepository;
     private ISkinTypeRoutineStepRepository _skinTypeRoutineStepRepository;
+    private ISkinAnalysisResultRepository _skinAnalysisResultRepository;
+    private ISkinAnalysisIssueRepository _skinAnalysisIssueRepository;
+    private ISkinAnalysisRecommendationRepository _skinAnalysisRecommendationRepository;
  
     public UnitOfWork(SPSSContext context) =>  _context = context;
 
@@ -79,7 +82,11 @@ public class UnitOfWork : IUnitOfWork
     public IQuizQuestionRepository QuizQuestions => _quizQuestionRepository ??= new QuizQuestionRepository(_context);
     public IQuizOptionRepository QuizOptions => _quizOptionRepository ??= new QuizOptionRepository(_context);
     public IQuizResultRepository QuizResults => _quizResultRepository ??= new QuizResultRepository(_context);
-    public ICountryRepository Countries => _countryRepository ??= new CountryRepository(_context); 
+    public ICountryRepository Countries => _countryRepository ??= new CountryRepository(_context);
+    public ISkinAnalysisResultRepository SkinAnalysisResults => _skinAnalysisResultRepository ??= new SkinAnalysisResultRepository(_context);
+    public ISkinAnalysisIssueRepository SkinAnalysisIssues => _skinAnalysisIssueRepository ??= new SkinAnalysisIssueRepository(_context);
+    public ISkinAnalysisRecommendationRepository SkinAnalysisRecommendations => _skinAnalysisRecommendationRepository ??= new SkinAnalysisRecommendationRepository(_context);
+
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 
     public async Task BeginTransactionAsync()

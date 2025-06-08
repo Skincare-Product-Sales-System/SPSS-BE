@@ -1,8 +1,10 @@
 ﻿using BusinessObjects.Dto.Product;
 using BusinessObjects.Dto.SkinAnalysis;
+using BusinessObjects.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Repositories.Interface;
 using Services.Interface;
@@ -38,8 +40,9 @@ namespace Services.Implementation
         /// Analyzes skin from a face image and returns comprehensive skin analysis results
         /// </summary>
         /// <param name="faceImage">The facial image for analysis</param>
+        /// <param name="userId">The ID of the user requesting the analysis</param>
         /// <returns>Comprehensive skin analysis results including condition, issues, and product recommendations</returns>
-        public async Task<SkinAnalysisResultDto> AnalyzeSkinAsync(IFormFile faceImage)
+        public async Task<SkinAnalysisResultDto> AnalyzeSkinAsync(IFormFile faceImage, Guid userId)
         {
             try
             {
@@ -89,6 +92,10 @@ namespace Services.Implementation
                     SkinCareAdvice = skinCareAdvice
                 };
 
+                // 10. Save analysis results to database
+                await SaveSkinAnalysisResultAsync(result, userId, skinType.Id, enhancedAnalysis);
+                _logger?.LogInformation("Saved skin analysis results to database");
+
                 _logger?.LogInformation("Skin analysis completed successfully");
                 return result;
             }
@@ -96,6 +103,88 @@ namespace Services.Implementation
             {
                 _logger?.LogError(ex, "Error during skin analysis: {ErrorMessage}", ex.Message);
                 throw new Exception("Skin analysis failed. Please try again later.", ex);
+            }
+        }
+
+        /// <summary>
+        /// Saves skin analysis results to the database
+        /// </summary>
+        private async Task SaveSkinAnalysisResultAsync(SkinAnalysisResultDto result, Guid userId, Guid skinTypeId, EnhancedSkinAnalysisDto enhancedAnalysis)
+        {
+            try
+            {
+                // Create the main skin analysis result entity
+                var skinAnalysisResult = new SkinAnalysisResult
+                {
+                    Id = Guid.NewGuid(),
+                    ImageUrl = result.ImageUrl,
+                    UserId = userId,
+                    SkinTypeId = skinTypeId,
+                    
+                    // Skin condition scores
+                    AcneScore = result.SkinCondition.AcneScore,
+                    WrinkleScore = result.SkinCondition.WrinkleScore,
+                    DarkCircleScore = result.SkinCondition.DarkCircleScore,
+                    DarkSpotScore = result.SkinCondition.DarkSpotScore,
+                    HealthScore = result.SkinCondition.HealthScore,
+                    
+                    // Enhanced analysis data
+                    OilinessLevel = enhancedAnalysis.OilinessLevel,
+                    DrynessLevel = enhancedAnalysis.DrynessLevel,
+                    SensitivityLevel = enhancedAnalysis.SensitivityLevel,
+                    
+                    // Store full result as JSON
+                    FullAnalysisJson = JsonConvert.SerializeObject(result),
+                    
+                    // Audit fields
+                    CreatedBy = userId.ToString(),
+                    CreatedTime = DateTimeOffset.UtcNow,
+                    LastUpdatedBy = userId.ToString(),
+                    LastUpdatedTime = DateTimeOffset.UtcNow,
+                    IsDeleted = false
+                };
+
+                // Add the main entity
+                _unitOfWork.SkinAnalysisResults.Add(skinAnalysisResult);
+
+                // Add skin issues
+                foreach (var issue in result.SkinIssues)
+                {
+                    var skinIssueEntity = new SkinAnalysisIssue
+                    {
+                        Id = Guid.NewGuid(),
+                        SkinAnalysisResultId = skinAnalysisResult.Id,
+                        IssueName = issue.IssueName,
+                        Description = issue.Description,
+                        Severity = issue.Severity
+                    };
+                    
+                    _unitOfWork.SkinAnalysisIssues.Add(skinIssueEntity);
+                }
+
+                // Add product recommendations
+                foreach (var recommendation in result.RecommendedProducts)
+                {
+                    var recommendationEntity = new SkinAnalysisRecommendation
+                    {
+                        Id = Guid.NewGuid(),
+                        SkinAnalysisResultId = skinAnalysisResult.Id,
+                        ProductId = recommendation.ProductId,
+                        RecommendationReason = recommendation.RecommendationReason,
+                        PriorityScore = recommendation.PriorityScore
+                    };
+                    
+                    _unitOfWork.SkinAnalysisRecommendations.Add(recommendationEntity);
+                }
+
+                // Save all changes
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error saving skin analysis results: {ErrorMessage}", ex.Message);
+                // We don't want to fail the whole analysis if saving to DB fails
+                // So just log the error but don't rethrow
             }
         }
 
@@ -578,6 +667,109 @@ namespace Services.Implementation
                 _logger?.LogError(ex, "Error generating skincare advice: {ErrorMessage}", ex.Message);
                 return new List<string> { "Duy trì quy trình chăm sóc da cơ bản: làm sạch, dưỡng ẩm, chống nắng" };
             }
+        }
+
+        /// <summary>
+        /// Retrieves a specific skin analysis result by ID
+        /// </summary>
+        public async Task<SkinAnalysisResultDto> GetSkinAnalysisResultByIdAsync(Guid id)
+        {
+            var result = await _unitOfWork.SkinAnalysisResults.Entities
+                .Include(sar => sar.SkinType)
+                .Include(sar => sar.User)
+                .Include(sar => sar.SkinAnalysisIssues)
+                .Include(sar => sar.SkinAnalysisRecommendations)
+                    .ThenInclude(sr => sr.Product)
+                        .ThenInclude(p => p.ProductImages)
+                .FirstOrDefaultAsync(sar => sar.Id == id && !sar.IsDeleted);
+
+            if (result == null)
+            {
+                throw new KeyNotFoundException($"Skin analysis result with ID {id} not found");
+            }
+
+            // If we have the full JSON result stored, we can deserialize it directly
+            if (!string.IsNullOrEmpty(result.FullAnalysisJson))
+            {
+                try
+                {
+                    return JsonConvert.DeserializeObject<SkinAnalysisResultDto>(result.FullAnalysisJson);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Error deserializing stored skin analysis JSON: {ErrorMessage}", ex.Message);
+                    // Continue with manual mapping below if deserialization fails
+                }
+            }
+
+            // Otherwise, manually construct the DTO from the database entities
+            var skinCondition = new SkinConditionDto
+            {
+                AcneScore = result.AcneScore,
+                WrinkleScore = result.WrinkleScore,
+                DarkCircleScore = result.DarkCircleScore,
+                DarkSpotScore = result.DarkSpotScore,
+                HealthScore = result.HealthScore,
+                SkinType = result.SkinType?.Name
+            };
+
+            var skinIssues = result.SkinAnalysisIssues.Select(issue => new SkinIssueDto
+            {
+                IssueName = issue.IssueName,
+                Description = issue.Description,
+                Severity = issue.Severity
+            }).ToList();
+
+            var recommendedProducts = result.SkinAnalysisRecommendations.Select(rec => new ProductRecommendationDto
+            {
+                ProductId = rec.ProductId,
+                Name = rec.Product?.Name,
+                Description = rec.Product?.Description,
+                ImageUrl = rec.Product?.ProductImages.FirstOrDefault(pi => pi.IsThumbnail)?.ImageUrl ?? "",
+                Price = rec.Product?.Price ?? 0,
+                RecommendationReason = rec.RecommendationReason,
+                PriorityScore = rec.PriorityScore
+            }).ToList();
+
+            return new SkinAnalysisResultDto
+            {
+                ImageUrl = result.ImageUrl,
+                SkinCondition = skinCondition,
+                SkinIssues = skinIssues,
+                RecommendedProducts = recommendedProducts,
+                // Since we don't store skin care advice separately, we'll return an empty list
+                SkinCareAdvice = new List<string>()
+            };
+        }
+
+        /// <summary>
+        /// Retrieves all skin analysis results for a specific user
+        /// </summary>
+        public async Task<List<SkinAnalysisResultDto>> GetSkinAnalysisResultsByUserIdAsync(Guid userId)
+        {
+            var results = await _unitOfWork.SkinAnalysisResults.Entities
+                .Include(sar => sar.SkinType)
+                .Where(sar => sar.UserId == userId && !sar.IsDeleted)
+                .OrderByDescending(sar => sar.CreatedTime)
+                .ToListAsync();
+
+            var resultDtos = new List<SkinAnalysisResultDto>();
+
+            foreach (var result in results)
+            {
+                try
+                {
+                    var dto = await GetSkinAnalysisResultByIdAsync(result.Id);
+                    resultDtos.Add(dto);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Error retrieving skin analysis result {ResultId}: {ErrorMessage}", result.Id, ex.Message);
+                    // Continue with next result if one fails
+                }
+            }
+
+            return resultDtos;
         }
     }
 }
