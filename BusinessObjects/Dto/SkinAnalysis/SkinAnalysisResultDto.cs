@@ -37,5 +37,6 @@ namespace BusinessObjects.Dto.SkinAnalysis
         public string ImageUrl { get; set; }
         public decimal Price { get; set; }
         public string RecommendationReason { get; set; }
+        public int PriorityScore { get; set; } // 1-10 scale, higher means more recommended
     }
 }

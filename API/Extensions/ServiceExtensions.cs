@@ -58,6 +58,9 @@ public static class ServiceExtensions
         // Add Face++ skin analysis services
         services.AddScoped<FacePlusPlusClient>();
         services.AddScoped<ISkinAnalysisService, SkinAnalysisService>();
+
+        // Add TensorFlow skin analysis service
+        services.AddScoped<TensorFlowSkinAnalysisService>();
         
         return services;
     }
