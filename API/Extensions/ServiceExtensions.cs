@@ -54,6 +54,11 @@ public static class ServiceExtensions
         services.AddScoped<IQuizQuestionService, QuizQuestionService>();
         services.AddScoped<IVoucherService, VoucherService>();
         services.AddScoped<IDashboardService, DashboardService>();
+
+        // Add Face++ skin analysis services
+        services.AddScoped<FacePlusPlusClient>();
+        services.AddScoped<ISkinAnalysisService, SkinAnalysisService>();
+        
         return services;
     }
 
