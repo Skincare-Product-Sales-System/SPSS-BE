@@ -47,14 +47,81 @@ namespace Services.Implementation
             try
             {
                 // Step 1: Detect face to get face_token
-                string faceToken = await DetectFaceAsync(faceImage);
+                var detectResponse = await DetectFaceWithDetailsAsync(faceImage);
 
-                // Step 2: Analyze face using the face_token
-                return await AnalyzeFaceAsync(faceToken);
+                // Step 2: Instead of calling the analyze API, we'll use the detection results
+                // Comment out the original analyze face call:
+                // return await AnalyzeFaceAsync(faceToken);
+
+                // Return the detection results directly
+                return detectResponse;
             }
             catch (Exception ex)
             {
                 throw new Exception($"Skin analysis process failed: {ex.Message}", ex);
+            }
+        }
+
+        private async Task<Dictionary<string, object>> DetectFaceWithDetailsAsync(IFormFile faceImage)
+        {
+            try
+            {
+                // Thử cách khác để gửi tham số
+                var queryString = new Dictionary<string, string>
+                {
+                    { "api_key", _apiKey },
+                    { "api_secret", _apiSecret },
+                    // Request skin status directly in the detect call
+                    { "return_attributes", "gender,age,skinstatus" }
+                };
+
+                var detectUrlWithQuery = $"{_detectUrl}?{string.Join("&", queryString.Select(kv => $"{kv.Key}={kv.Value}"))}";
+                Console.WriteLine($"URL with query: {detectUrlWithQuery}");
+
+                // Tạo MultipartFormDataContent chỉ cho file
+                using var formData = new MultipartFormDataContent();
+
+                // Add image file
+                using var imageStream = faceImage.OpenReadStream();
+                using var memoryStream = new MemoryStream();
+                await imageStream.CopyToAsync(memoryStream);
+
+                var imageContent = new ByteArrayContent(memoryStream.ToArray());
+                imageContent.Headers.ContentType = MediaTypeHeaderValue.Parse("image/jpeg");
+                formData.Add(imageContent, "image_file", faceImage.FileName);
+
+                Console.WriteLine("Sending detect request with URL parameters...");
+                var response = await _httpClient.PostAsync(detectUrlWithQuery, formData);
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Detect response: {jsonResponse}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorObj = JObject.Parse(jsonResponse);
+                    string errorMsg = errorObj["error_message"]?.ToString() ?? "Unknown error";
+                    throw new HttpRequestException($"Face detection failed: {errorMsg}");
+                }
+
+                // Parse the response and check if we have faces
+                var responseObj = JObject.Parse(jsonResponse);
+                var faces = responseObj["faces"] as JArray;
+
+                if (faces == null || !faces.Any())
+                {
+                    throw new Exception("No face detected in the image");
+                }
+
+                // Extract face token for logging purposes
+                string faceToken = faces[0]["face_token"].ToString();
+                Console.WriteLine($"Face token: {faceToken}");
+
+                // Return the complete detection result as a dictionary
+                return JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonResponse);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in DetectFaceWithDetailsAsync: {ex.Message}");
+                throw;
             }
         }
 
