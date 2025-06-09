@@ -9,6 +9,7 @@ namespace BusinessObjects.Dto.SkinAnalysis
         public SkinConditionDto SkinCondition { get; set; }
         public List<SkinIssueDto> SkinIssues { get; set; }
         public List<ProductRecommendationDto> RecommendedProducts { get; set; }
+        public List<SkincareRoutineStepDto> RoutineSteps { get; set; } = new List<SkincareRoutineStepDto>();
         public List<string> SkinCareAdvice { get; set; }
     }
 

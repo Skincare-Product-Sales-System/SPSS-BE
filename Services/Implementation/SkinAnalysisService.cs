@@ -75,7 +75,8 @@ namespace Services.Implementation
                 _logger?.LogInformation("Enhanced skin issues with AI analysis. Found {IssueCount} issues", skinIssues.Count);
 
                 // 7. Get product recommendations based on enhanced skin analysis
-                var recommendedProducts = await GetEnhancedProductRecommendationsAsync(skinType.Id, skinIssues, enhancedAnalysis);
+                var (recommendedProducts, routineSteps) =
+                await GetEnhancedProductRecommendationsAsync(skinType.Id, skinIssues, enhancedAnalysis);
                 _logger?.LogInformation("Generated {RecommendationCount} product recommendations", recommendedProducts.Count);
 
                 // 8. Generate AI-enhanced skincare advice
@@ -89,6 +90,7 @@ namespace Services.Implementation
                     SkinCondition = skinCondition,
                     SkinIssues = skinIssues,
                     RecommendedProducts = recommendedProducts,
+                    RoutineSteps = routineSteps,
                     SkinCareAdvice = skinCareAdvice
                 };
 
@@ -415,9 +417,11 @@ namespace Services.Implementation
         }
 
         /// <summary>
-        /// Gets enhanced product recommendations based on skin type, issues, and AI analysis
+        /// Gets enhanced product recommendations based on skin type, issues, and AI analysis,
+        /// organized by skincare routine steps
         /// </summary>
-        private async Task<List<ProductRecommendationDto>> GetEnhancedProductRecommendationsAsync(Guid skinTypeId, List<SkinIssueDto> skinIssues, EnhancedSkinAnalysisDto enhancedAnalysis)
+        private async Task<(List<ProductRecommendationDto> AllProducts, List<SkincareRoutineStepDto> RoutineSteps)>
+            GetEnhancedProductRecommendationsAsync(Guid skinTypeId, List<SkinIssueDto> skinIssues, EnhancedSkinAnalysisDto enhancedAnalysis)
         {
             try
             {
@@ -434,7 +438,7 @@ namespace Services.Implementation
 
                 if (skinTypeProducts == null || !skinTypeProducts.Any())
                 {
-                    return new List<ProductRecommendationDto>();
+                    return (new List<ProductRecommendationDto>(), new List<SkincareRoutineStepDto>());
                 }
 
                 var recommendations = new List<ProductRecommendationDto>();
@@ -474,7 +478,7 @@ namespace Services.Implementation
                         }
                     }
 
-                    // Kiểm tra thành phần sản phẩm (giả định có trường Ingredients)
+                    // Kiểm tra thành phần sản phẩm
                     if (!string.IsNullOrEmpty(product.Description))
                     {
                         // Tăng điểm ưu tiên nếu sản phẩm chứa thành phần được khuyến nghị
@@ -509,24 +513,95 @@ namespace Services.Implementation
                         ImageUrl = product.ProductImages.FirstOrDefault(pi => pi.IsThumbnail)?.ImageUrl ?? "",
                         Price = product.Price,
                         RecommendationReason = reason,
-                        PriorityScore = priorityScore // Thêm trường này vào DTO
+                        PriorityScore = priorityScore
                     });
                 }
 
-                // Sắp xếp sản phẩm theo điểm ưu tiên và chỉ lấy 10 sản phẩm có điểm cao nhất
-                return recommendations
-                    .Where(r => r.PriorityScore >= 0) // Loại bỏ sản phẩm có thành phần nên tránh
+                // Lọc sản phẩm có điểm dương và sắp xếp theo điểm ưu tiên
+                var filteredRecommendations = recommendations
+                    .Where(r => r.PriorityScore >= 0)
                     .OrderByDescending(r => r.PriorityScore)
                     .Take(10)
                     .ToList();
+
+                // Lấy các bước chăm sóc da theo loại da
+                var routineSteps = await _unitOfWork.SkinTypeRoutineSteps.Entities
+                    .Include(s => s.Category)
+                    .Where(s => s.SkinTypeId == skinTypeId)
+                    .OrderBy(s => s.Order)
+                    .ToListAsync();
+
+                // Tạo cấu trúc các bước chăm sóc da kèm sản phẩm gợi ý
+                var routineStepsDto = new List<SkincareRoutineStepDto>();
+
+                if (routineSteps.Any())
+                {
+                    // Nếu có các bước routine được định nghĩa sẵn, sử dụng chúng
+                    foreach (var step in routineSteps)
+                    {
+                        var stepDto = new SkincareRoutineStepDto
+                        {
+                            StepName = step.StepName,
+                            Instruction = step.Instruction,
+                            Order = step.Order,
+                            Products = filteredRecommendations
+                                .Where(p =>
+                                    // Lọc sản phẩm theo danh mục phù hợp với bước chăm sóc
+                                    skinTypeProducts
+                                        .FirstOrDefault(sp => sp.Id == p.ProductId)?.ProductCategoryId == step.CategoryId)
+                                .OrderByDescending(p => p.PriorityScore)
+                                .ToList()
+                        };
+
+                        routineStepsDto.Add(stepDto);
+                    }
+                }
+                else
+                {
+                    // Nếu không có routine được định nghĩa, tạo một bộ cơ bản dựa trên các danh mục phổ biến
+                    var defaultSteps = new[]
+                    {
+                new { Name = "Sữa rửa mặt", Order = 1, Instruction = "Rửa mặt với sữa rửa mặt phù hợp loại da", Categories = new[] { "cleanser", "làm sạch", "rửa mặt" } },
+                new { Name = "Toner", Order = 2, Instruction = "Cân bằng độ pH với toner", Categories = new[] { "toner", "nước hoa hồng" } },
+                new { Name = "Serum/Điều trị", Order = 3, Instruction = "Thoa serum điều trị các vấn đề da cụ thể", Categories = new[] { "serum", "điều trị", "treatment", "essence" } },
+                new { Name = "Kem dưỡng ẩm", Order = 4, Instruction = "Dưỡng ẩm để giữ nước cho da", Categories = new[] { "moisturizer", "kem dưỡng", "dưỡng ẩm" } },
+                new { Name = "Kem chống nắng", Order = 5, Instruction = "Bảo vệ da khỏi tia UV (chỉ sử dụng ban ngày)", Categories = new[] { "sunscreen", "chống nắng", "spf" } }
+            };
+
+                    foreach (var step in defaultSteps)
+                    {
+                        var stepProducts = filteredRecommendations
+                            .Where(p => {
+                                var product = skinTypeProducts.FirstOrDefault(sp => sp.Id == p.ProductId);
+                                if (product == null) return false;
+
+                                var categoryName = product.ProductCategory?.CategoryName?.ToLower() ?? "";
+                                return step.Categories.Any(c => categoryName.Contains(c));
+                            })
+                            .OrderByDescending(p => p.PriorityScore)
+                            .ToList();
+
+                        if (stepProducts.Any())
+                        {
+                            routineStepsDto.Add(new SkincareRoutineStepDto
+                            {
+                                StepName = step.Name,
+                                Instruction = step.Instruction,
+                                Order = step.Order,
+                                Products = stepProducts
+                            });
+                        }
+                    }
+                }
+
+                return (filteredRecommendations, routineStepsDto);
             }
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Error getting product recommendations: {ErrorMessage}", ex.Message);
-                return new List<ProductRecommendationDto>();
+                return (new List<ProductRecommendationDto>(), new List<SkincareRoutineStepDto>());
             }
         }
-
         /// <summary>
         /// Uploads image to Firebase storage and returns the URL
         /// </summary>
