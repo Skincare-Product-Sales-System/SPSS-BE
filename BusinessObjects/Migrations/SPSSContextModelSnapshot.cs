@@ -51,6 +51,9 @@ namespace BusinessObjects.Migrations
                     b.Property<DateTimeOffset?>("CreatedTime")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<string>("CustomerName")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("DeletedBy")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -70,6 +73,9 @@ namespace BusinessObjects.Migrations
 
                     b.Property<DateTimeOffset?>("LastUpdatedTime")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Postcode")
                         .IsRequired()
@@ -124,7 +130,8 @@ namespace BusinessObjects.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -138,8 +145,7 @@ namespace BusinessObjects.Migrations
 
                     b.Property<string>("Thumbnail")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -159,6 +165,7 @@ namespace BusinessObjects.Migrations
             modelBuilder.Entity("BusinessObjects.Models.BlogSection", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("BlogId")
@@ -170,22 +177,20 @@ namespace BusinessObjects.Migrations
 
                     b.Property<string>("ContentType")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Order")
                         .HasColumnType("int");
 
                     b.Property<string>("Subtitle")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("BlogId");
 
-                    b.ToTable("BlogSections", (string)null);
+                    b.ToTable("BlogSections");
                 });
 
             modelBuilder.Entity("BusinessObjects.Models.Brand", b =>
@@ -463,7 +468,7 @@ namespace BusinessObjects.Migrations
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18, 2)");
 
-                    b.Property<Guid?>("ProductCategoryId")
+                    b.Property<Guid>("ProductCategoryId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("ProductStatusId")
@@ -759,9 +764,6 @@ namespace BusinessObjects.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<Guid>("SetId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid>("SkinTypeId")
                         .HasColumnType("uniqueidentifier");
 
@@ -985,6 +987,133 @@ namespace BusinessObjects.Migrations
                     b.ToTable("Roles");
                 });
 
+            modelBuilder.Entity("BusinessObjects.Models.SkinAnalysisIssue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("IssueName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Severity")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SkinAnalysisResultId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SkinAnalysisResultId");
+
+                    b.ToTable("SkinAnalysisIssues");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.SkinAnalysisRecommendation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("PriorityScore")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RecommendationReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid>("SkinAnalysisResultId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("SkinAnalysisResultId");
+
+                    b.ToTable("SkinAnalysisRecommendations");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.SkinAnalysisResult", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AcneScore")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("CreatedTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("DarkCircleScore")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DarkSpotScore")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("DeletedTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("DrynessLevel")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FullAnalysisJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("HealthScore")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastUpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("LastUpdatedTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("OilinessLevel")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SensitivityLevel")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SkinTypeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("WrinkleScore")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SkinTypeId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("SkinAnalysisResults");
+                });
+
             modelBuilder.Entity("BusinessObjects.Models.SkinType", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1008,7 +1137,6 @@ namespace BusinessObjects.Migrations
             modelBuilder.Entity("BusinessObjects.Models.SkinTypeRoutineStep", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("CategoryId")
@@ -1016,7 +1144,8 @@ namespace BusinessObjects.Migrations
 
                     b.Property<string>("Instruction")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<int>("Order")
                         .HasColumnType("int");
@@ -1026,8 +1155,8 @@ namespace BusinessObjects.Migrations
 
                     b.Property<string>("StepName")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.HasKey("Id");
 
@@ -1035,7 +1164,7 @@ namespace BusinessObjects.Migrations
 
                     b.HasIndex("SkinTypeId");
 
-                    b.ToTable("SkinTypeRoutineSteps", (string)null);
+                    b.ToTable("SkinTypeRoutineSteps");
                 });
 
             modelBuilder.Entity("BusinessObjects.Models.StatusChange", b =>
@@ -1067,7 +1196,6 @@ namespace BusinessObjects.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AvatarUrl")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
@@ -1125,7 +1253,8 @@ namespace BusinessObjects.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("SurName")
                         .IsRequired()
@@ -1134,13 +1263,14 @@ namespace BusinessObjects.Migrations
 
                     b.Property<string>("UserName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("UserId");
 
-                    b.HasIndex("SkinTypeId");
-
                     b.HasIndex(new[] { "RoleId" }, "IX_Users_RoleId");
+
+                    b.HasIndex(new[] { "SkinTypeId" }, "IX_Users_SkinTypeId");
 
                     b.ToTable("Users");
                 });
@@ -1280,10 +1410,9 @@ namespace BusinessObjects.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("UsageLimit")
-                        .IsRequired()
+                    b.Property<int>("UsageLimit")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -1326,8 +1455,7 @@ namespace BusinessObjects.Migrations
                         .WithMany("BlogSections")
                         .HasForeignKey("BlogId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_BlogSections_Blogs");
+                        .IsRequired();
 
                     b.Navigation("Blog");
                 });
@@ -1426,7 +1554,9 @@ namespace BusinessObjects.Migrations
 
                     b.HasOne("BusinessObjects.Models.ProductCategory", "ProductCategory")
                         .WithMany("Products")
-                        .HasForeignKey("ProductCategoryId");
+                        .HasForeignKey("ProductCategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("BusinessObjects.Models.ProductStatus", "ProductStatus")
                         .WithMany("Products")
@@ -1601,12 +1731,61 @@ namespace BusinessObjects.Migrations
                     b.Navigation("Review");
                 });
 
+            modelBuilder.Entity("BusinessObjects.Models.SkinAnalysisIssue", b =>
+                {
+                    b.HasOne("BusinessObjects.Models.SkinAnalysisResult", "SkinAnalysisResult")
+                        .WithMany("SkinAnalysisIssues")
+                        .HasForeignKey("SkinAnalysisResultId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SkinAnalysisResult");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.SkinAnalysisRecommendation", b =>
+                {
+                    b.HasOne("BusinessObjects.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BusinessObjects.Models.SkinAnalysisResult", "SkinAnalysisResult")
+                        .WithMany("SkinAnalysisRecommendations")
+                        .HasForeignKey("SkinAnalysisResultId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("SkinAnalysisResult");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.SkinAnalysisResult", b =>
+                {
+                    b.HasOne("BusinessObjects.Models.SkinType", "SkinType")
+                        .WithMany()
+                        .HasForeignKey("SkinTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BusinessObjects.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("SkinType");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("BusinessObjects.Models.SkinTypeRoutineStep", b =>
                 {
                     b.HasOne("BusinessObjects.Models.ProductCategory", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("BusinessObjects.Models.SkinType", "SkinType")
@@ -1762,6 +1941,13 @@ namespace BusinessObjects.Migrations
             modelBuilder.Entity("BusinessObjects.Models.Role", b =>
                 {
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("BusinessObjects.Models.SkinAnalysisResult", b =>
+                {
+                    b.Navigation("SkinAnalysisIssues");
+
+                    b.Navigation("SkinAnalysisRecommendations");
                 });
 
             modelBuilder.Entity("BusinessObjects.Models.SkinType", b =>

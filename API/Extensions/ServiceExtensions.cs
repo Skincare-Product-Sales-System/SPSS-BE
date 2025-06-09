@@ -54,6 +54,14 @@ public static class ServiceExtensions
         services.AddScoped<IQuizQuestionService, QuizQuestionService>();
         services.AddScoped<IVoucherService, VoucherService>();
         services.AddScoped<IDashboardService, DashboardService>();
+
+        // Add Face++ skin analysis services
+        services.AddScoped<FacePlusPlusClient>();
+        services.AddScoped<ISkinAnalysisService, SkinAnalysisService>();
+
+        // Add TensorFlow skin analysis service
+        services.AddScoped<TensorFlowSkinAnalysisService>();
+        
         return services;
     }
 
@@ -152,7 +160,14 @@ public static class ServiceExtensions
         services.AddDbContext<SPSSContext>(options =>
         {
             options.UseSqlServer(configuration.GetConnectionString("SPSS"));
+        }, ServiceLifetime.Scoped);
+        
+        // Register IConfiguration for the DbContext to use
+        services.AddScoped<SPSSContext>((provider) => {
+            var options = provider.GetRequiredService<DbContextOptions<SPSSContext>>();
+            return new SPSSContext(options, configuration);
         });
+        
         return services;
     }
     
