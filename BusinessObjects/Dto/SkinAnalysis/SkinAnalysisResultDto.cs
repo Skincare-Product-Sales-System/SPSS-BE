@@ -5,12 +5,14 @@ namespace BusinessObjects.Dto.SkinAnalysis
 {
     public class SkinAnalysisResultDto
     {
+        public Guid Id { get; set; }
         public string ImageUrl { get; set; }
         public SkinConditionDto SkinCondition { get; set; }
         public List<SkinIssueDto> SkinIssues { get; set; }
         public List<ProductRecommendationDto> RecommendedProducts { get; set; }
         public List<SkincareRoutineStepDto> RoutineSteps { get; set; } = new List<SkincareRoutineStepDto>();
         public List<string> SkinCareAdvice { get; set; }
+        public DateTimeOffset? CreatedTime { get; set; }
     }
 
     public class SkinConditionDto
