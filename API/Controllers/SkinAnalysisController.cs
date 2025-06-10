@@ -71,7 +71,7 @@ namespace API.Controllers
                     ApiResponse<object>.FailureResponse("Lỗi khi tạo yêu c?u thanh toán", new List<string> { ex.Message }));
             }
         }
-        
+
         [CustomAuthorize("Customer")]
         [HttpPost("analyze-with-payment")]
         [Consumes("multipart/form-data")]
@@ -86,20 +86,20 @@ namespace API.Controllers
                 // Validate input
                 if (faceImage == null || faceImage.Length == 0)
                 {
-                    return BadRequest(ApiResponse<object>.FailureResponse("Hình ?nh khuôn m?t không ???c ?? tr?ng"));
+                    return BadRequest(ApiResponse<object>.FailureResponse("Hình ảnh khuôn mặt không được để trống"));
                 }
 
                 // Check file type
                 var fileExtension = Path.GetExtension(faceImage.FileName).ToLower();
                 if (fileExtension != ".jpg" && fileExtension != ".jpeg" && fileExtension != ".png")
                 {
-                    return BadRequest(ApiResponse<object>.FailureResponse("Ch? ch?p nh?n các ??nh d?ng ?nh: .jpg, .jpeg, .png"));
+                    return BadRequest(ApiResponse<object>.FailureResponse("Chỉ chấp nhận các định dạng ảnh: .jpg, .jpeg, .png"));
                 }
 
                 // Check file size (limit to 10MB)
                 if (faceImage.Length > 10 * 1024 * 1024)
                 {
-                    return BadRequest(ApiResponse<object>.FailureResponse("Kích th??c t?p quá l?n, t?i ?a 10MB"));
+                    return BadRequest(ApiResponse<object>.FailureResponse("Kích thước tệp quá lớn, tối đa 10MB"));
                 }
 
                 // Get user ID from context
@@ -109,19 +109,40 @@ namespace API.Controllers
                     return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
                 }
 
-                // Check payment status and proceed with analysis if approved
-                var response = await _skinAnalysisService.CheckPaymentStatusAndAnalyzeSkinAsync(faceImage, userId.Value);
-                
-                return Ok(response);
+                try
+                {
+                    // Check payment status and proceed with analysis if approved
+                    var response = await _skinAnalysisService.CheckPaymentStatusAndAnalyzeSkinAsync(faceImage, userId.Value);
+                    return Ok(response);
+                }
+                catch (Exception ex)
+                {
+                    // Kiểm tra xem lỗi có phải do không nhận diện được khuôn mặt không
+                    if (ex.Message.Contains("No face detected") ||
+                        (ex.InnerException != null && ex.InnerException.Message.Contains("No face detected")))
+                    {
+                        // Trả về Bad Request với thông báo cụ thể về lỗi khuôn mặt
+                        return BadRequest(ApiResponse<object>.FailureResponse(
+                            "Không phát hiện khuôn mặt trong ảnh. Vui lòng chọn ảnh rõ nét và đảm bảo khuôn mặt hiển thị đầy đủ."));
+                    }
+
+                    // Log lỗi gốc
+                    Console.WriteLine($"Error analyzing skin: {ex.Message}");
+
+                    // Trả về lỗi cụ thể cho client
+                    string errorMessage = ex.InnerException?.Message ?? ex.Message;
+                    return StatusCode(StatusCodes.Status500InternalServerError,
+                        ApiResponse<object>.FailureResponse("Lỗi khi phân tích da", new List<string> { errorMessage }));
+                }
             }
             catch (Exception ex)
             {
                 // Log the exception
                 Console.WriteLine($"Error analyzing skin: {ex.Message}");
-                
+
                 // Return error response
-                return StatusCode(StatusCodes.Status500InternalServerError, 
-                    ApiResponse<object>.FailureResponse("L?i khi phân tích da", new List<string> { ex.Message }));
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse<object>.FailureResponse("Lỗi khi phân tích da", new List<string> { ex.Message }));
             }
         }
 
@@ -186,20 +207,20 @@ namespace API.Controllers
                 // Validate input
                 if (faceImage == null || faceImage.Length == 0)
                 {
-                    return BadRequest(ApiResponse<object>.FailureResponse("Hình ?nh khuôn m?t không ???c ?? tr?ng"));
+                    return BadRequest(ApiResponse<object>.FailureResponse("Hình ảnh khuôn mặt không được để trống"));
                 }
 
                 // Check file type
                 var fileExtension = Path.GetExtension(faceImage.FileName).ToLower();
                 if (fileExtension != ".jpg" && fileExtension != ".jpeg" && fileExtension != ".png")
                 {
-                    return BadRequest(ApiResponse<object>.FailureResponse("Ch? ch?p nh?n các ??nh d?ng ?nh: .jpg, .jpeg, .png"));
+                    return BadRequest(ApiResponse<object>.FailureResponse("Chỉ chấp nhận các định dạng ảnh: .jpg, .jpeg, .png"));
                 }
 
                 // Check file size (limit to 10MB)
                 if (faceImage.Length > 10 * 1024 * 1024)
                 {
-                    return BadRequest(ApiResponse<object>.FailureResponse("Kích th??c t?p quá l?n, t?i ?a 10MB"));
+                    return BadRequest(ApiResponse<object>.FailureResponse("Kích thước tệp quá lớn, tối đa 10MB"));
                 }
 
                 // Get user ID from context
@@ -209,20 +230,46 @@ namespace API.Controllers
                     return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
                 }
 
-                // Process the image and analyze skin - now passing the user ID
-                var result = await _skinAnalysisService.AnalyzeSkinAsync(faceImage, userId.Value);
-                
-                // Return success response with analysis results
-                return Ok(ApiResponse<SkinAnalysisResultDto>.SuccessResponse(result, "Phân tích da thành công"));
+                try
+                {
+                    // Process the image and analyze skin - now passing the user ID
+                    var result = await _skinAnalysisService.AnalyzeSkinAsync(faceImage, userId.Value);
+
+                    // Return success response with analysis results
+                    return Ok(ApiResponse<SkinAnalysisResultDto>.SuccessResponse(result, "Phân tích da thành công"));
+                }
+                catch (Exception ex)
+                {
+                    // Kiểm tra xem lỗi có phải do không nhận diện được khuôn mặt không
+                    if (ex.Message.Contains("No face detected") ||
+                        (ex.InnerException != null && ex.InnerException.Message.Contains("No face detected")))
+                    {
+                        // Trả về Bad Request với thông báo cụ thể về lỗi khuôn mặt
+                        return BadRequest(ApiResponse<object>.FailureResponse(
+                            "Không phát hiện khuôn mặt trong ảnh. Vui lòng chọn ảnh rõ nét và đảm bảo khuôn mặt hiển thị đầy đủ."));
+                    }
+
+                    // Log lỗi gốc
+                    Console.WriteLine($"Error analyzing skin: {ex.Message}");
+                    if (ex.InnerException != null)
+                    {
+                        Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                    }
+
+                    // Trả về lỗi cụ thể cho client
+                    string errorMessage = ex.InnerException?.Message ?? ex.Message;
+                    return StatusCode(StatusCodes.Status500InternalServerError,
+                        ApiResponse<object>.FailureResponse("Lỗi khi phân tích da", new List<string> { errorMessage }));
+                }
             }
             catch (Exception ex)
             {
                 // Log the exception
-                Console.WriteLine($"Error analyzing skin: {ex.Message}");
-                
+                Console.WriteLine($"Error processing request: {ex.Message}");
+
                 // Return error response
-                return StatusCode(StatusCodes.Status500InternalServerError, 
-                    ApiResponse<object>.FailureResponse("L?i khi phân tích da", new List<string> { ex.Message }));
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse<object>.FailureResponse("Lỗi xử lý yêu cầu", new List<string> { ex.Message }));
             }
         }
 
