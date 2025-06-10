@@ -370,7 +370,7 @@ namespace Services.Implementation
                             // Add user information for admin view
                             dto.UserId = result.UserId;
                             dto.UserName = result.User?.UserName ?? "Unknown";
-                            dto.AnalysisDate = result.CreatedTime;
+                            dto.CreatedTime = result.CreatedTime;
 
                             resultDtos.Add(dto);
                         }
@@ -382,7 +382,7 @@ namespace Services.Implementation
                             // Add user information for admin view
                             dto.UserId = result.UserId;
                             dto.UserName = result.User?.UserName ?? "Unknown";
-                            dto.AnalysisDate = result.CreatedTime;
+                            dto.CreatedTime = result.CreatedTime;
 
                             resultDtos.Add(dto);
                         }

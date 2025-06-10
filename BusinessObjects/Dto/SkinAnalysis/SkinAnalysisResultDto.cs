@@ -15,7 +15,7 @@ namespace BusinessObjects.Dto.SkinAnalysis
         // Add these properties to your existing SkinAnalysisResultDto class
         public Guid UserId { get; set; }
         public string UserName { get; set; }
-        public DateTimeOffset? AnalysisDate { get; set; }
+        public DateTimeOffset? CreatedTime { get; set; }
     }
 
     public class SkinConditionDto
