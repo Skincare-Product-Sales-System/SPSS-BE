@@ -14,7 +14,6 @@ namespace Services.Interface
         Task<SkinAnalysisResultDto> AnalyzeSkinAsync(IFormFile faceImage, Guid userId);
         Task<SkinAnalysisResultDto> GetSkinAnalysisResultByIdAsync(Guid id);
         Task<List<SkinAnalysisResultDto>> GetSkinAnalysisResultsByUserIdAsync(Guid userId);
-        
         // Methods for payment-based skin analysis
         Task<TransactionDto> CreateSkinAnalysisPaymentRequestAsync(Guid userId);
         Task<ApiResponse<object>> CheckPaymentStatusAndAnalyzeSkinAsync(IFormFile faceImage, Guid userId);
@@ -24,5 +23,6 @@ namespace Services.Interface
             string skinType,
             DateTime? fromDate,
             DateTime? toDate);
+        Task<PagedResponse<SkinAnalysisResultDto>> GetPagedSkinAnalysisResultsByUserIdAsync(Guid userId, int pageNumber = 1, int pageSize = 10);
     }
 }

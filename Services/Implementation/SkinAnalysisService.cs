@@ -191,17 +191,19 @@ namespace Services.Implementation
                 // 9. Create and return the result
                 var result = new SkinAnalysisResultDto
                 {
+                    Id = Guid.Empty, // Will be updated in SaveSkinAnalysisResultAsync
                     ImageUrl = imageUrl,
                     SkinCondition = skinCondition,
                     SkinIssues = skinIssues,
                     RecommendedProducts = recommendedProducts,
                     RoutineSteps = routineSteps,
-                    SkinCareAdvice = skinCareAdvice
+                    SkinCareAdvice = skinCareAdvice,
+                    CreatedTime = DateTimeOffset.UtcNow // Initialize with current time (will be updated in SaveSkinAnalysisResultAsync)
                 };
 
-                // 10. Save analysis results to database
+                // 10. Save analysis results to database (this will set the Id and CreatedTime)
                 await SaveSkinAnalysisResultAsync(result, userId, skinType.Id, enhancedAnalysis);
-                _logger?.LogInformation("Saved skin analysis results to database");
+                _logger?.LogInformation("Saved skin analysis results to database with ID: {ResultId}", result.Id);
 
                 _logger?.LogInformation("Skin analysis completed successfully");
                 return result;
@@ -221,9 +223,12 @@ namespace Services.Implementation
             try
             {
                 // Create the main skin analysis result entity
+                var skinAnalysisResultId = Guid.NewGuid();
+                result.Id = skinAnalysisResultId; // Set the ID in the DTO
+                
                 var skinAnalysisResult = new SkinAnalysisResult
                 {
-                    Id = Guid.NewGuid(),
+                    Id = skinAnalysisResultId,
                     ImageUrl = result.ImageUrl,
                     UserId = userId,
                     SkinTypeId = skinTypeId,
@@ -250,6 +255,9 @@ namespace Services.Implementation
                     LastUpdatedTime = DateTimeOffset.UtcNow,
                     IsDeleted = false
                 };
+
+                // Set the creation time in the DTO
+                result.CreatedTime = skinAnalysisResult.CreatedTime;
 
                 // Add the main entity
                 _unitOfWork.SkinAnalysisResults.Add(skinAnalysisResult);
@@ -286,6 +294,8 @@ namespace Services.Implementation
 
                 // Save all changes
                 await _unitOfWork.SaveChangesAsync();
+                
+                _logger?.LogInformation("Skin analysis result saved with ID: {ResultId}", result.Id);
             }
             catch (Exception ex)
             {
@@ -984,7 +994,11 @@ namespace Services.Implementation
             {
                 try
                 {
-                    return JsonConvert.DeserializeObject<SkinAnalysisResultDto>(result.FullAnalysisJson);
+                    var dto = JsonConvert.DeserializeObject<SkinAnalysisResultDto>(result.FullAnalysisJson);
+                    // Add the ID and creation time since they might not be in the serialized JSON
+                    dto.Id = result.Id;
+                    dto.CreatedTime = result.CreatedTime;
+                    return dto;
                 }
                 catch (Exception ex)
                 {
@@ -1024,10 +1038,12 @@ namespace Services.Implementation
 
             return new SkinAnalysisResultDto
             {
+                Id = result.Id, // Include the ID
                 ImageUrl = result.ImageUrl,
                 SkinCondition = skinCondition,
                 SkinIssues = skinIssues,
                 RecommendedProducts = recommendedProducts,
+                CreatedTime = result.CreatedTime, // Include creation time
                 // Since we don't store skin care advice separately, we'll return an empty list
                 SkinCareAdvice = new List<string>()
             };
@@ -1061,6 +1077,80 @@ namespace Services.Implementation
             }
 
             return resultDtos;
+        }
+
+        /// <summary>
+        /// Retrieves paged skin analysis results for a specific user
+        /// </summary>
+        /// <param name="userId">User ID to retrieve skin analysis results for</param>
+        /// <param name="pageNumber">Page number, starting from 1</param>
+        /// <param name="pageSize">Number of items per page</param>
+        /// <returns>Paged response containing skin analysis results</returns>
+        public async Task<PagedResponse<SkinAnalysisResultDto>> GetPagedSkinAnalysisResultsByUserIdAsync(
+            Guid userId, int pageNumber = 1, int pageSize = 10)
+        {
+            try
+            {
+                // Validate pagination parameters
+                pageNumber = pageNumber < 1 ? 1 : pageNumber;
+                pageSize = pageSize < 1 ? 10 : (pageSize > 50 ? 50 : pageSize);
+
+                // Query to get total count
+                var totalCount = await _unitOfWork.SkinAnalysisResults.Entities
+                    .Where(sar => sar.UserId == userId && !sar.IsDeleted)
+                    .CountAsync();
+
+                // Query to get paged results with minimal data to improve performance
+                var pagedResults = await _unitOfWork.SkinAnalysisResults.Entities
+                    .Include(r => r.SkinType)
+                    .Where(sar => sar.UserId == userId && !sar.IsDeleted)
+                    .OrderByDescending(sar => sar.CreatedTime)
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(r => new
+                    {
+                        r.Id,
+                        r.ImageUrl,
+                        r.CreatedTime,
+                        r.SkinTypeId,
+                        SkinTypeName = r.SkinType.Name,
+                        r.HealthScore
+                    })
+                    .ToListAsync();
+
+                // Map to DTOs with minimal information for the list view
+                var items = pagedResults.Select(r => new SkinAnalysisResultDto
+                {
+                    Id = r.Id,
+                    ImageUrl = r.ImageUrl,
+                    CreatedTime = r.CreatedTime,
+                    SkinCondition = new SkinConditionDto
+                    {
+                        HealthScore = r.HealthScore,
+                        SkinType = r.SkinTypeName
+                    },
+                    // Other properties are initialized as empty collections
+                    SkinIssues = new List<SkinIssueDto>(),
+                    RecommendedProducts = new List<ProductRecommendationDto>(),
+                    RoutineSteps = new List<SkincareRoutineStepDto>(),
+                    SkinCareAdvice = new List<string>()
+                }).ToList();
+
+                _logger?.LogInformation("Retrieved {Count} paged skin analysis results for user {UserId}", items.Count, userId);
+
+                return new PagedResponse<SkinAnalysisResultDto>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving paged skin analysis results for user {UserId}: {ErrorMessage}", userId, ex.Message);
+                throw;
+            }
         }
     }
 }

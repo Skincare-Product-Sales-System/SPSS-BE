@@ -291,25 +291,11 @@ namespace API.Controllers
                     return BadRequest(ApiResponse<AccountDto>.FailureResponse("User ID is missing or invalid"));
                 }
 
-                var results = await _skinAnalysisService.GetSkinAnalysisResultsByUserIdAsync(userId.Value);
-                
-                // Manual paging (ideally this would be in the service layer with proper DB queries)
-                var totalCount = results.Count;
-                var skip = (pageNumber - 1) * pageSize;
-                var pagedItems = results
-                    .Skip(skip)
-                    .Take(pageSize)
-                    .ToList();
+                // Use the service method that properly handles paging at the database level
+                var pagedResults = await _skinAnalysisService.GetPagedSkinAnalysisResultsByUserIdAsync(
+                    userId.Value, pageNumber, pageSize);
 
-                var pagedResponse = new PagedResponse<SkinAnalysisResultDto>
-                {
-                    Items = pagedItems,
-                    TotalCount = totalCount,
-                    PageNumber = pageNumber,
-                    PageSize = pageSize
-                };
-
-                return Ok(ApiResponse<PagedResponse<SkinAnalysisResultDto>>.SuccessResponse(pagedResponse));
+                return Ok(ApiResponse<PagedResponse<SkinAnalysisResultDto>>.SuccessResponse(pagedResults));
             }
             catch (Exception ex)
             {

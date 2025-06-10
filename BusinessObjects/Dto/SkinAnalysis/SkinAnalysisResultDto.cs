@@ -5,6 +5,7 @@ namespace BusinessObjects.Dto.SkinAnalysis
 {
     public class SkinAnalysisResultDto
     {
+        public Guid Id { get; set; }
         public string ImageUrl { get; set; }
         public SkinConditionDto SkinCondition { get; set; }
         public List<SkinIssueDto> SkinIssues { get; set; }
