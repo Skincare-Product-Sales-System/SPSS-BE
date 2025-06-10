@@ -46,6 +46,7 @@ public class UnitOfWork : IUnitOfWork
     private ISkinAnalysisResultRepository _skinAnalysisResultRepository;
     private ISkinAnalysisIssueRepository _skinAnalysisIssueRepository;
     private ISkinAnalysisRecommendationRepository _skinAnalysisRecommendationRepository;
+    private ITransactionRepository _transactionRepository;
  
     public UnitOfWork(SPSSContext context) =>  _context = context;
 
@@ -86,6 +87,7 @@ public class UnitOfWork : IUnitOfWork
     public ISkinAnalysisResultRepository SkinAnalysisResults => _skinAnalysisResultRepository ??= new SkinAnalysisResultRepository(_context);
     public ISkinAnalysisIssueRepository SkinAnalysisIssues => _skinAnalysisIssueRepository ??= new SkinAnalysisIssueRepository(_context);
     public ISkinAnalysisRecommendationRepository SkinAnalysisRecommendations => _skinAnalysisRecommendationRepository ??= new SkinAnalysisRecommendationRepository(_context);
+    public ITransactionRepository Transactions => _transactionRepository ??= new TransactionRepository(_context);
 
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 

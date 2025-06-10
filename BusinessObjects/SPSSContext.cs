@@ -97,6 +97,9 @@ public partial class SPSSContext : DbContext
 
     public virtual DbSet<SkinAnalysisRecommendation> SkinAnalysisRecommendations { get; set; }
 
+    // Add the Transaction DbSet
+    public virtual DbSet<Transaction> Transactions { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
@@ -694,6 +697,13 @@ public partial class SPSSContext : DbContext
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        // Configure Transaction entity relationships
+        modelBuilder.Entity<Transaction>()
+            .HasOne(t => t.User)
+            .WithMany()
+            .HasForeignKey(t => t.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
