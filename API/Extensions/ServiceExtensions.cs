@@ -62,6 +62,9 @@ public static class ServiceExtensions
         // Add TensorFlow skin analysis service
         services.AddScoped<TensorFlowSkinAnalysisService>();
         
+        // Add Transaction service
+        services.AddScoped<ITransactionService, TransactionService>();
+        
         return services;
     }
 
@@ -100,6 +103,18 @@ public static class ServiceExtensions
                     },
                     OnMessageReceived = context =>
                     {
+                        // Lấy token từ query string cho SignalR
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        
+                        // Kiểm tra xem request có phải cho SignalR Hub không
+                        if (!string.IsNullOrEmpty(accessToken) && 
+                            (path.StartsWithSegments("/chathub") || path.StartsWithSegments("/transactionhub")))
+                        {
+                            // Đặt token để hệ thống xác thực
+                            context.Token = accessToken;
+                        }
+                        
                         return Task.CompletedTask;
                     }
                 };
@@ -183,6 +198,15 @@ public static class ServiceExtensions
                         .AllowAnyMethod()
                         .AllowCredentials();
                 });
+            
+            options.AddPolicy("AllowAll", builder =>
+            {
+                builder
+                    .SetIsOriginAllowed(_ => true) // Cho phép tất cả nguồn gốc
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials(); // Quan trọng cho WebSocket/SignalR
+            });
         });
         return services;
     }

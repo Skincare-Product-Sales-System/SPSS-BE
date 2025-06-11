@@ -12,6 +12,9 @@ namespace BusinessObjects.Dto.SkinAnalysis
         public List<ProductRecommendationDto> RecommendedProducts { get; set; }
         public List<SkincareRoutineStepDto> RoutineSteps { get; set; } = new List<SkincareRoutineStepDto>();
         public List<string> SkinCareAdvice { get; set; }
+        // Add these properties to your existing SkinAnalysisResultDto class
+        public Guid UserId { get; set; }
+        public string UserName { get; set; }
         public DateTimeOffset? CreatedTime { get; set; }
     }
 

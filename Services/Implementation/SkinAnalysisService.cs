@@ -1,12 +1,15 @@
 ﻿using BusinessObjects.Dto.Product;
 using BusinessObjects.Dto.SkinAnalysis;
+using BusinessObjects.Dto.Transaction;
 using BusinessObjects.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Repositories.Interface;
+using Services.Dto.Api;
 using Services.Interface;
 using Services.Response;
 using System;
@@ -22,19 +25,120 @@ namespace Services.Implementation
         private readonly FacePlusPlusClient _facePlusPlusClient;
         private readonly TensorFlowSkinAnalysisService _tensorFlowService;
         private readonly ManageFirebaseImage.ManageFirebaseImageService _firebaseImageService;
+        private readonly ITransactionService _transactionService;
+        private readonly IConfiguration _configuration;
         private readonly ILogger<SkinAnalysisService>? _logger;
+        
+        // Read skin analysis cost from configuration
+        private readonly decimal _skinAnalysisCost;
 
         public SkinAnalysisService(
             IUnitOfWork unitOfWork,
             FacePlusPlusClient facePlusPlusClient,
             TensorFlowSkinAnalysisService tensorFlowService,
+            ITransactionService transactionService,
+            IConfiguration configuration,
             ILogger<SkinAnalysisService>? logger = null)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _facePlusPlusClient = facePlusPlusClient ?? throw new ArgumentNullException(nameof(facePlusPlusClient));
             _tensorFlowService = tensorFlowService ?? throw new ArgumentNullException(nameof(tensorFlowService));
+            _transactionService = transactionService ?? throw new ArgumentNullException(nameof(transactionService));
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _firebaseImageService = new ManageFirebaseImage.ManageFirebaseImageService();
             _logger = logger;
+            
+            // Get skin analysis cost from configuration or use default value if not found
+            if (!decimal.TryParse(_configuration["SkinAnalysis:Cost"], out _skinAnalysisCost))
+            {
+                _skinAnalysisCost = 20000; // Default value
+                _logger?.LogWarning("SkinAnalysis:Cost not found in configuration. Using default value: {DefaultCost}", _skinAnalysisCost);
+            }
+        }
+
+        /// <summary>
+        /// Creates a payment request for skin analysis
+        /// </summary>
+        public async Task<TransactionDto> CreateSkinAnalysisPaymentRequestAsync(Guid userId)
+        {
+            try
+            {
+                _logger?.LogInformation("Creating skin analysis payment request for user {UserId}", userId);
+                
+                var createTransactionDto = new CreateTransactionDto
+                {
+                    TransactionType = "SkinAnalysis",
+                    Amount = _skinAnalysisCost,
+                    Description = "Thanh toan cho dich vu phan tich da"
+                };
+                
+                var transaction = await _transactionService.CreateTransactionAsync(createTransactionDto, userId);
+                
+                _logger?.LogInformation("Skin analysis payment request created: {TransactionId}", transaction.Id);
+                
+                return transaction;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error creating skin analysis payment request: {ErrorMessage}", ex.Message);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Checks payment status and proceeds with skin analysis if payment is approved
+        /// </summary>
+        public async Task<ApiResponse<object>> CheckPaymentStatusAndAnalyzeSkinAsync(IFormFile faceImage, Guid userId)
+        {
+            try
+            {
+                _logger?.LogInformation("Checking payment status for user {UserId}", userId);
+                
+                // Get the most recent pending transaction for this user
+                var pendingTransactions = await _unitOfWork.Transactions.Entities
+                    .Where(t => t.UserId == userId && 
+                                t.TransactionType == "SkinAnalysis" && 
+                                !t.IsDeleted)
+                    .OrderByDescending(t => t.CreatedTime)
+                    .ToListAsync();
+                
+                var latestTransaction = pendingTransactions.FirstOrDefault();
+                
+                if (latestTransaction == null)
+                {
+                    return ApiResponse<object>.FailureResponse("Không tìm thấy yêu cầu thanh toán cho dịch vụ phân tích da");
+                }
+                
+                if (latestTransaction.Status == "Pending")
+                {
+                    return ApiResponse<object>.FailureResponse("Vui lòng thanh toán và chờ xác nhận từ admin");
+                }
+                
+                if (latestTransaction.Status == "Rejected")
+                {
+                    return ApiResponse<object>.FailureResponse("Thanh toán của bạn đã bị từ chối. Vui lòng tạo yêu cầu thanh toán mới");
+                }
+                
+                if (latestTransaction.Status == "Approved")
+                {
+                    // Process skin analysis
+                    var result = await AnalyzeSkinAsync(faceImage, userId);
+                    
+                    // Mark transaction as used
+                    latestTransaction.Description += " - Đã sử dụng";
+                    _unitOfWork.Transactions.Update(latestTransaction);
+                    await _unitOfWork.SaveChangesAsync();
+                    
+                    return ApiResponse<object>.SuccessResponse(result, "Phân tích da thành công");
+                }
+                
+                return ApiResponse<object>.FailureResponse("Trạng thái thanh toán không hợp lệ");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error checking payment status: {ErrorMessage}", ex.Message);
+                return ApiResponse<object>.FailureResponse("Lỗi khi kiểm tra trạng thái thanh toán", new List<string> { ex.Message });
+            }
         }
 
         /// <summary>
@@ -198,6 +302,117 @@ namespace Services.Implementation
                 _logger?.LogError(ex, "Error saving skin analysis results: {ErrorMessage}", ex.Message);
                 // We don't want to fail the whole analysis if saving to DB fails
                 // So just log the error but don't rethrow
+            }
+        }
+
+        /// <summary>
+        /// Retrieves all skin analysis results with optional filtering and pagination
+        /// </summary>
+        public async Task<PagedResponse<SkinAnalysisResultDto>> GetAllSkinAnalysisResultsAsync(
+            int pageNumber,
+            int pageSize,
+            string skinType = null,
+            DateTime? fromDate = null,
+            DateTime? toDate = null)
+        {
+            try
+            {
+                _logger?.LogInformation("Retrieving all skin analysis results - Page: {PageNumber}, Size: {PageSize}, " +
+                    "SkinType: {SkinType}, FromDate: {FromDate}, ToDate: {ToDate}",
+                    pageNumber, pageSize, skinType, fromDate, toDate);
+
+                // Start with the base query
+                var query = _unitOfWork.SkinAnalysisResults.Entities
+                    .Include(sar => sar.SkinType)
+                    .Include(sar => sar.User)
+                    .Where(sar => !sar.IsDeleted);
+
+                // Apply filters if provided
+                if (!string.IsNullOrEmpty(skinType))
+                {
+                    query = query.Where(sar => sar.SkinType.Name.Contains(skinType));
+                }
+
+                if (fromDate.HasValue)
+                {
+                    var fromDateUtc = new DateTimeOffset(fromDate.Value.Date, TimeSpan.Zero);
+                    query = query.Where(sar => sar.CreatedTime >= fromDateUtc);
+                }
+
+                if (toDate.HasValue)
+                {
+                    var toDateUtc = new DateTimeOffset(toDate.Value.Date.AddDays(1), TimeSpan.Zero); // Include the entire day
+                    query = query.Where(sar => sar.CreatedTime < toDateUtc);
+                }
+
+                // Get total count for pagination
+                var totalCount = await query.CountAsync();
+
+                // Apply paging
+                var skip = (pageNumber - 1) * pageSize;
+                var results = await query
+                    .OrderByDescending(sar => sar.CreatedTime)
+                    .Skip(skip)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                // Convert to DTOs
+                var resultDtos = new List<SkinAnalysisResultDto>();
+                foreach (var result in results)
+                {
+                    try
+                    {
+                        // First try to deserialize from stored JSON if available
+                        if (!string.IsNullOrEmpty(result.FullAnalysisJson))
+                        {
+                            var dto = JsonConvert.DeserializeObject<SkinAnalysisResultDto>(result.FullAnalysisJson);
+
+                            // Add user information for admin view
+                            dto.UserId = result.UserId;
+                            dto.UserName = result.User?.UserName ?? "Unknown";
+                            dto.CreatedTime = result.CreatedTime;
+
+                            resultDtos.Add(dto);
+                        }
+                        else
+                        {
+                            // If JSON not available, get the full result by ID
+                            var dto = await GetSkinAnalysisResultByIdAsync(result.Id);
+
+                            // Add user information for admin view
+                            dto.UserId = result.UserId;
+                            dto.UserName = result.User?.UserName ?? "Unknown";
+                            dto.CreatedTime = result.CreatedTime;
+
+                            resultDtos.Add(dto);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogError(ex, "Error retrieving skin analysis result {ResultId}: {ErrorMessage}",
+                            result.Id, ex.Message);
+                        // Continue with next result if one fails
+                    }
+                }
+
+                // Create paged response
+                var pagedResponse = new PagedResponse<SkinAnalysisResultDto>
+                {
+                    Items = resultDtos,
+                    TotalCount = totalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
+
+                _logger?.LogInformation("Successfully retrieved {Count} skin analysis results (total: {TotalCount})",
+                    resultDtos.Count, totalCount);
+
+                return pagedResponse;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving all skin analysis results: {ErrorMessage}", ex.Message);
+                throw;
             }
         }
 

@@ -86,6 +86,7 @@ app.UseEndpoints(endpoints =>
 {
     // Định nghĩa SignalR Hub
     endpoints.MapHub<ChatHub>("/chathub");
+    endpoints.MapHub<TransactionHub>("/transactionhub");
 
     // Định nghĩa API endpoints
     endpoints.MapControllers();
