@@ -48,6 +48,8 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<MappingProfile>();  // Add your mappings profile here
 }, typeof(Program).Assembly);
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<VietQRService>();
 
 var app = builder.Build();
 
