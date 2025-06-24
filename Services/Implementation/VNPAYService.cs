@@ -231,7 +231,7 @@ public class VNPAYService : IVNPayService
 
                 await _unitOfWork.SaveChangesAsync();
 
-                returnUrl = $"https://spss-fe-tuannguyen333s-projects.vercel.app/payment-success?id={orderInfo}";
+                returnUrl = $"spss://vnpay-return?id={orderInfo}";
 
 
                 // updateDto = new UpdateStatusOrderDto
@@ -257,7 +257,7 @@ public class VNPAYService : IVNPayService
 
                     _unitOfWork.Orders.Update(order);
                     await _unitOfWork.SaveChangesAsync();
-                    returnUrl = $"https://spss-fe-tuannguyen333s-projects.vercel.app/payment-failure?id={orderInfo}";
+                    returnUrl = $"spss://vnpay-return?id={orderInfo}";
 
                 // updateDto = new UpdateStatusOrderDto
                 // {
@@ -318,8 +318,7 @@ public class VNPAYService : IVNPayService
 
                 _unitOfWork.Orders.Update(order);
                 await _unitOfWork.SaveChangesAsync();
-                returnUrl = $"https://spss-fe-tuannguyen333s-projects.vercel.app/payment-failure?id={orderInfo}";
-
+                returnUrl = $"spss://vnpay-return?id={orderInfo}";
             // updateDto = new UpdateStatusOrderDto
             // {
             //     OrderId = order.Id,
