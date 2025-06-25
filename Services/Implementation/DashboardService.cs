@@ -157,6 +157,7 @@ namespace Services.Implementation
         {
             // Filter orders by date range and exclude cancelled orders
             var ordersQuery = _unitOfWork.Orders.Entities
+                .Include(o => o.Voucher)  // Include voucher information
                 .Where(o => !o.IsDeleted && o.Status != "Cancelled");
                 
             if (startDate.HasValue)
@@ -172,39 +173,65 @@ namespace Services.Implementation
                 .Where(o => o.Status == StatusForOrder.Processing || o.Status == StatusForOrder.AwaitingPayment)
                 .CountAsync();
             
-            // Calculate total revenue from completed orders
-            var totalRevenue = await completedOrdersQuery.SumAsync(o => o.OrderTotal);
+            // Calculate total revenue from completed orders (this is already net of voucher discounts)
+            var totalNetRevenue = await completedOrdersQuery.SumAsync(o => o.OrderTotal);
             
-            // Calculate procurement costs and profit
-            decimal totalProcurementCost = 0;
-            
-            // Get all order details for completed orders
+            // Get all order details for completed orders with their order information
             var orderDetails = await _unitOfWork.OrderDetails.Entities
+                .Include(od => od.Order)
+                    .ThenInclude(o => o.Voucher)
                 .Include(od => od.ProductItem)
                 .Where(od => !od.Order.IsDeleted && 
-                             od.Order.Status == StatusForOrder.Delivered && 
-                             (!startDate.HasValue || od.Order.CreatedTime >= startDate.Value) &&
-                             (!endDate.HasValue || od.Order.CreatedTime <= endDate.Value))
+                            od.Order.Status == StatusForOrder.Delivered && 
+                            (!startDate.HasValue || od.Order.CreatedTime >= startDate.Value) &&
+                            (!endDate.HasValue || od.Order.CreatedTime <= endDate.Value))
                 .ToListAsync();
             
-            // Calculate procurement cost for each item sold
-            foreach (var orderDetail in orderDetails)
+            // Calculate procurement cost, gross revenue, and discount amount
+            decimal totalProcurementCost = 0;
+            decimal grossRevenue = 0;
+            decimal totalDiscountAmount = 0;
+            
+            // Group order details by order to calculate per-order metrics
+            var orderGroups = orderDetails.GroupBy(od => od.OrderId).ToList();
+            
+            foreach (var orderGroup in orderGroups)
             {
-                // Use the product item's purchase price for cost calculation
-                var purchasePrice = orderDetail.ProductItem.PurchasePrice;
-                totalProcurementCost += purchasePrice * orderDetail.Quantity;
+                // Get the first order detail to access the order info
+                var firstDetail = orderGroup.First();
+                var order = firstDetail.Order;
+                
+                // Calculate the raw total for this order (before any discount)
+                decimal orderGrossTotal = orderGroup.Sum(od => od.Price * od.Quantity);
+                grossRevenue += orderGrossTotal;
+                
+                // If there's a voucher, calculate the discount amount
+                if (order.VoucherId.HasValue && order.Voucher != null)
+                {
+                    // The discount is the difference between the gross total and the actual order total
+                    decimal orderDiscountAmount = orderGrossTotal - order.OrderTotal;
+                    totalDiscountAmount += orderDiscountAmount;
+                }
+                
+                // Calculate procurement cost for this order
+                foreach (var orderDetail in orderGroup)
+                {
+                    totalProcurementCost += orderDetail.ProductItem.PurchasePrice * orderDetail.Quantity;
+                }
             }
             
-            // Calculate profit and profit margin
-            var totalProfit = totalRevenue - totalProcurementCost;
-            var profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+            // Calculate profit and profit margin based on net revenue
+            var totalProfit = totalNetRevenue - totalProcurementCost;
+            var profitMargin = totalNetRevenue > 0 ? (totalProfit / totalNetRevenue) * 100 : 0;
             
             // Get completed order count
             var completedOrderCount = await completedOrdersQuery.CountAsync();
             
             return new FinancialSummaryDto
             {
-                TotalRevenue = totalRevenue,
+                GrossRevenue = grossRevenue,  // Revenue before voucher discounts
+                DiscountAmount = totalDiscountAmount,  // Total voucher discount amount
+                TotalRevenue = totalNetRevenue,  // Net revenue after discounts
                 TotalProcurementCost = totalProcurementCost,
                 TotalProfit = totalProfit,
                 ProfitMargin = profitMargin,
@@ -220,6 +247,7 @@ namespace Services.Implementation
             // Create a query for order details of completed orders
             var query = _unitOfWork.OrderDetails.Entities
                 .Include(od => od.Order)
+                    .ThenInclude(o => o.Voucher)
                 .Include(od => od.ProductItem)
                 .ThenInclude(pi => pi.Product)
                 .Where(od => !od.Order.IsDeleted && 
@@ -238,10 +266,10 @@ namespace Services.Implementation
                     ProductId = g.Key.ProductId,
                     ProductName = g.Key.Name,
                     QuantitySold = g.Sum(od => od.Quantity),
-                    Revenue = g.Sum(od => od.Price * od.Quantity),
+                    LineItemRevenue = g.Sum(od => od.Price * od.Quantity),
                     PurchasePrice = g.Average(od => od.ProductItem.PurchasePrice)
                 })
-                .OrderByDescending(p => p.Revenue)
+                .OrderByDescending(p => p.LineItemRevenue)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -250,15 +278,15 @@ namespace Services.Implementation
             var productProfitDtos = productProfits.Select(p => 
             {
                 var procurementCost = p.PurchasePrice * p.QuantitySold;
-                var profit = p.Revenue - procurementCost;
-                var profitMargin = p.Revenue > 0 ? (profit / p.Revenue) * 100 : 0;
+                var profit = p.LineItemRevenue - procurementCost;
+                var profitMargin = p.LineItemRevenue > 0 ? (profit / p.LineItemRevenue) * 100 : 0;
                 
                 return new ProductProfitDto
                 {
                     ProductId = p.ProductId,
                     ProductName = p.ProductName,
                     QuantitySold = p.QuantitySold,
-                    Revenue = p.Revenue,
+                    Revenue = p.LineItemRevenue,
                     ProcurementCost = procurementCost,
                     Profit = profit,
                     ProfitMargin = profitMargin
@@ -288,8 +316,9 @@ namespace Services.Implementation
             var startDate = new DateTime(year, 1, 1);
             var endDate = new DateTime(year, 12, 31, 23, 59, 59);
             
-            // Get all completed orders for the year
+            // Get all completed orders for the year with voucher information
             var orders = await _unitOfWork.Orders.Entities
+                .Include(o => o.Voucher)
                 .Where(o => !o.IsDeleted && 
                            o.Status == StatusForOrder.Delivered &&
                            o.CreatedTime >= startDate &&
@@ -299,6 +328,7 @@ namespace Services.Implementation
             // Get all order details for the completed orders
             var orderDetails = await _unitOfWork.OrderDetails.Entities
                 .Include(od => od.Order)
+                    .ThenInclude(o => o.Voucher)
                 .Include(od => od.ProductItem)
                 .Where(od => !od.Order.IsDeleted && 
                              od.Order.Status == StatusForOrder.Delivered &&
@@ -313,27 +343,54 @@ namespace Services.Implementation
                 var monthOrders = orders.Where(o => ((DateTimeOffset)o.CreatedTime).Month == month).ToList();
                 var monthOrderDetails = orderDetails.Where(od => ((DateTimeOffset)od.Order.CreatedTime).Month == month).ToList();
                 
-                // Calculate monthly revenue
-                var monthlyRevenue = monthOrders.Sum(o => o.OrderTotal);
+                // Calculate monthly net revenue (after voucher discounts)
+                var monthlyNetRevenue = monthOrders.Sum(o => o.OrderTotal);
                 
                 // Calculate monthly procurement cost
                 decimal monthlyProcurementCost = 0;
-                foreach (var orderDetail in monthOrderDetails)
+                decimal monthlyGrossRevenue = 0;
+                decimal monthlyDiscountAmount = 0;
+                
+                // Group order details by order
+                var orderGroups = monthOrderDetails.GroupBy(od => od.OrderId).ToList();
+                
+                foreach (var orderGroup in orderGroups)
                 {
-                    var purchasePrice = orderDetail.ProductItem.PurchasePrice;
-                    monthlyProcurementCost += purchasePrice * orderDetail.Quantity;
+                    // Calculate gross revenue for this order
+                    var orderGrossRevenue = orderGroup.Sum(od => od.Price * od.Quantity);
+                    monthlyGrossRevenue += orderGrossRevenue;
+                    
+                    // Get the first order detail to access the order info
+                    var firstDetail = orderGroup.First();
+                    var order = firstDetail.Order;
+                    
+                    // If there's a voucher, calculate the discount amount
+                    if (order.VoucherId.HasValue && order.Voucher != null)
+                    {
+                        decimal orderDiscountAmount = orderGrossRevenue - order.OrderTotal;
+                        monthlyDiscountAmount += orderDiscountAmount;
+                    }
+                    
+                    // Calculate procurement cost
+                    foreach (var orderDetail in orderGroup)
+                    {
+                        var purchasePrice = orderDetail.ProductItem.PurchasePrice;
+                        monthlyProcurementCost += purchasePrice * orderDetail.Quantity;
+                    }
                 }
                 
-                // Calculate profit and profit margin
-                var monthlyProfit = monthlyRevenue - monthlyProcurementCost;
-                var monthlyProfitMargin = monthlyRevenue > 0 ? (monthlyProfit / monthlyRevenue) * 100 : 0;
+                // Calculate profit and profit margin based on net revenue
+                var monthlyProfit = monthlyNetRevenue - monthlyProcurementCost;
+                var monthlyProfitMargin = monthlyNetRevenue > 0 ? (monthlyProfit / monthlyNetRevenue) * 100 : 0;
                 
-                // Create the monthly report
+                // Create the monthly report with both gross and net revenue
                 monthlyReports.Add(new MonthlyFinancialReportDto
                 {
                     Year = year,
                     Month = month,
-                    Revenue = monthlyRevenue,
+                    GrossRevenue = monthlyGrossRevenue,
+                    DiscountAmount = monthlyDiscountAmount,
+                    Revenue = monthlyNetRevenue,
                     ProcurementCost = monthlyProcurementCost,
                     Profit = monthlyProfit,
                     ProfitMargin = monthlyProfitMargin,

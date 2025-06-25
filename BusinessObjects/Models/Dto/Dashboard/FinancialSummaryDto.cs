@@ -4,7 +4,10 @@ namespace BusinessObjects.Models.Dto.Dashboard
 {
     public class FinancialSummaryDto
     {
-        public decimal TotalRevenue { get; set; }
+        public decimal GrossRevenue { get; set; }         // Total revenue before voucher discounts
+        public decimal DiscountAmount { get; set; }       // Total amount of discounts from vouchers
+
+        public decimal TotalRevenue { get; set; }         // Net revenue after discounts
         public decimal TotalProcurementCost { get; set; }
         public decimal TotalProfit { get; set; }
         public decimal ProfitMargin { get; set; }
