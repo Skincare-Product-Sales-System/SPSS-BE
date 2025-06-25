@@ -59,38 +59,6 @@ namespace Services.Implementation
 
             return await query.CountAsync();
         }
-        //
-        // public async Task<List<RevenueTrendDto>> GetRevenueTrendAsync(DateTime startDate, DateTime endDate, string granularity = "daily")
-        // {
-        //     var query = _unitOfWork.Orders.Entities
-        //         .Where(o => !o.IsDeleted && o.Status != "Cancelled"
-        //                  && o.CreatedTime >= startDate && o.CreatedTime <= endDate);
-        //
-        //     var revenueTrend = granularity.ToLower() switch
-        //     {
-        //         "monthly" => await query
-        //             .GroupBy(o => new { o.CreatedTime.Year, o.CreatedTime.Month })
-        //             .Select(g => new RevenueTrendDto
-        //             {
-        //                 Date = new DateTime(g.Key.Year, g.Key.Month, 1),
-        //                 Revenue = g.Sum(o => o.OrderTotal)
-        //             })
-        //             .OrderBy(t => t.Date)
-        //             .ToListAsync(),
-        //
-        //         _ => await query // Default to daily
-        //             .GroupBy(o => o.CreatedTime.Date)
-        //             .Select(g => new RevenueTrendDto
-        //             {
-        //                 Date = g.Key,
-        //                 Revenue = g.Sum(o => o.OrderTotal)
-        //             })
-        //             .OrderBy(t => t.Date)
-        //             .ToListAsync()
-        //     };
-        //
-        //     return revenueTrend;
-        // }
 
         public async Task<PagedResponse<TopProductDto>> GetTopSellingProductsAsync(int pageNumber, int pageSize, DateTime? startDate = null, DateTime? endDate = null)
         {
@@ -181,6 +149,199 @@ namespace Services.Implementation
                 PageNumber = 1,
                 PageSize = topCount
             };
+        }
+        
+        // New methods for financial dashboard
+        
+        public async Task<FinancialSummaryDto> GetFinancialSummaryAsync(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            // Filter orders by date range and exclude cancelled orders
+            var ordersQuery = _unitOfWork.Orders.Entities
+                .Where(o => !o.IsDeleted && o.Status != "Cancelled");
+                
+            if (startDate.HasValue)
+                ordersQuery = ordersQuery.Where(o => o.CreatedTime >= startDate.Value);
+            if (endDate.HasValue)
+                ordersQuery = ordersQuery.Where(o => o.CreatedTime <= endDate.Value);
+
+            // Get completed orders (Delivered) for revenue calculation
+            var completedOrdersQuery = ordersQuery.Where(o => o.Status == StatusForOrder.Delivered);
+            
+            // Get pending orders count
+            var pendingOrdersCount = await ordersQuery
+                .Where(o => o.Status == StatusForOrder.Processing || o.Status == StatusForOrder.AwaitingPayment)
+                .CountAsync();
+            
+            // Calculate total revenue from completed orders
+            var totalRevenue = await completedOrdersQuery.SumAsync(o => o.OrderTotal);
+            
+            // Calculate procurement costs and profit
+            decimal totalProcurementCost = 0;
+            
+            // Get all order details for completed orders
+            var orderDetails = await _unitOfWork.OrderDetails.Entities
+                .Include(od => od.ProductItem)
+                .Where(od => !od.Order.IsDeleted && 
+                             od.Order.Status == StatusForOrder.Delivered && 
+                             (!startDate.HasValue || od.Order.CreatedTime >= startDate.Value) &&
+                             (!endDate.HasValue || od.Order.CreatedTime <= endDate.Value))
+                .ToListAsync();
+            
+            // Calculate procurement cost for each item sold
+            foreach (var orderDetail in orderDetails)
+            {
+                // Use the product item's purchase price for cost calculation
+                var purchasePrice = orderDetail.ProductItem.PurchasePrice;
+                totalProcurementCost += purchasePrice * orderDetail.Quantity;
+            }
+            
+            // Calculate profit and profit margin
+            var totalProfit = totalRevenue - totalProcurementCost;
+            var profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+            
+            // Get completed order count
+            var completedOrderCount = await completedOrdersQuery.CountAsync();
+            
+            return new FinancialSummaryDto
+            {
+                TotalRevenue = totalRevenue,
+                TotalProcurementCost = totalProcurementCost,
+                TotalProfit = totalProfit,
+                ProfitMargin = profitMargin,
+                CompletedOrderCount = completedOrderCount,
+                PendingOrderCount = pendingOrdersCount,
+                StartDate = startDate,
+                EndDate = endDate
+            };
+        }
+
+        public async Task<PagedResponse<ProductProfitDto>> GetProductProfitAnalysisAsync(int pageNumber, int pageSize, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            // Create a query for order details of completed orders
+            var query = _unitOfWork.OrderDetails.Entities
+                .Include(od => od.Order)
+                .Include(od => od.ProductItem)
+                .ThenInclude(pi => pi.Product)
+                .Where(od => !od.Order.IsDeleted && 
+                             od.Order.Status == StatusForOrder.Delivered);
+                
+            if (startDate.HasValue)
+                query = query.Where(od => od.Order.CreatedTime >= startDate.Value);
+            if (endDate.HasValue)
+                query = query.Where(od => od.Order.CreatedTime <= endDate.Value);
+                
+            // Group by product and calculate profit metrics
+            var productProfits = await query
+                .GroupBy(od => new { od.ProductItem.ProductId, od.ProductItem.Product.Name })
+                .Select(g => new
+                {
+                    ProductId = g.Key.ProductId,
+                    ProductName = g.Key.Name,
+                    QuantitySold = g.Sum(od => od.Quantity),
+                    Revenue = g.Sum(od => od.Price * od.Quantity),
+                    PurchasePrice = g.Average(od => od.ProductItem.PurchasePrice)
+                })
+                .OrderByDescending(p => p.Revenue)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+                
+            // Calculate profit and profit margin for each product
+            var productProfitDtos = productProfits.Select(p => 
+            {
+                var procurementCost = p.PurchasePrice * p.QuantitySold;
+                var profit = p.Revenue - procurementCost;
+                var profitMargin = p.Revenue > 0 ? (profit / p.Revenue) * 100 : 0;
+                
+                return new ProductProfitDto
+                {
+                    ProductId = p.ProductId,
+                    ProductName = p.ProductName,
+                    QuantitySold = p.QuantitySold,
+                    Revenue = p.Revenue,
+                    ProcurementCost = procurementCost,
+                    Profit = profit,
+                    ProfitMargin = profitMargin
+                };
+            }).ToList();
+            
+            // Get total count for pagination
+            var totalCount = await query
+                .GroupBy(od => od.ProductItem.ProductId)
+                .CountAsync();
+                
+            return new PagedResponse<ProductProfitDto>
+            {
+                Items = productProfitDtos,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+        }
+
+        public async Task<List<MonthlyFinancialReportDto>> GetMonthlyFinancialReportAsync(int year)
+        {
+            // Create a list to hold the monthly reports
+            var monthlyReports = new List<MonthlyFinancialReportDto>();
+            
+            // Define the date range for the year
+            var startDate = new DateTime(year, 1, 1);
+            var endDate = new DateTime(year, 12, 31, 23, 59, 59);
+            
+            // Get all completed orders for the year
+            var orders = await _unitOfWork.Orders.Entities
+                .Where(o => !o.IsDeleted && 
+                           o.Status == StatusForOrder.Delivered &&
+                           o.CreatedTime >= startDate &&
+                           o.CreatedTime <= endDate)
+                .ToListAsync();
+                
+            // Get all order details for the completed orders
+            var orderDetails = await _unitOfWork.OrderDetails.Entities
+                .Include(od => od.Order)
+                .Include(od => od.ProductItem)
+                .Where(od => !od.Order.IsDeleted && 
+                             od.Order.Status == StatusForOrder.Delivered &&
+                             od.Order.CreatedTime >= startDate &&
+                             od.Order.CreatedTime <= endDate)
+                .ToListAsync();
+                
+            // Group data by month
+            for (int month = 1; month <= 12; month++)
+            {
+                // Filter orders for this month - handle DateTimeOffset by checking Month on DateTime component
+                var monthOrders = orders.Where(o => ((DateTimeOffset)o.CreatedTime).Month == month).ToList();
+                var monthOrderDetails = orderDetails.Where(od => ((DateTimeOffset)od.Order.CreatedTime).Month == month).ToList();
+                
+                // Calculate monthly revenue
+                var monthlyRevenue = monthOrders.Sum(o => o.OrderTotal);
+                
+                // Calculate monthly procurement cost
+                decimal monthlyProcurementCost = 0;
+                foreach (var orderDetail in monthOrderDetails)
+                {
+                    var purchasePrice = orderDetail.ProductItem.PurchasePrice;
+                    monthlyProcurementCost += purchasePrice * orderDetail.Quantity;
+                }
+                
+                // Calculate profit and profit margin
+                var monthlyProfit = monthlyRevenue - monthlyProcurementCost;
+                var monthlyProfitMargin = monthlyRevenue > 0 ? (monthlyProfit / monthlyRevenue) * 100 : 0;
+                
+                // Create the monthly report
+                monthlyReports.Add(new MonthlyFinancialReportDto
+                {
+                    Year = year,
+                    Month = month,
+                    Revenue = monthlyRevenue,
+                    ProcurementCost = monthlyProcurementCost,
+                    Profit = monthlyProfit,
+                    ProfitMargin = monthlyProfitMargin,
+                    OrderCount = monthOrders.Count
+                });
+            }
+            
+            return monthlyReports;
         }
     }
 }

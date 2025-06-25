@@ -15,6 +15,7 @@ public partial class ProductItem
 
     public decimal Price { get; set; }
     public decimal MarketPrice { get; set; }
+    public decimal PurchasePrice { get; set; }
     public Guid ProductId { get; set; }
     public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
 
