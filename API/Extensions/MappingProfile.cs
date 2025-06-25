@@ -184,7 +184,8 @@ public class MappingProfile : Profile
                 VariationName = config.VariationOption.Variation.Name,
                 OptionName = config.VariationOption.Value,
                 OptionId = config.VariationOption.Id
-            }).ToList()));
+            }).ToList()))
+            .ForMember(dest => dest.PurchasePrice, opt => opt.MapFrom(src => src.PurchasePrice));
         #endregion
 
         #region StatusChange

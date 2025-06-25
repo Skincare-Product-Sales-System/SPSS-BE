@@ -54,15 +54,15 @@ builder.Services.AddScoped<VietQRService>();
 var app = builder.Build();
 
 // Apply migrations at startup
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<SPSSContext>();
+//using (var scope = app.Services.CreateScope())
+//{
+//    var dbContext = scope.ServiceProvider.GetRequiredService<SPSSContext>();
     
-    // Apply pending migrations
-    Console.WriteLine("Applying pending migrations...");
-    dbContext.Database.Migrate();
-    Console.WriteLine("Migrations applied successfully!");
-}
+//    // Apply pending migrations
+//    Console.WriteLine("Applying pending migrations...");
+//    dbContext.Database.Migrate();
+//    Console.WriteLine("Migrations applied successfully!");
+//}
 
 if (app.Environment.IsDevelopment() || true) // Luôn bật Swagger
 {
