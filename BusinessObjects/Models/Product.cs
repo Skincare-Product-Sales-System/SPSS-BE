@@ -33,8 +33,6 @@ public partial class Product : BaseEntity
 
     public decimal MarketPrice { get; set; }
 
-    public decimal PurchasePrice { get; set; }
-
     public string KeyActiveIngredients { get; set; }
 
     public string ExpiryDate { get; set; }
