@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Repositories.Interface;
 using Services.Interface;
 using Services.Response;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Services.Implementation;
 
@@ -65,6 +68,20 @@ public class AddressService : IAddressService
         if (addressForCreationDto is null)
             throw new ArgumentNullException(nameof(addressForCreationDto), "Address data cannot be null.");
 
+        // Validate that the country exists
+        var countryExists = await _unitOfWork.Countries.Entities
+            .AnyAsync(c => c.Id == addressForCreationDto.CountryId);
+        
+        if (!countryExists)
+            throw new ArgumentException($"Country with ID {addressForCreationDto.CountryId} does not exist.", nameof(addressForCreationDto.CountryId));
+
+        // Validate user exists
+        var userExists = await _unitOfWork.Users.Entities
+            .AnyAsync(u => u.UserId == userId);
+            
+        if (!userExists)
+            throw new ArgumentException($"User with ID {userId} does not exist.", nameof(userId));
+
         // Thực hiện ánh xạ thủ công từ AddressForCreationDto sang Address
         var address = new Address
         {
@@ -84,32 +101,50 @@ public class AddressService : IAddressService
             CreatedBy = userId.ToString(),
             LastUpdatedBy = userId.ToString(),
             LastUpdatedTime = DateTimeOffset.UtcNow,
-            IsDeleted = false
+            IsDeleted = false,
+            IsDefault = addressForCreationDto.IsDefault
         };
 
         // Xử lý thiết lập IsDefault
         if (addressForCreationDto.IsDefault)
         {
-            // Lấy danh sách địa chỉ hiện tại của người dùng
-            var userAddresses = await _unitOfWork.Addresses.Entities
-                .Where(a => a.UserId == userId && !a.IsDeleted)
-                .ToListAsync();
-
-            // Đặt tất cả các địa chỉ hiện tại không còn là mặc định
-            foreach (var userAddress in userAddresses)
+            try
             {
-                if (userAddress.IsDefault)
-                {
-                    userAddress.IsDefault = false;
-                }
-            }
-            // Đặt địa chỉ mới làm mặc định
-            address.IsDefault = true;
-        }
+                await _unitOfWork.BeginTransactionAsync();
+                
+                // Lấy danh sách địa chỉ hiện tại của người dùng
+                var userAddresses = await _unitOfWork.Addresses.Entities
+                    .Where(a => a.UserId == userId && !a.IsDeleted)
+                    .ToListAsync();
 
-        // Thêm địa chỉ mới vào cơ sở dữ liệu
-        _unitOfWork.Addresses.Add(address);
-        await _unitOfWork.SaveChangesAsync();
+                // Đặt tất cả các địa chỉ hiện tại không còn là mặc định
+                foreach (var userAddress in userAddresses)
+                {
+                    if (userAddress.IsDefault)
+                    {
+                        userAddress.IsDefault = false;
+                        _unitOfWork.Addresses.Update(userAddress);
+                    }
+                }
+                
+                // Thêm địa chỉ mới vào cơ sở dữ liệu
+                _unitOfWork.Addresses.Add(address);
+                
+                // Lưu các thay đổi
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new Exception($"Failed to create address: {ex.Message}", ex);
+            }
+        }
+        else
+        {
+            // Thêm địa chỉ mới vào cơ sở dữ liệu (không cần transaction nếu không phải địa chỉ mặc định)
+            _unitOfWork.Addresses.Add(address);
+            await _unitOfWork.SaveChangesAsync();
+        }
 
         // Lấy dữ liệu Address cùng các liên quan (Country, User)
         var savedAddress = await _unitOfWork.Addresses.Entities
@@ -146,6 +181,13 @@ public class AddressService : IAddressService
         if (addressForUpdateDto is null)
             throw new ArgumentNullException(nameof(addressForUpdateDto), "Address data cannot be null.");
 
+        // Validate that the country exists
+        var countryExists = await _unitOfWork.Countries.Entities
+            .AnyAsync(c => c.Id == addressForUpdateDto.CountryId);
+        
+        if (!countryExists)
+            throw new ArgumentException($"Country with ID {addressForUpdateDto.CountryId} does not exist.", nameof(addressForUpdateDto.CountryId));
+
         var address = await _unitOfWork.Addresses.GetByIdAsync(addressId);
         if (address == null)
             throw new KeyNotFoundException($"Address with ID {addressId} not found.");
@@ -171,35 +213,47 @@ public class AddressService : IAddressService
 
     public async Task<bool> SetAsDefaultAsync(Guid addressId, Guid userId)
     {
-        // Lấy danh sách địa chỉ của người dùng
-        var userAddresses = await _unitOfWork.Addresses.Entities
-            .Where(a => a.UserId == userId && !a.IsDeleted)
-            .ToListAsync();
-
-        // Kiểm tra xem địa chỉ cần đặt mặc định có tồn tại không
-        var addressToSetDefault = userAddresses.FirstOrDefault(a => a.Id == addressId);
-        if (addressToSetDefault == null)
-            throw new KeyNotFoundException($"Address with ID {addressId} not found for the current user.");
-
-        // Kiểm tra nếu địa chỉ đã là mặc định, không cần thực hiện thay đổi
-        if (addressToSetDefault.IsDefault)
-            return true;
-
-        // Bỏ mặc định địa chỉ hiện tại (nếu có)
-        foreach (var address in userAddresses)
+        try
         {
-            if (address.IsDefault)
-            {
-                address.IsDefault = false;
-            }
-        }
+            await _unitOfWork.BeginTransactionAsync();
+            
+            // Lấy danh sách địa chỉ của người dùng
+            var userAddresses = await _unitOfWork.Addresses.Entities
+                .Where(a => a.UserId == userId && !a.IsDeleted)
+                .ToListAsync();
 
-        // Đặt địa chỉ yêu cầu thành mặc định
-        addressToSetDefault.IsDefault = true;
-        _unitOfWork.Addresses.Update(addressToSetDefault); // Lưu thay đổi
-        // Lưu thay đổi
-        await _unitOfWork.SaveChangesAsync();
-        return true;
+            // Kiểm tra xem địa chỉ cần đặt mặc định có tồn tại không
+            var addressToSetDefault = userAddresses.FirstOrDefault(a => a.Id == addressId);
+            if (addressToSetDefault == null)
+                throw new KeyNotFoundException($"Address with ID {addressId} not found for the current user.");
+
+            // Kiểm tra nếu địa chỉ đã là mặc định, không cần thực hiện thay đổi
+            if (addressToSetDefault.IsDefault)
+                return true;
+
+            // Bỏ mặc định địa chỉ hiện tại (nếu có)
+            foreach (var address in userAddresses)
+            {
+                if (address.IsDefault)
+                {
+                    address.IsDefault = false;
+                    _unitOfWork.Addresses.Update(address);
+                }
+            }
+
+            // Đặt địa chỉ yêu cầu thành mặc định
+            addressToSetDefault.IsDefault = true;
+            _unitOfWork.Addresses.Update(addressToSetDefault);
+            
+            // Lưu thay đổi
+            await _unitOfWork.CommitTransactionAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw new Exception($"Failed to set address as default: {ex.Message}", ex);
+        }
     }
 
     public async Task<bool> DeleteAsync(Guid id, Guid userId)
@@ -207,6 +261,7 @@ public class AddressService : IAddressService
         var address = await _unitOfWork.Addresses.GetByIdAsync(id);
         if (address == null)
             throw new KeyNotFoundException($"Address with ID {id} not found.");
+        
         address.DeletedBy = userId.ToString();
         address.DeletedTime = DateTimeOffset.UtcNow;
         address.IsDeleted = true;
