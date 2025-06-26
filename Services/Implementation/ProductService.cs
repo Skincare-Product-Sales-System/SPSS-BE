@@ -41,6 +41,9 @@ public class ProductService : IProductService
 
         var orderedProducts = products.OrderByDescending(p => p.CreatedTime).ToList();
 
+        // Update products with minimum prices
+        await UpdateProductsWithMinimumPricesAsync(orderedProducts);
+
         var productIds = orderedProducts.Select(p => p.Id).ToList();
         var productImages = await _unitOfWork.ProductImages.Entities
             .Where(pi => productIds.Contains(pi.ProductId))
@@ -80,6 +83,9 @@ public class ProductService : IProductService
         );
 
         var orderedProducts = products.OrderByDescending(p => p.CreatedTime).ToList();
+
+        // Update products with minimum prices
+        await UpdateProductsWithMinimumPricesAsync(orderedProducts);
 
         var productImageIds = orderedProducts.Select(p => p.Id).ToList();
         var productImages = await _unitOfWork.ProductImages.Entities
@@ -123,6 +129,9 @@ public class ProductService : IProductService
         );
 
         var orderedProducts = products.OrderByDescending(p => p.CreatedTime).ToList();
+
+        // Update products with minimum prices
+        await UpdateProductsWithMinimumPricesAsync(orderedProducts);
 
         // Fetch related product images
         var productImageIds = orderedProducts.Select(p => p.Id).ToList();
@@ -239,11 +248,10 @@ public class ProductService : IProductService
     Guid? brandId = null,
     Guid? categoryId = null,
     Guid? skinTypeId = null,
-    string sortBy = "newest", // Thêm tham số sortBy với giá trị mặc định "newest"
-    string name = null // Thêm tham số name để lọc theo tên sản phẩm
-)
+    string sortBy = "newest",
+    string name = null)
     {
-        // Lọc sản phẩm theo SkinTypeId nếu được cung cấp
+        // Existing code for filtering products
         var productIdsBySkinType = skinTypeId.HasValue
             ? await _unitOfWork.ProductForSkinTypes.Entities
                 .Where(pst => pst.SkinTypeId == skinTypeId.Value)
@@ -252,40 +260,40 @@ public class ProductService : IProductService
                 .ToListAsync()
             : null;
 
-        // Lấy danh sách các CategoryId bao gồm cả subcategories
         var subCategoryIds = categoryId.HasValue
             ? await GetSubCategoryIdsAsync(categoryId.Value)
             : null;
 
-        // Truy vấn sản phẩm từ cơ sở dữ liệu với các điều kiện lọc
         var (products, totalCount) = await _unitOfWork.Products.GetPagedAsync(
             pageNumber,
             pageSize,
             cr =>
-                cr.IsDeleted == false && // Không lấy các sản phẩm bị xóa
-                (!brandId.HasValue || cr.BrandId == brandId.Value) && // Lọc theo BrandId nếu có
-                (subCategoryIds == null || subCategoryIds.Contains(cr.ProductCategoryId)) && // Lọc theo CategoryId nếu có
-                (productIdsBySkinType == null || productIdsBySkinType.Contains(cr.Id)) && // Lọc theo SkinTypeId nếu có
-                (string.IsNullOrEmpty(name) || cr.Name.Contains(name)) // Lọc theo tên sản phẩm nếu có
+                cr.IsDeleted == false &&
+                (!brandId.HasValue || cr.BrandId == brandId.Value) &&
+                (subCategoryIds == null || subCategoryIds.Contains(cr.ProductCategoryId)) &&
+                (productIdsBySkinType == null || productIdsBySkinType.Contains(cr.Id)) &&
+                (string.IsNullOrEmpty(name) || cr.Name.Contains(name))
         );
 
-        // Sắp xếp sản phẩm theo tiêu chí được chọn
+        // Update products with minimum prices from their items
+        await UpdateProductsWithMinimumPricesAsync(products);
+
+        // Existing code for sorting
         products = sortBy.ToLower() switch
         {
             "newest" => products.OrderByDescending(p => p.CreatedTime),
-            "bestselling" => products.OrderByDescending(p => p.SoldCount), // Giả định `Sales` là số lượng sản phẩm bán được
+            "bestselling" => products.OrderByDescending(p => p.SoldCount),
             "price_asc" => products.OrderBy(p => p.Price),
             "price_desc" => products.OrderByDescending(p => p.Price),
-            _ => products.OrderByDescending(p => p.CreatedTime) // Mặc định là newest
+            _ => products.OrderByDescending(p => p.CreatedTime)
         };
 
-        // Lấy danh sách Id của sản phẩm và các ảnh liên quan
+        // Existing code for loading images
         var productIds = products.Select(p => p.Id).ToList();
         var productImages = await _unitOfWork.ProductImages.Entities
             .Where(pi => productIds.Contains(pi.ProductId))
             .ToListAsync();
 
-        // Gán ảnh vào từng sản phẩm
         foreach (var product in products)
         {
             product.ProductImages = productImages
@@ -293,10 +301,8 @@ public class ProductService : IProductService
                 .ToList();
         }
 
-        // Chuyển đổi sản phẩm sang DTO
         var productDtos = _mapper.Map<IEnumerable<ProductDto>>(products);
 
-        // Trả về kết quả phân trang
         return new PagedResponse<ProductDto>
         {
             Items = productDtos,
@@ -304,6 +310,38 @@ public class ProductService : IProductService
             PageNumber = pageNumber,
             PageSize = pageSize
         };
+    }
+
+    // Add this helper method to the ProductService class
+    private async Task UpdateProductsWithMinimumPricesAsync(IEnumerable<Product> products)
+    {
+        var productIds = products.Select(p => p.Id).ToList();
+
+        // Get all product items for these products
+        var productItems = await _unitOfWork.ProductItems.Entities
+            .Where(pi => productIds.Contains(pi.ProductId))
+            .ToListAsync();
+
+        // Group product items by product id
+        var productItemsGrouped = productItems.GroupBy(pi => pi.ProductId)
+                                             .ToDictionary(g => g.Key, g => g.ToList());
+
+        // Update each product with minimum prices from its items
+        foreach (var product in products)
+        {
+            if (productItemsGrouped.TryGetValue(product.Id, out var items) && items.Any())
+            {
+                // Set product price to the minimum price from its items
+                var minPriceItem = items.OrderBy(i => i.Price).FirstOrDefault();
+                var minMarketPriceItem = items.OrderBy(i => i.MarketPrice).FirstOrDefault();
+
+                if (minPriceItem != null)
+                    product.Price = minPriceItem.Price;
+
+                if (minMarketPriceItem != null)
+                    product.MarketPrice = minMarketPriceItem.MarketPrice;
+            }
+        }
     }
 
     private async Task<List<Guid>> GetSubCategoryIdsAsync(Guid categoryId)
@@ -346,6 +384,9 @@ public class ProductService : IProductService
 
         // Sort by SoldCount in descending order
         var orderedProducts = products.OrderByDescending(p => p.SoldCount).ToList();
+
+        // Update products with minimum prices
+        await UpdateProductsWithMinimumPricesAsync(orderedProducts);
 
         var productIds = orderedProducts.Select(p => p.Id).ToList();
         var productImages = await _unitOfWork.ProductImages.Entities
