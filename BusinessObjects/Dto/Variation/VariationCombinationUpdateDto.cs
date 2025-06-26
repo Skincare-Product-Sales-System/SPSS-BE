@@ -14,6 +14,9 @@ namespace BusinessObjects.Dto.Variation
         [Range(0, int.MaxValue, ErrorMessage = "Price must be a non-negative integer.")]
         public int? Price { get; set; }
 
+        [Range(0, int.MaxValue, ErrorMessage = "Purchase price must be a non-negative integer.")]
+        public int? PurchasePrice { get; set; }
+
         [Range(0, int.MaxValue, ErrorMessage = "Quantity in stock must be a non-negative integer.")]
         public int? QuantityInStock { get; set; }
     }

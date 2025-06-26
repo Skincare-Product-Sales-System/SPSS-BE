@@ -546,6 +546,7 @@ public class ProductService : IProductService
                 ProductId = product.Id,
                 Price = combination.Price,
                 MarketPrice = combination.MarketPrice,
+                PurchasePrice = combination.PurchasePrice,
                 QuantityInStock = combination.QuantityInStock,
                 ImageUrl = string.IsNullOrWhiteSpace(combination.ImageUrl)
                 ? defaultThumbnail // Use Product.Thumbnail if ImageUrl is empty
@@ -744,6 +745,8 @@ public class ProductService : IProductService
                 ImageUrl = combination.ImageUrl,
                 ProductId = product.Id,
                 Price = combination.Price ?? 0,  // Defaulting to 0 if Price is not provided
+                MarketPrice = combination.Price ?? 0, // Default to same as price if not provided
+                PurchasePrice = combination.PurchasePrice ?? 0, // Default to 0 if PurchasePrice is not provided
                 QuantityInStock = combination.QuantityInStock ?? 0,
             };
 
