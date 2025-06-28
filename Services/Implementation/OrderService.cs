@@ -409,7 +409,7 @@ namespace Services.Implementation
                     // Add StatusChange entity to UnitOfWork
                     _unitOfWork.StatusChanges.Add(statusChangeEntity);
                 }
-                else if (orderEntity.PaymentMethodId == Guid.Parse("354EDA95-5BE5-41BE-ACC3-CFD70188118A"))
+                else if (orderEntity.PaymentMethodId == Guid.Parse("354EDA95-5BE5-41BE-ACC3-CFD70188118A") || orderEntity.PaymentMethodId == Guid.Parse("B0B58CE6-34D1-4500-BF1C-4BCC35A2EFD8"))
                 {
                     // Nếu là "354EDA95-5BE5-41BE-ACC3-CFD70188118A", trạng thái là Awaiting Payment và không tạo StatusChange
                     orderEntity.Status = StatusForOrder.AwaitingPayment;
@@ -632,9 +632,5 @@ namespace Services.Implementation
             _unitOfWork.Orders.Update(order); // Soft delete via update
             await _unitOfWork.SaveChangesAsync();
         }
-        
-       
     }
-    
-    
 }

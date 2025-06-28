@@ -1,0 +1,1 @@
+Add-Migration MovePurchasePriceToProductItem -Project BusinessObjects -StartupProject API -Context SPSSContext

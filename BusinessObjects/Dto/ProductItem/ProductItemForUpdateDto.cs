@@ -16,5 +16,9 @@ namespace BusinessObjects.Dto.ProductItem
         [Required(ErrorMessage = "Price is required.")]
         [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than 0.")]
         public decimal Price { get; set; }
+        
+        [Required(ErrorMessage = "Purchase price is required.")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Purchase price must be greater than 0.")]
+        public decimal PurchasePrice { get; set; }
     }
 }
