@@ -28,6 +28,7 @@ using BusinessObjects.Dto.Country;
 using BusinessObjects.Dto.QuizOption;
 using BusinessObjects.Dto.QuizQuestion;
 using BusinessObjects.Dto.Voucher;
+using BusinessObjects.Dto.ChatHistory;
 
 namespace API.Extensions;
 
@@ -422,6 +423,15 @@ public class MappingProfile : Profile
         CreateMap<VoucherForCreationDto, Voucher>();
         CreateMap<VoucherForUpdateDto, Voucher>();
         CreateMap<Voucher, VoucherForCreationDto>();
+        #endregion
+
+        #region ChatHistory
+        CreateMap<ChatHistory, ChatHistoryDto>();
+        CreateMap<ChatHistoryForCreationDto, ChatHistory>()
+            .ForMember(dest => dest.Timestamp, opt => opt.MapFrom(src => DateTimeOffset.UtcNow))
+            .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => DateTimeOffset.UtcNow))
+            .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => DateTimeOffset.UtcNow))
+            .ForMember(dest => dest.IsDeleted, opt => opt.MapFrom(src => false));
         #endregion
     }
 }

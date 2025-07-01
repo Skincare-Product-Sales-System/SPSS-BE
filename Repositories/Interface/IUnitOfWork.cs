@@ -39,6 +39,7 @@ public interface IUnitOfWork : IDisposable
     ISkinAnalysisIssueRepository SkinAnalysisIssues { get; }
     ISkinAnalysisRecommendationRepository SkinAnalysisRecommendations { get; }
     ITransactionRepository Transactions { get; }
+    IChatHistoryRepository ChatHistories { get; }
 
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();
