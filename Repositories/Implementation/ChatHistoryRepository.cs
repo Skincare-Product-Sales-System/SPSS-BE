@@ -49,5 +49,13 @@ namespace Repositories.Implementation
                 .ThenBy(ch => ch.Timestamp)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<ChatHistory>> GetByUserIdAndSessionIdAsync(Guid userId, string sessionId)
+        {
+            return await _context.ChatHistories
+                .Where(ch => ch.UserId == userId && ch.SessionId == sessionId && !ch.IsDeleted)
+                .OrderBy(ch => ch.Timestamp)
+                .ToListAsync();
+        }
     }
 }
