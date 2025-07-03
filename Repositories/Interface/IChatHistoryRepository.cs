@@ -10,5 +10,6 @@ namespace Repositories.Interface
         Task<IEnumerable<ChatHistory>> GetByUserIdAsync(Guid userId, int limit = 100);
         Task<IEnumerable<ChatHistory>> GetBySessionIdAsync(string sessionId);
         Task<IEnumerable<ChatHistory>> GetRecentSessionsAsync(Guid userId, int maxSessions = 10);
+        Task<IEnumerable<ChatHistory>> GetByUserIdAndSessionIdAsync(Guid userId, string sessionId);
     }
 }

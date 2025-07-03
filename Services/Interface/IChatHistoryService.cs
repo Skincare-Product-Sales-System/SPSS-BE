@@ -11,5 +11,6 @@ namespace Services.Interface
         Task<IEnumerable<ChatHistoryDto>> GetChatSessionAsync(string sessionId);
         Task<IEnumerable<string>> GetRecentSessionsIdsAsync(Guid userId, int maxSessions = 10);
         Task<ChatHistoryDto> SaveChatMessageAsync(ChatHistoryForCreationDto chatMessage);
+        Task<IEnumerable<ChatHistoryDto>> GetChatHistoryByUserIdAndSessionIdAsync(Guid userId, string sessionId);
     }
 }
