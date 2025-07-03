@@ -22,7 +22,7 @@ namespace API.Controllers
         }
 
         [HttpGet("user/{userId}")]
-        [CustomAuthorize("Customer,Manager")]
+        [CustomAuthorize("Customer", "Manager")]
         public async Task<IActionResult> GetChatHistoryByUserId(Guid userId, [FromQuery] int limit = 100)
         {
             try
@@ -32,12 +32,13 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponse<object>.FailureResponse(ex.Message));
+                var errorMsg = ex.InnerException?.Message ?? ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse(errorMsg));
             }
         }
 
         [HttpGet("session/{sessionId}")]
-        [CustomAuthorize("Customer,Manager")]
+        [CustomAuthorize("Customer", "Manager")]
         public async Task<IActionResult> GetChatSessionById(string sessionId)
         {
             try
@@ -47,12 +48,13 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponse<object>.FailureResponse(ex.Message));
+                var errorMsg = ex.InnerException?.Message ?? ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse(errorMsg));
             }
         }
 
         [HttpGet("sessions/{userId}")]
-        [CustomAuthorize("Customer,Manager")]
+        [CustomAuthorize("Customer", "Manager")]
         public async Task<IActionResult> GetRecentSessionsForUser(Guid userId, [FromQuery] int maxSessions = 10)
         {
             try
@@ -62,12 +64,13 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponse<object>.FailureResponse(ex.Message));
+                var errorMsg = ex.InnerException?.Message ?? ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse(errorMsg));
             }
         }
 
         [HttpPost]
-        [CustomAuthorize("Customer,Manager")]
+        [CustomAuthorize("Customer", "Manager")]
         public async Task<IActionResult> SaveChatMessage([FromBody] ChatHistoryForCreationDto chatMessage)
         {
             try
@@ -77,7 +80,8 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponse<object>.FailureResponse(ex.Message));
+                var errorMsg = ex.InnerException?.Message ?? ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse(errorMsg));
             }
         }
     }

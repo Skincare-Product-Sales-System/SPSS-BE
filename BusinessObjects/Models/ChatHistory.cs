@@ -21,7 +21,7 @@ public partial class ChatHistory
 
     public string LastUpdatedBy { get; set; }
 
-    public string DeletedBy { get; set; }
+    public string? DeletedBy { get; set; }
 
     public DateTimeOffset? CreatedTime { get; set; }
 
