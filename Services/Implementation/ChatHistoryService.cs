@@ -65,5 +65,11 @@ namespace Services.Implementation
 
             return _mapper.Map<ChatHistoryDto>(chatHistoryEntity);
         }
+
+        public async Task<IEnumerable<ChatHistoryDto>> GetChatHistoryByUserIdAndSessionIdAsync(Guid userId, string sessionId)
+        {
+            var chatHistory = await _unitOfWork.ChatHistories.GetByUserIdAndSessionIdAsync(userId, sessionId);
+            return _mapper.Map<IEnumerable<ChatHistoryDto>>(chatHistory);
+        }
     }
 }

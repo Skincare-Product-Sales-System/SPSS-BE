@@ -84,5 +84,21 @@ namespace API.Controllers
                 return StatusCode(500, ApiResponse<object>.FailureResponse(errorMsg));
             }
         }
+
+        [HttpGet("user/{userId}/session/{sessionId}")]
+        [CustomAuthorize("Customer", "Manager")]
+        public async Task<IActionResult> GetChatHistoryByUserIdAndSessionId(Guid userId, string sessionId)
+        {
+            try
+            {
+                var history = await _chatHistoryService.GetChatHistoryByUserIdAndSessionIdAsync(userId, sessionId);
+                return Ok(ApiResponse<IEnumerable<ChatHistoryDto>>.SuccessResponse(history));
+            }
+            catch (Exception ex)
+            {
+                var errorMsg = ex.InnerException?.Message ?? ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse(errorMsg));
+            }
+        }
     }
 }
