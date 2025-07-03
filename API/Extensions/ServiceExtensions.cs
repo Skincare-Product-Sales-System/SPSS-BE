@@ -64,6 +64,7 @@ public static class ServiceExtensions
         
         // Add Transaction service
         services.AddScoped<ITransactionService, TransactionService>();
+        services.AddScoped<IChatHistoryService, ChatHistoryService>();
         
         return services;
     }
