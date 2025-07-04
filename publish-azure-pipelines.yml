@@ -27,7 +27,7 @@ steps:
   - task: AzureWebApp@1
     name: 'pushtoAzure'
     inputs:
-      azureSubscription: 'Prod_Cuong'
+      azureSubscription: 'Prod'
       appType: 'webApp'
       appName: 'spssapi'
       package: '$(Build.ArtifactsDirectory)/SPSSartifact/*.zip'
