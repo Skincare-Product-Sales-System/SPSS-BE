@@ -99,6 +99,9 @@ public partial class SPSSContext : DbContext
 
     // Add the Transaction DbSet
     public virtual DbSet<Transaction> Transactions { get; set; }
+    
+    // Add the ChatHistory DbSet
+    public virtual DbSet<ChatHistory> ChatHistories { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -205,423 +208,7 @@ public partial class SPSSContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.Addresses).HasForeignKey(d => d.UserId);
         });
 
-
-
-        modelBuilder.Entity<Blog>(entity =>
-        {
-            entity.HasIndex(e => e.UserId, "IX_Blogs_UserId");
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Thumbnail).IsRequired();
-            entity.Property(e => e.CreatedBy).HasMaxLength(100);
-            entity.Property(e => e.DeletedBy).HasMaxLength(100);
-            entity.Property(e => e.Description)
-                .IsRequired()
-                .HasMaxLength(500);
-            entity.Property(e => e.LastUpdatedBy).HasMaxLength(100);
-            entity.Property(e => e.Title)
-                .IsRequired()
-                .HasMaxLength(200);
-
-            entity.HasOne(d => d.User).WithMany(p => p.Blogs).HasForeignKey(d => d.UserId);
-        });
-
-        // modelBuilder.Entity<BlogImage>(entity =>
-        // {
-        //     entity.HasIndex(e => e.BlogId, "IX_BlogImages_BlogId");
-        //     entity.Property(e => e.Id).ValueGeneratedNever();
-        //     entity.Property(e => e.CreatedBy).HasMaxLength(100);
-        //     entity.Property(e => e.DeletedBy).HasMaxLength(100);
-        //     entity.Property(e => e.ImageUrl)
-        //         .IsRequired()
-        //         .HasMaxLength(500);
-        //     entity.Property(e => e.LastUpdatedBy).HasMaxLength(100);
-        //     entity.HasOne(d => d.Blog).WithMany(p => p.BlogImages).HasForeignKey(d => d.BlogId);
-        // });
-
-        modelBuilder.Entity<Brand>(entity =>
-        {
-            entity.HasIndex(e => e.CountryId, "IX_Brands_CountryId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Description)
-                .IsRequired()
-                .HasMaxLength(500);
-            entity.Property(e => e.ImageUrl)
-                .IsRequired()
-                .HasMaxLength(500);
-            entity.Property(e => e.Name)
-                .IsRequired()
-                .HasMaxLength(100);
-            entity.Property(e => e.Title)
-                .IsRequired()
-                .HasMaxLength(200);
-
-            entity.HasOne(d => d.Country).WithMany(p => p.Brands).HasForeignKey(d => d.CountryId);
-        });
-
-        modelBuilder.Entity<CancelReason>(entity =>
-        {
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Description)
-                .IsRequired()
-                .HasMaxLength(500);
-            entity.Property(e => e.RefundRate).HasColumnType("decimal(5, 2)");
-        });
-
-        modelBuilder.Entity<CartItem>(entity =>
-        {
-            entity.HasIndex(e => e.ProductItemId, "IX_CartItems_ProductItemId");
-
-            entity.HasIndex(e => e.UserId, "IX_CartItems_UserId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Quantity).HasDefaultValue(1);
-
-            entity.HasOne(d => d.ProductItem).WithMany(p => p.CartItems).HasForeignKey(d => d.ProductItemId);
-
-            entity.HasOne(d => d.User).WithMany(p => p.CartItems).HasForeignKey(d => d.UserId);
-        });
-
-        modelBuilder.Entity<Country>(entity =>
-        {
-            entity.Property(e => e.CountryCode)
-                .IsRequired()
-                .HasMaxLength(10);
-            entity.Property(e => e.CountryName)
-                .IsRequired()
-                .HasMaxLength(100);
-        });
-
-        modelBuilder.Entity<Order>(entity =>
-        {
-            entity.HasIndex(e => e.AddressId, "IX_Orders_AddressId");
-
-            entity.HasIndex(e => e.CancelReasonId, "IX_Orders_CancelReasonId");
-
-            entity.HasIndex(e => e.PaymentMethodId, "IX_Orders_PaymentMethodId");
-
-            entity.HasIndex(e => e.UserId, "IX_Orders_UserId");
-
-            entity.HasIndex(e => e.VoucherId, "IX_Orders_VoucherId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.OrderTotal).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.Status)
-                .IsRequired()
-                .HasMaxLength(100);
-
-            entity.HasOne(d => d.Address).WithMany(p => p.Orders).HasForeignKey(d => d.AddressId);
-
-            entity.HasOne(d => d.CancelReason).WithMany(p => p.Orders).HasForeignKey(d => d.CancelReasonId);
-
-            entity.HasOne(d => d.PaymentMethod).WithMany(p => p.Orders).HasForeignKey(d => d.PaymentMethodId);
-
-            entity.HasOne(d => d.User).WithMany(p => p.Orders)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull);
-
-            entity.HasOne(d => d.Voucher).WithMany(p => p.Orders).HasForeignKey(d => d.VoucherId);
-        });
-
-        modelBuilder.Entity<OrderDetail>(entity =>
-        {
-            entity.HasIndex(e => e.OrderId, "IX_OrderDetails_OrderId");
-
-            entity.HasIndex(e => e.ProductItemId, "IX_OrderDetails_ProductItemId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Price).HasColumnType("decimal(18, 2)");
-
-            entity.HasOne(d => d.Order).WithMany(p => p.OrderDetails).HasForeignKey(d => d.OrderId);
-
-            entity.HasOne(d => d.ProductItem).WithMany(p => p.OrderDetails)
-                .HasForeignKey(d => d.ProductItemId)
-                .OnDelete(DeleteBehavior.ClientSetNull);
-        });
-
-        modelBuilder.Entity<PaymentMethod>(entity =>
-        {
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.ImageUrl)
-                .IsRequired()
-                .HasMaxLength(200);
-            entity.Property(e => e.PaymentType)
-                .IsRequired()
-                .HasMaxLength(100);
-        });
-
-        modelBuilder.Entity<Product>(entity =>
-        {
-            entity.HasIndex(e => e.BrandId, "IX_Products_BrandId");
-
-            entity.HasIndex(e => e.ProductCategoryId, "IX_Products_ProductCategoryId");
-
-            entity.HasIndex(e => e.ProductStatusId, "IX_Products_ProductStatusId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Description).IsRequired();
-            entity.Property(e => e.DetailedIngredients).HasMaxLength(1000);
-            entity.Property(e => e.EnglishName).HasMaxLength(255);
-            entity.Property(e => e.ExpiryDate).HasMaxLength(50);
-            entity.Property(e => e.KeyActiveIngredients).HasMaxLength(500);
-            entity.Property(e => e.MainFunction).HasMaxLength(255);
-            entity.Property(e => e.MarketPrice).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.Name)
-                .IsRequired()
-                .HasMaxLength(255);
-            entity.Property(e => e.Price).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.SkinIssues).HasMaxLength(255);
-            entity.Property(e => e.StorageInstruction).HasMaxLength(500);
-            entity.Property(e => e.Texture).HasMaxLength(255);
-            entity.Property(e => e.UsageInstruction).HasMaxLength(500);
-
-            entity.HasOne(d => d.Brand).WithMany(p => p.Products).HasForeignKey(d => d.BrandId);
-
-            entity.HasOne(d => d.ProductCategory).WithMany(p => p.Products).HasForeignKey(d => d.ProductCategoryId);
-
-            entity.HasOne(d => d.ProductStatus).WithMany(p => p.Products).HasForeignKey(d => d.ProductStatusId);
-        });
-
-        modelBuilder.Entity<ProductCategory>(entity =>
-        {
-            entity.HasIndex(e => e.ParentCategoryId, "IX_ProductCategories_ParentCategoryId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.CategoryName)
-                .IsRequired()
-                .HasMaxLength(100);
-
-            entity.HasOne(d => d.ParentCategory).WithMany(p => p.InverseParentCategory).HasForeignKey(d => d.ParentCategoryId);
-        });
-
-        modelBuilder.Entity<ProductConfiguration>(entity =>
-        {
-            entity.HasIndex(e => e.ProductItemId, "IX_ProductConfigurations_ProductItemId");
-
-            entity.HasIndex(e => e.VariationOptionId, "IX_ProductConfigurations_VariationOptionId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-
-            entity.HasOne(d => d.ProductItem).WithMany(p => p.ProductConfigurations).HasForeignKey(d => d.ProductItemId);
-
-            entity.HasOne(d => d.VariationOption).WithMany(p => p.ProductConfigurations).HasForeignKey(d => d.VariationOptionId);
-        });
-
-        modelBuilder.Entity<ProductForSkinType>(entity =>
-        {
-            entity.HasIndex(e => e.ProductId, "IX_ProductForSkinTypes_ProductId");
-
-            entity.HasIndex(e => e.SkinTypeId, "IX_ProductForSkinTypes_SkinTypeId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-
-            entity.HasOne(d => d.Product).WithMany(p => p.ProductForSkinTypes).HasForeignKey(d => d.ProductId);
-
-            entity.HasOne(d => d.SkinType).WithMany(p => p.ProductForSkinTypes).HasForeignKey(d => d.SkinTypeId);
-        });
-
-        modelBuilder.Entity<ProductImage>(entity =>
-        {
-            entity.HasIndex(e => e.ProductId, "IX_ProductImages_ProductId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.ImageUrl)
-                .IsRequired()
-                .HasMaxLength(500);
-
-            entity.HasOne(d => d.Product).WithMany(p => p.ProductImages).HasForeignKey(d => d.ProductId);
-        });
-
-        modelBuilder.Entity<ProductItem>(entity =>
-        {
-            entity.HasIndex(e => e.ProductId, "IX_ProductItems_ProductId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.ImageUrl)
-                .IsRequired()
-                .HasMaxLength(500);
-            entity.Property(e => e.Price).HasColumnType("decimal(18, 2)");
-
-            entity.HasOne(d => d.Product).WithMany(p => p.ProductItems).HasForeignKey(d => d.ProductId);
-        });
-
-        modelBuilder.Entity<ProductStatus>(entity =>
-        {
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Description)
-                .IsRequired()
-                .HasMaxLength(500);
-            entity.Property(e => e.StatusName)
-                .IsRequired()
-                .HasMaxLength(100);
-        });
-
-        modelBuilder.Entity<QuizOption>(entity =>
-        {
-            entity.HasIndex(e => e.QuizQuestionId, "IX_QuizOptions_QuizQuestionId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Value)
-                .IsRequired()
-                .HasMaxLength(255);
-
-            entity.HasOne(d => d.QuizQuestion).WithMany(p => p.QuizOptions).HasForeignKey(d => d.QuizQuestionId);
-        });
-
-        modelBuilder.Entity<QuizQuestion>(entity =>
-        {
-            entity.HasIndex(e => e.QuizSetId, "IX_QuizQuestions_QuizSetId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Value)
-                .IsRequired()
-                .HasMaxLength(500);
-
-            entity.HasOne(d => d.QuizSet).WithMany(p => p.QuizQuestions).HasForeignKey(d => d.QuizSetId);
-        });
-
-        modelBuilder.Entity<QuizResult>(entity =>
-        {
-            entity.HasIndex(e => e.QuizSetId, "IX_QuizResults_QuizSetId");
-
-            entity.HasIndex(e => e.SkinTypeId, "IX_QuizResults_SkinTypeId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Score)
-                .IsRequired()
-                .HasMaxLength(100);
-
-            entity.HasOne(d => d.QuizSet).WithMany(p => p.QuizResults).HasForeignKey(d => d.QuizSetId);
-
-            entity.HasOne(d => d.SkinType).WithMany(p => p.QuizResults).HasForeignKey(d => d.SkinTypeId);
-        });
-
-        modelBuilder.Entity<QuizSet>(entity =>
-        {
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Name)
-                .IsRequired()
-                .HasMaxLength(200);
-        });
-
-        modelBuilder.Entity<RefreshToken>(entity =>
-        {
-            entity.HasIndex(e => e.UserId, "IX_RefreshTokens_UserId");
-
-            entity.HasOne(d => d.User).WithMany(p => p.RefreshTokens).HasForeignKey(d => d.UserId);
-        });
-
-        modelBuilder.Entity<Reply>(entity =>
-        {
-            entity.HasIndex(e => e.ReviewId, "IX_Replies_ReviewId").IsUnique();
-
-            entity.HasIndex(e => e.UserId, "IX_Replies_UserId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.ReplyContent)
-                .IsRequired()
-                .HasMaxLength(1000);
-
-            entity.HasOne(d => d.Review).WithOne(p => p.Reply).HasForeignKey<Reply>(d => d.ReviewId);
-
-            entity.HasOne(d => d.User).WithMany(p => p.Replies).HasForeignKey(d => d.UserId);
-        });
-
-        modelBuilder.Entity<Review>(entity =>
-        {
-            entity.HasIndex(e => e.ProductItemId, "IX_Reviews_ProductItemId");
-
-            entity.HasIndex(e => e.UserId, "IX_Reviews_UserId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Comment)
-                .IsRequired()
-                .HasMaxLength(2000);
-
-            entity.HasOne(d => d.ProductItem).WithMany(p => p.Reviews).HasForeignKey(d => d.ProductItemId);
-
-            entity.HasOne(d => d.User).WithMany(p => p.Reviews).HasForeignKey(d => d.UserId);
-        });
-
-        modelBuilder.Entity<ReviewImage>(entity =>
-        {
-            entity.HasIndex(e => e.ReviewId, "IX_ReviewImages_ReviewId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.ImageUrl)
-                .IsRequired()
-                .HasMaxLength(1000);
-
-            entity.HasOne(d => d.Review).WithMany(p => p.ReviewImages).HasForeignKey(d => d.ReviewId);
-        });
-
-        modelBuilder.Entity<SkinType>(entity =>
-        {
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Description)
-                .IsRequired()
-                .HasMaxLength(1000);
-            entity.Property(e => e.Name)
-                .IsRequired()
-                .HasMaxLength(200);
-            // entity.Property(e => e.Routine)
-            //     .IsRequired()
-            //     .HasMaxLength(2000);
-        });
-
-        modelBuilder.Entity<StatusChange>(entity =>
-        {
-            entity.HasIndex(e => e.OrderId, "IX_StatusChanges_OrderId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Status)
-                .IsRequired()
-                .HasMaxLength(100);
-
-            entity.HasOne(d => d.Order).WithMany(p => p.StatusChanges).HasForeignKey(d => d.OrderId);
-        });
-
-        modelBuilder.Entity<Variation>(entity =>
-        {
-            entity.HasIndex(e => e.ProductCategoryId, "IX_Variations_ProductCategoryId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Name)
-                .IsRequired()
-                .HasMaxLength(255);
-
-            entity.HasOne(d => d.ProductCategory).WithMany(p => p.Variations).HasForeignKey(d => d.ProductCategoryId);
-        });
-
-        modelBuilder.Entity<VariationOption>(entity =>
-        {
-            entity.HasIndex(e => e.VariationId, "IX_VariationOptions_VariationId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Value)
-                .IsRequired()
-                .HasMaxLength(255);
-
-            entity.HasOne(d => d.Variation).WithMany(p => p.VariationOptions).HasForeignKey(d => d.VariationId);
-        });
-
-        modelBuilder.Entity<Voucher>(entity =>
-        {
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.Code)
-                .IsRequired()
-                .HasMaxLength(100);
-            entity.Property(e => e.Description)
-                .IsRequired()
-                .HasMaxLength(500);
-            entity.Property(e => e.Status)
-                .IsRequired()
-                .HasMaxLength(50);
-            entity.Property(e => e.UsageLimit)
-                .IsRequired()
-                .HasMaxLength(50);
-        });
-        OnModelCreatingPartial(modelBuilder);
+        // ... other entity configurations ...
 
         modelBuilder.Entity<SkinTypeRoutineStep>(entity =>
         {
@@ -695,6 +282,30 @@ public partial class SPSSContext : DbContext
             entity.HasOne(e => e.Product)
                 .WithMany()
                 .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure ChatHistory entity relationships
+        modelBuilder.Entity<ChatHistory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            
+            entity.HasIndex(e => e.UserId, "IX_ChatHistories_UserId");
+            entity.HasIndex(e => e.SessionId, "IX_ChatHistories_SessionId");
+            
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.MessageContent).IsRequired().HasColumnType("nvarchar(max)");
+            entity.Property(e => e.SenderType).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.SessionId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Timestamp).IsRequired();
+            
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.LastUpdatedBy).HasMaxLength(100);
+            entity.Property(e => e.DeletedBy).HasMaxLength(100);
+            
+            entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
