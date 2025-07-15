@@ -10,12 +10,15 @@ namespace YourNamespace.Controllers
         [HttpGet("download")]
         public IActionResult DownloadApk()
         {
-            var apkPath = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "skincede.apk");
+            var apkPath = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "app-release.apk");
+
             if (!System.IO.File.Exists(apkPath))
             {
                 return NotFound("APK file not found.");
             }
+
             var stream = new FileStream(apkPath, FileMode.Open, FileAccess.Read);
+
             return File(
                 stream,
                 "application/vnd.android.package-archive",
