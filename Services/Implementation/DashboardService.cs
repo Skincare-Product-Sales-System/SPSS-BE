@@ -229,6 +229,8 @@ namespace Services.Implementation
 
             var inventoryProcurementCost = await GetInventoryProcurementCostAsync();
 
+            var totalOrderCount = completedOrderCount + pendingOrdersCount;
+
             return new FinancialSummaryDto
             {
                 GrossRevenue = grossRevenue,
@@ -240,6 +242,12 @@ namespace Services.Implementation
                 ProfitMargin = profitMargin,
                 CompletedOrderCount = completedOrderCount,
                 PendingOrderCount = pendingOrdersCount,
+                ProfitMarginPercent = totalNetRevenue > 0 ? (double)(totalProfit / totalNetRevenue) * 100 : 0,
+                ProcurementCostPercent = totalNetRevenue > 0 ? (double)(totalProcurementCost / totalNetRevenue) * 100 : 0,
+                InventoryCostPercent = totalNetRevenue > 0 ? (double)(inventoryProcurementCost / totalNetRevenue) * 100 : 0,
+                CompletedOrderRate = totalOrderCount > 0 ? (double)completedOrderCount / totalOrderCount * 100 : 0,
+                PendingOrderRate = totalOrderCount > 0 ? (double)pendingOrdersCount / totalOrderCount * 100 : 0,
+                DiscountRate = grossRevenue > 0 ? (double)(totalDiscountAmount / grossRevenue) * 100 : 0,
                 StartDate = startDate,
                 EndDate = endDate
             };

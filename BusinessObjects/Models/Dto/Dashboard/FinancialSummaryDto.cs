@@ -14,6 +14,12 @@ namespace BusinessObjects.Models.Dto.Dashboard
         public decimal ProfitMargin { get; set; }
         public int CompletedOrderCount { get; set; }
         public int PendingOrderCount { get; set; }
+        public double ProfitMarginPercent { get; set; }
+        public double ProcurementCostPercent { get; set; }
+        public double InventoryCostPercent { get; set; }
+        public double CompletedOrderRate { get; set; }
+        public double PendingOrderRate { get; set; }
+        public double DiscountRate { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
     }
