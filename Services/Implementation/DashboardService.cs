@@ -226,13 +226,16 @@ namespace Services.Implementation
             
             // Get completed order count
             var completedOrderCount = await completedOrdersQuery.CountAsync();
-            
+
+            var inventoryProcurementCost = await GetInventoryProcurementCostAsync();
+
             return new FinancialSummaryDto
             {
-                GrossRevenue = grossRevenue,  // Revenue before voucher discounts
-                DiscountAmount = totalDiscountAmount,  // Total voucher discount amount
-                TotalRevenue = totalNetRevenue,  // Net revenue after discounts
-                TotalProcurementCost = totalProcurementCost,
+                GrossRevenue = grossRevenue,
+                DiscountAmount = totalDiscountAmount,
+                TotalRevenue = totalNetRevenue,
+                TotalProcurementCost = totalProcurementCost, // Sold products
+                InventoryProcurementCost = inventoryProcurementCost, // All inventory
                 TotalProfit = totalProfit,
                 ProfitMargin = profitMargin,
                 CompletedOrderCount = completedOrderCount,
@@ -240,6 +243,14 @@ namespace Services.Implementation
                 StartDate = startDate,
                 EndDate = endDate
             };
+        }
+
+        private async Task<decimal> GetInventoryProcurementCostAsync()
+        {
+            var productItems = await _unitOfWork.ProductItems.Entities
+                .ToListAsync();
+
+            return productItems.Sum(pi => pi.PurchasePrice * pi.QuantityInStock);
         }
 
         public async Task<PagedResponse<ProductProfitDto>> GetProductProfitAnalysisAsync(int pageNumber, int pageSize, DateTime? startDate = null, DateTime? endDate = null)

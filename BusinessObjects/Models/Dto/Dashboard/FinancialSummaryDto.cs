@@ -9,6 +9,7 @@ namespace BusinessObjects.Models.Dto.Dashboard
 
         public decimal TotalRevenue { get; set; }         // Net revenue after discounts
         public decimal TotalProcurementCost { get; set; }
+        public decimal InventoryProcurementCost { get; set; }
         public decimal TotalProfit { get; set; }
         public decimal ProfitMargin { get; set; }
         public int CompletedOrderCount { get; set; }
