@@ -36,6 +36,15 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
+        #region Country
+        CreateMap<Country, CountryDto>();
+        CreateMap<CountryForCreationDto, Country>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore()); // Bỏ qua Id vì là tự tăng
+        CreateMap<CountryForCreationDto, CountryDto>();
+        CreateMap<CountryForUpdateDto, CountryDto>();
+        CreateMap<CountryForUpdateDto, Country>();
+        #endregion
+
         #region Order
         // Mapping Order -> OrderDto
         CreateMap<Order, OrderDto>()

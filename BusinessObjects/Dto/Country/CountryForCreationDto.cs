@@ -4,8 +4,6 @@ namespace BusinessObjects.Dto.Country;
 
 public class CountryForCreationDto
 {
-    [Required(ErrorMessage = "Country ID is required.")]
-    public int Id { get; set; }
 
     [Required(ErrorMessage = "Country code is required.")]
     [StringLength(10, ErrorMessage = "Country code can't exceed 10 characters.")]
