@@ -212,6 +212,7 @@ public class ProductService : IProductService
                 Id = pi.Id,
                 Price = pi.Price,
                 MarketPrice = pi.MarketPrice,
+                PurchasePrice = pi.PurchasePrice,
                 QuantityInStock = pi.QuantityInStock,
                 ImageUrl = pi.ImageUrl,
                 Configurations = pi.ProductConfigurations.Select(pc => new ProductConfigurationForProductQueryDto
