@@ -193,4 +193,55 @@ public class ProductController : ControllerBase
         var pagedData = await _productService.GetByCategoryIdPagedAsync(categoryId, pageNumber, pageSize);
         return Ok(ApiResponse<PagedResponse<ProductDto>>.SuccessResponse(pagedData));
     }
+
+    // New endpoint for getting product for edit
+    [HttpGet("{id:guid}/edit")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetProductForEdit(Guid id)
+    {
+        try
+        {
+            var product = await _productService.GetProductForEditAsync(id);
+            return Ok(ApiResponse<ProductForEditDto>.SuccessResponse(product));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ApiResponse<ProductForEditDto>.FailureResponse(ex.Message));
+        }
+    }
+
+    // New endpoint for updating full product
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateProduct(Guid id, [FromBody] ProductForEditDto productDto)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(ApiResponse<bool>.FailureResponse("Invalid product data", errors));
+        }
+
+        Guid? userId = HttpContext.Items["UserId"] as Guid?;
+        if (userId == null)
+        {
+            return Unauthorized(ApiResponse<bool>.FailureResponse("User ID not found"));
+        }
+
+        try
+        {
+            var result = await _productService.UpdateProductAsync(id, productDto, userId.ToString());
+            return Ok(ApiResponse<bool>.SuccessResponse(result, "Product updated successfully"));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ApiResponse<bool>.FailureResponse(ex.Message));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ApiResponse<bool>.FailureResponse(ex.Message));
+        }
+    }
 }

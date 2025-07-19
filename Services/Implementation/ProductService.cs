@@ -718,7 +718,7 @@ public class ProductService : IProductService
                 Id = Guid.NewGuid(),
                 ProductId = productId,
                 ImageUrl = imagesToAdd[i],
-                IsThumbnail = (i == 0 && !existingProduct.ProductImages.Any(pi => pi.IsThumbnail)),
+                IsThumbnail = (i == 0 && !existingProduct.ProductImages.Any(pi => pi.IsThumbnail && !imagesToRemove.Contains(pi))),
             });
         }
 
@@ -859,4 +859,250 @@ public class ProductService : IProductService
         };
     }
 
+    public async Task<ProductForEditDto> GetProductForEditAsync(Guid id)
+    {
+        // Lấy sản phẩm từ database với tất cả thông tin liên quan
+        var product = await _unitOfWork.Products
+            .GetQueryable()
+            .Include(p => p.ProductCategory)
+            .Include(p => p.ProductItems)
+                .ThenInclude(pi => pi.ProductConfigurations)
+                    .ThenInclude(pc => pc.VariationOption)
+                        .ThenInclude(vo => vo.Variation)
+            .Include(p => p.Brand)
+            .Include(p => p.ProductImages)
+            .Include(p => p.ProductForSkinTypes)
+                .ThenInclude(pst => pst.SkinType)
+            .Include(ps => ps.ProductStatus)
+            .FirstOrDefaultAsync(p => p.Id == id);
+
+        // Kiểm tra null
+        if (product == null)
+            throw new KeyNotFoundException($"Product with ID {id} not found.");
+
+        // Lấy tất cả variations và options cho sản phẩm
+        var allVariations = await _unitOfWork.Variations.Entities
+            .Include(v => v.VariationOptions)
+            .ToListAsync();
+
+        // Tạo ProductForEditDto
+        var productForEditDto = new ProductForEditDto
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Description = product.Description,
+            Price = product.Price,
+            MarketPrice = product.MarketPrice,
+            Status = product.ProductStatus?.StatusName,
+            BrandId = product.BrandId,
+            ProductCategoryId = product.ProductCategoryId,
+            ProductImageUrls = product.ProductImages.Select(pi => pi.ImageUrl).ToList(),
+            SkinTypeIds = product.ProductForSkinTypes.Select(pst => pst.SkinTypeId).ToList(),
+            Specifications = new ProductSpecifications
+            {
+                StorageInstruction = product.StorageInstruction,
+                UsageInstruction = product.UsageInstruction,
+                DetailedIngredients = product.DetailedIngredients,
+                MainFunction = product.MainFunction,
+                Texture = product.Texture,
+                KeyActiveIngredients = product.KeyActiveIngredients,
+                ExpiryDate = product.ExpiryDate,
+                SkinIssues = product.SkinIssues,
+                EnglishName = product.EnglishName
+            }
+        };
+
+        // Tìm tất cả variation options đang được sử dụng trong sản phẩm này
+        var usedVariationOptionIds = product.ProductItems
+            .SelectMany(pi => pi.ProductConfigurations)
+            .Select(pc => pc.VariationOptionId)
+            .Distinct()
+            .ToHashSet();
+
+        // Map các variations và options
+        var variationsForProduct = new List<VariationForProductEditDto>();
+
+        foreach (var variation in allVariations)
+        {
+            var variationDto = new VariationForProductEditDto
+            {
+                Id = variation.Id,
+                Name = variation.Name,
+                Options = variation.VariationOptions.Select(vo => new VariationOptionForEditDto
+                {
+                    Id = vo.Id,
+                    Value = vo.Value,
+                    // Đánh dấu là selected nếu option này đang được sử dụng trong sản phẩm
+                    IsSelected = usedVariationOptionIds.Contains(vo.Id)
+                }).ToList()
+            };
+
+            // Chỉ thêm variation có ít nhất 1 option được sử dụng
+            if (variationDto.Options.Any(o => o.IsSelected))
+            {
+                variationsForProduct.Add(variationDto);
+            }
+        }
+
+        productForEditDto.Variations = variationsForProduct;
+
+        // Map các product items với variation combinations
+        productForEditDto.ProductItems = product.ProductItems.Select(pi => new VariationCombinationEditDto
+        {
+            Id = pi.Id,
+            Price = pi.Price,
+            MarketPrice = pi.MarketPrice,
+            PurchasePrice = pi.PurchasePrice,
+            QuantityInStock = pi.QuantityInStock,
+            ImageUrl = pi.ImageUrl,
+            VariationOptionIds = pi.ProductConfigurations.Select(pc => pc.VariationOptionId).ToList()
+        }).ToList();
+
+        return productForEditDto;
+    }
+
+    public async Task<bool> UpdateProductAsync(Guid id, ProductForEditDto productDto, string userId)
+    {
+        await _unitOfWork.BeginTransactionAsync();
+
+        try
+        {
+            // Lấy sản phẩm từ database
+            var existingProduct = await _unitOfWork.Products.Entities
+                .Include(p => p.ProductItems)
+                    .ThenInclude(pi => pi.ProductConfigurations)
+                .Include(p => p.ProductImages)
+                .Include(p => p.ProductForSkinTypes)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (existingProduct == null)
+            {
+                throw new KeyNotFoundException($"Product with ID {id} not found.");
+            }
+
+            // Cập nhật thông tin cơ bản
+            existingProduct.Name = productDto.Name;
+            existingProduct.Description = productDto.Description;
+            existingProduct.Price = productDto.Price;
+            existingProduct.MarketPrice = productDto.MarketPrice;
+            existingProduct.BrandId = productDto.BrandId.Value;
+            existingProduct.ProductCategoryId = productDto.ProductCategoryId.Value;
+            existingProduct.LastUpdatedBy = userId;
+            existingProduct.LastUpdatedTime = DateTime.UtcNow;
+
+            // Cập nhật specifications
+            existingProduct.StorageInstruction = productDto.Specifications.StorageInstruction;
+            existingProduct.UsageInstruction = productDto.Specifications.UsageInstruction;
+            existingProduct.DetailedIngredients = productDto.Specifications.DetailedIngredients;
+            existingProduct.MainFunction = productDto.Specifications.MainFunction;
+            existingProduct.Texture = productDto.Specifications.Texture;
+            existingProduct.KeyActiveIngredients = productDto.Specifications.KeyActiveIngredients;
+            existingProduct.ExpiryDate = productDto.Specifications.ExpiryDate;
+            existingProduct.SkinIssues = productDto.Specifications.SkinIssues;
+            existingProduct.EnglishName = productDto.Specifications.EnglishName;
+
+            // Cập nhật SkinTypes
+            var existingSkinTypeIds = existingProduct.ProductForSkinTypes.Select(pfs => pfs.SkinTypeId).ToList();
+            var skinTypesToRemove = existingSkinTypeIds.Except(productDto.SkinTypeIds).ToList();
+            var skinTypesToAdd = productDto.SkinTypeIds.Except(existingSkinTypeIds).ToList();
+
+            // Xóa các liên kết cũ
+            foreach (var skinTypeId in skinTypesToRemove)
+            {
+                var toRemove = existingProduct.ProductForSkinTypes.FirstOrDefault(pfs => pfs.SkinTypeId == skinTypeId);
+                if (toRemove != null)
+                    _unitOfWork.ProductForSkinTypes.Delete(toRemove);
+            }
+
+            // Thêm các liên kết mới
+            foreach (var skinTypeId in skinTypesToAdd)
+            {
+                _unitOfWork.ProductForSkinTypes.Add(new ProductForSkinType
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = id,
+                    SkinTypeId = skinTypeId,
+                });
+            }
+
+            // Cập nhật ProductImages
+            var existingImageUrls = existingProduct.ProductImages.Select(pi => pi.ImageUrl).ToList();
+            var imagesToRemove = existingProduct.ProductImages.Where(pi => !productDto.ProductImageUrls.Contains(pi.ImageUrl)).ToList();
+            var imagesToAdd = productDto.ProductImageUrls.Except(existingImageUrls).ToList();
+
+            // Xóa các images cũ
+            foreach (var image in imagesToRemove)
+            {
+                _unitOfWork.ProductImages.Delete(image);
+            }
+
+            // Thêm các images mới
+            for (int i = 0; i < imagesToAdd.Count; i++)
+            {
+                _unitOfWork.ProductImages.Add(new ProductImage
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = id,
+                    ImageUrl = imagesToAdd[i],
+                    // Đánh dấu là thumbnail nếu là ảnh đầu tiên và chưa có thumbnail
+                    IsThumbnail = (i == 0 && !existingProduct.ProductImages.Any(pi => pi.IsThumbnail && !imagesToRemove.Contains(pi))),
+                });
+            }
+
+            // Xóa tất cả ProductItems và ProductConfigurations hiện tại
+            var productItems = existingProduct.ProductItems.ToList();
+            foreach (var item in productItems)
+            {
+                // Xóa các configurations trước
+                var configurations = item.ProductConfigurations.ToList();
+                foreach (var config in configurations)
+                {
+                    _unitOfWork.ProductConfigurations.Delete(config);
+                }
+                // Sau đó xóa item
+                _unitOfWork.ProductItems.Delete(item);
+            }
+
+            // Thêm các ProductItems và ProductConfigurations mới
+            foreach (var item in productDto.ProductItems)
+            {
+                var productItem = new ProductItem
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = id,
+                    Price = item.Price,
+                    MarketPrice = item.MarketPrice,
+                    PurchasePrice = item.PurchasePrice,
+                    QuantityInStock = item.QuantityInStock,
+                    ImageUrl = item.ImageUrl
+                };
+
+                _unitOfWork.ProductItems.Add(productItem);
+
+                // Thêm các ProductConfigurations cho item này
+                foreach (var optionId in item.VariationOptionIds)
+                {
+                    var productConfiguration = new ProductConfiguration
+                    {
+                        Id = Guid.NewGuid(),
+                        ProductItemId = productItem.Id,
+                        VariationOptionId = optionId
+                    };
+
+                    _unitOfWork.ProductConfigurations.Add(productConfiguration);
+                }
+            }
+
+            // Lưu thay đổi
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitTransactionAsync();
+
+            return true;
+        }
+        catch (Exception)
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
+    }
 }

@@ -22,4 +22,6 @@ public interface IProductService
     Task<bool> UpdateAsync(ProductForUpdateDto productDto, Guid userId, Guid productId);
     Task DeleteAsync(Guid id, string userId);
     Task<PagedResponse<ProductDto>> GetBestSellerAsync(int pageNumber, int pageSize);
+    Task<ProductForEditDto> GetProductForEditAsync(Guid id); // New method for getting product for edit
+    Task<bool> UpdateProductAsync(Guid id, ProductForEditDto productDto, string userId); // New method for full product update
 }
