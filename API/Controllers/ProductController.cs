@@ -162,6 +162,7 @@ public class ProductController : ControllerBase
 
     // DELETE: api/products/{id}
     [HttpDelete("{id:guid}")]
+    [CustomAuthorize("Manager")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id)
@@ -196,6 +197,7 @@ public class ProductController : ControllerBase
 
     // New endpoint for getting product for edit
     [HttpGet("{id:guid}/edit")]
+    [CustomAuthorize("Manager")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProductForEdit(Guid id)
@@ -213,6 +215,7 @@ public class ProductController : ControllerBase
 
     // New endpoint for updating full product
     [HttpPut("{id:guid}")]
+    [CustomAuthorize("Manager")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
