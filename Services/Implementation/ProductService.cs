@@ -182,6 +182,20 @@ public class ProductService : IProductService
         if (product == null)
             throw new KeyNotFoundException($"Product with ID {id} not found.");
 
+        // Tìm tất cả variation options đang được sử dụng trong sản phẩm này
+        var usedVariationOptionIds = product.ProductItems
+            .SelectMany(pi => pi.ProductConfigurations)
+            .Select(pc => pc.VariationOptionId)
+            .Distinct()
+            .ToHashSet();
+
+        // Lấy các variation được sử dụng trong sản phẩm, nhóm theo variation
+        var variationsUsed = product.ProductItems
+            .SelectMany(pi => pi.ProductConfigurations)
+            .Select(pc => pc.VariationOption.Variation)
+            .DistinctBy(v => v.Id)
+            .ToList();
+
         // Thủ công map dữ liệu từ entity sang DTO
         var productDto = new ProductWithDetailsDto
         {
@@ -236,8 +250,28 @@ public class ProductService : IProductService
                 Texture = product.Texture,
                 KeyActiveIngredients = product.KeyActiveIngredients,
                 ExpiryDate = product.ExpiryDate,
-                SkinIssues = product.SkinIssues
-            }
+                SkinIssues = product.SkinIssues,
+                EnglishName = product.EnglishName
+            },
+            // Add variations
+            Variations = variationsUsed.Select(v => new VariationForProductEditDto
+            {
+                Id = v.Id,
+                Name = v.Name,
+                Options = product.ProductItems
+                    .SelectMany(pi => pi.ProductConfigurations)
+                    .Where(pc => pc.VariationOption.VariationId == v.Id)
+                    .Select(pc => pc.VariationOption)
+                    .DistinctBy(vo => vo.Id)
+                    .Select(vo => new VariationOptionForEditDto
+                    {
+                        Id = vo.Id,
+                        Value = vo.Value,
+                        IsSelected = true // All options are selected since they're being used
+                    })
+                    .OrderBy(o => o.Value)
+                    .ToList()
+            }).ToList()
         };
 
         return productDto;
@@ -875,16 +909,24 @@ public class ProductService : IProductService
             .Include(p => p.ProductForSkinTypes)
                 .ThenInclude(pst => pst.SkinType)
             .Include(ps => ps.ProductStatus)
+            .AsNoTracking() // Using AsNoTracking for better performance when just reading
             .FirstOrDefaultAsync(p => p.Id == id);
 
         // Kiểm tra null
         if (product == null)
             throw new KeyNotFoundException($"Product with ID {id} not found.");
 
-        // Lấy tất cả variations và options cho sản phẩm
-        var allVariations = await _unitOfWork.Variations.Entities
-            .Include(v => v.VariationOptions)
-            .ToListAsync();
+        // Tìm tất cả variation options đang được sử dụng trong sản phẩm này
+        var usedVariationOptions = product.ProductItems
+            .SelectMany(pi => pi.ProductConfigurations)
+            .Select(pc => pc.VariationOption)
+            .Distinct()
+            .ToList();
+
+        // Nhóm các variation options theo variation
+        var groupedVariations = usedVariationOptions
+            .GroupBy(vo => vo.Variation)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
         // Tạo ProductForEditDto
         var productForEditDto = new ProductForEditDto
@@ -897,7 +939,10 @@ public class ProductService : IProductService
             Status = product.ProductStatus?.StatusName,
             BrandId = product.BrandId,
             ProductCategoryId = product.ProductCategoryId,
-            ProductImageUrls = product.ProductImages.Select(pi => pi.ImageUrl).ToList(),
+            ProductImageUrls = product.ProductImages
+                .OrderByDescending(pi => pi.IsThumbnail) // Ensure thumbnail is first
+                .Select(pi => pi.ImageUrl)
+                .ToList(),
             SkinTypeIds = product.ProductForSkinTypes.Select(pst => pst.SkinTypeId).ToList(),
             Specifications = new ProductSpecifications
             {
@@ -910,65 +955,57 @@ public class ProductService : IProductService
                 ExpiryDate = product.ExpiryDate,
                 SkinIssues = product.SkinIssues,
                 EnglishName = product.EnglishName
-            }
-        };
-
-        // Tìm tất cả variation options đang được sử dụng trong sản phẩm này
-        var usedVariationOptionIds = product.ProductItems
-            .SelectMany(pi => pi.ProductConfigurations)
-            .Select(pc => pc.VariationOptionId)
-            .Distinct()
-            .ToHashSet();
-
-        // Map các variations và options
-        var variationsForProduct = new List<VariationForProductEditDto>();
-
-        foreach (var variation in allVariations)
-        {
-            var variationDto = new VariationForProductEditDto
+            },
+            // Chỉ lấy các variations và options đang được sử dụng
+            Variations = groupedVariations.Select(g => new VariationForProductEditDto
             {
-                Id = variation.Id,
-                Name = variation.Name,
-                Options = variation.VariationOptions.Select(vo => new VariationOptionForEditDto
+                Id = g.Key.Id,
+                Name = g.Key.Name,
+                Options = g.Value.Select(vo => new VariationOptionForEditDto
                 {
                     Id = vo.Id,
                     Value = vo.Value,
-                    // Đánh dấu là selected nếu option này đang được sử dụng trong sản phẩm
-                    IsSelected = usedVariationOptionIds.Contains(vo.Id)
-                }).ToList()
-            };
-
-            // Chỉ thêm variation có ít nhất 1 option được sử dụng
-            if (variationDto.Options.Any(o => o.IsSelected))
+                    IsSelected = true // Tất cả đều được sử dụng
+                })
+                .OrderBy(o => o.Value)
+                .ToList()
+            }).ToList(),
+            ProductItems = product.ProductItems.Select(pi => new VariationCombinationEditDto
             {
-                variationsForProduct.Add(variationDto);
-            }
-        }
-
-        productForEditDto.Variations = variationsForProduct;
-
-        // Map các product items với variation combinations
-        productForEditDto.ProductItems = product.ProductItems.Select(pi => new VariationCombinationEditDto
-        {
-            Id = pi.Id,
-            Price = pi.Price,
-            MarketPrice = pi.MarketPrice,
-            PurchasePrice = pi.PurchasePrice,
-            QuantityInStock = pi.QuantityInStock,
-            ImageUrl = pi.ImageUrl,
-            VariationOptionIds = pi.ProductConfigurations.Select(pc => pc.VariationOptionId).ToList()
-        }).ToList();
+                Id = pi.Id,
+                Price = pi.Price,
+                MarketPrice = pi.MarketPrice,
+                PurchasePrice = pi.PurchasePrice,
+                QuantityInStock = pi.QuantityInStock,
+                ImageUrl = pi.ImageUrl,
+                VariationOptionIds = pi.ProductConfigurations
+                    .Select(pc => pc.VariationOptionId)
+                    .ToList()
+            }).ToList()
+        };
 
         return productForEditDto;
     }
 
     public async Task<bool> UpdateProductAsync(Guid id, ProductForEditDto productDto, string userId)
     {
+        // Validate essential data before proceeding
+        if (productDto.Variations == null || !productDto.Variations.Any())
+        {
+            throw new ArgumentException("Product must have at least one variation");
+        }
+
+        // Check if any variation doesn't have options
+        if (productDto.Variations.Any(v => v.Options == null || !v.Options.Any(o => o.IsSelected)))
+        {
+            throw new ArgumentException("Each variation must have at least one option selected");
+        }
+
         await _unitOfWork.BeginTransactionAsync();
 
         try
         {
-            // Lấy sản phẩm từ database
+            // Get full product details from database
             var existingProduct = await _unitOfWork.Products.Entities
                 .Include(p => p.ProductItems)
                     .ThenInclude(pi => pi.ProductConfigurations)
@@ -981,7 +1018,7 @@ public class ProductService : IProductService
                 throw new KeyNotFoundException($"Product with ID {id} not found.");
             }
 
-            // Cập nhật thông tin cơ bản
+            // 1. Update basic information
             existingProduct.Name = productDto.Name;
             existingProduct.Description = productDto.Description;
             existingProduct.Price = productDto.Price;
@@ -991,7 +1028,7 @@ public class ProductService : IProductService
             existingProduct.LastUpdatedBy = userId;
             existingProduct.LastUpdatedTime = DateTime.UtcNow;
 
-            // Cập nhật specifications
+            // 2. Update specifications
             existingProduct.StorageInstruction = productDto.Specifications.StorageInstruction;
             existingProduct.UsageInstruction = productDto.Specifications.UsageInstruction;
             existingProduct.DetailedIngredients = productDto.Specifications.DetailedIngredients;
@@ -1002,12 +1039,13 @@ public class ProductService : IProductService
             existingProduct.SkinIssues = productDto.Specifications.SkinIssues;
             existingProduct.EnglishName = productDto.Specifications.EnglishName;
 
-            // Cập nhật SkinTypes
+            // 3. Update skin types
+            // Find skin types to add and remove
             var existingSkinTypeIds = existingProduct.ProductForSkinTypes.Select(pfs => pfs.SkinTypeId).ToList();
             var skinTypesToRemove = existingSkinTypeIds.Except(productDto.SkinTypeIds).ToList();
             var skinTypesToAdd = productDto.SkinTypeIds.Except(existingSkinTypeIds).ToList();
 
-            // Xóa các liên kết cũ
+            // Remove skin types that aren't selected anymore
             foreach (var skinTypeId in skinTypesToRemove)
             {
                 var toRemove = existingProduct.ProductForSkinTypes.FirstOrDefault(pfs => pfs.SkinTypeId == skinTypeId);
@@ -1015,7 +1053,7 @@ public class ProductService : IProductService
                     _unitOfWork.ProductForSkinTypes.Delete(toRemove);
             }
 
-            // Thêm các liên kết mới
+            // Add newly selected skin types
             foreach (var skinTypeId in skinTypesToAdd)
             {
                 _unitOfWork.ProductForSkinTypes.Add(new ProductForSkinType
@@ -1026,84 +1064,143 @@ public class ProductService : IProductService
                 });
             }
 
-            // Cập nhật ProductImages
+            // 4. Update product images
             var existingImageUrls = existingProduct.ProductImages.Select(pi => pi.ImageUrl).ToList();
-            var imagesToRemove = existingProduct.ProductImages.Where(pi => !productDto.ProductImageUrls.Contains(pi.ImageUrl)).ToList();
-            var imagesToAdd = productDto.ProductImageUrls.Except(existingImageUrls).ToList();
-
-            // Xóa các images cũ
+            
+            // Handle images to remove
+            var imagesToRemove = existingProduct.ProductImages
+                .Where(pi => !productDto.ProductImageUrls.Contains(pi.ImageUrl))
+                .ToList();
             foreach (var image in imagesToRemove)
             {
                 _unitOfWork.ProductImages.Delete(image);
             }
 
-            // Thêm các images mới
+            // Handle images to add
+            var imagesToAdd = productDto.ProductImageUrls
+                .Except(existingImageUrls)
+                .ToList();
+                
+            var hasThumbnail = existingProduct.ProductImages
+                .Any(pi => pi.IsThumbnail && !imagesToRemove.Contains(pi));
+            
             for (int i = 0; i < imagesToAdd.Count; i++)
             {
+                var isThumbnail = !hasThumbnail && i == 0;
                 _unitOfWork.ProductImages.Add(new ProductImage
                 {
                     Id = Guid.NewGuid(),
                     ProductId = id,
                     ImageUrl = imagesToAdd[i],
-                    // Đánh dấu là thumbnail nếu là ảnh đầu tiên và chưa có thumbnail
-                    IsThumbnail = (i == 0 && !existingProduct.ProductImages.Any(pi => pi.IsThumbnail && !imagesToRemove.Contains(pi))),
+                    IsThumbnail = isThumbnail,
                 });
+                
+                if (isThumbnail)
+                    hasThumbnail = true;
+            }
+            
+            // If we removed all thumbnails, set the first remaining image as thumbnail
+            if (!hasThumbnail && existingProduct.ProductImages.Count > imagesToRemove.Count)
+            {
+                var firstImage = existingProduct.ProductImages
+                    .FirstOrDefault(pi => !imagesToRemove.Contains(pi));
+                if (firstImage != null)
+                    firstImage.IsThumbnail = true;
             }
 
-            // Xóa tất cả ProductItems và ProductConfigurations hiện tại
+            // 5. Update product items and variation configurations
+            
+            // Delete all existing product items and configurations
             var productItems = existingProduct.ProductItems.ToList();
             foreach (var item in productItems)
             {
-                // Xóa các configurations trước
+                // Delete configurations first (foreign key constraint)
                 var configurations = item.ProductConfigurations.ToList();
                 foreach (var config in configurations)
                 {
                     _unitOfWork.ProductConfigurations.Delete(config);
                 }
-                // Sau đó xóa item
+                // Then delete the product item
                 _unitOfWork.ProductItems.Delete(item);
             }
 
-            // Thêm các ProductItems và ProductConfigurations mới
-            foreach (var item in productDto.ProductItems)
+            // Get selected variation options from the provided variations
+            var variationOptionIdsPerVariation = new Dictionary<Guid, List<Guid>>();
+            foreach (var variation in productDto.Variations)
             {
+                variationOptionIdsPerVariation[variation.Id] = variation.Options
+                    .Where(o => o.IsSelected)
+                    .Select(o => o.Id)
+                    .ToList();
+            }
+
+            // Generate all possible combinations of variation options
+            var generatedCombinations = GetVariationOptionCombinations(variationOptionIdsPerVariation);
+
+            // If product items were provided, map them to the generated combinations
+            Dictionary<string, VariationCombinationEditDto> existingItemMap = new Dictionary<string, VariationCombinationEditDto>();
+            if (productDto.ProductItems != null && productDto.ProductItems.Any())
+            {
+                foreach (var item in productDto.ProductItems)
+                {
+                    if (item.VariationOptionIds != null && item.VariationOptionIds.Any())
+                    {
+                        var key = string.Join("-", item.VariationOptionIds.OrderBy(id => id));
+                        existingItemMap[key] = item;
+                    }
+                }
+            }
+
+            // Get default thumbnail for product items
+            var defaultThumbnail = existingProduct.ProductImages
+                .Where(pi => !imagesToRemove.Contains(pi))
+                .FirstOrDefault(pi => pi.IsThumbnail)?.ImageUrl;
+            
+            // Add product items for all combinations
+            foreach (var combination in generatedCombinations)
+            {
+                // Check if this combination exists in the provided items
+                var key = string.Join("-", combination.VariationOptionIds.OrderBy(id => id));
+                bool combinationExists = existingItemMap.TryGetValue(key, out var existingItem);
+                
+                // Create new product item with data from existing item or defaults
                 var productItem = new ProductItem
                 {
                     Id = Guid.NewGuid(),
                     ProductId = id,
-                    Price = item.Price,
-                    MarketPrice = item.MarketPrice,
-                    PurchasePrice = item.PurchasePrice,
-                    QuantityInStock = item.QuantityInStock,
-                    ImageUrl = item.ImageUrl
+                    Price = combinationExists ? existingItem.Price : productDto.Price,
+                    MarketPrice = combinationExists ? existingItem.MarketPrice : productDto.MarketPrice,
+                    PurchasePrice = combinationExists ? existingItem.PurchasePrice : 0,
+                    QuantityInStock = combinationExists ? existingItem.QuantityInStock : 0,
+                    ImageUrl = combinationExists && !string.IsNullOrEmpty(existingItem.ImageUrl) 
+                        ? existingItem.ImageUrl 
+                        : defaultThumbnail
                 };
 
                 _unitOfWork.ProductItems.Add(productItem);
 
-                // Thêm các ProductConfigurations cho item này
-                foreach (var optionId in item.VariationOptionIds)
+                // Add configurations for each variation option in this combination
+                foreach (var optionId in combination.VariationOptionIds)
                 {
-                    var productConfiguration = new ProductConfiguration
+                    _unitOfWork.ProductConfigurations.Add(new ProductConfiguration
                     {
                         Id = Guid.NewGuid(),
                         ProductItemId = productItem.Id,
                         VariationOptionId = optionId
-                    };
-
-                    _unitOfWork.ProductConfigurations.Add(productConfiguration);
+                    });
                 }
             }
 
-            // Lưu thay đổi
+            // Save all changes
             await _unitOfWork.SaveChangesAsync();
             await _unitOfWork.CommitTransactionAsync();
 
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             await _unitOfWork.RollbackTransactionAsync();
-            throw;
+            throw new Exception($"Failed to update product: {ex.Message}", ex);
         }
     }
 }
